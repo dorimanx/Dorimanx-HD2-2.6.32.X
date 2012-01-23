@@ -1001,8 +1001,8 @@ static struct msm_acpu_clock_platform_data htcleo_clock_data = {
 	.acpu_switch_time_us	= 20,
 	.max_speed_delta_khz	= 256000,
 	.vdd_switch_time_us	= 62,
-	.power_collapse_khz	= 245000,
-	.wait_for_irq_khz	= 245000,
+	.power_collapse_khz	= 96000,
+	.wait_for_irq_khz	= 96000,
 //	.wait_for_irq_khz	= 19200,   // TCXO
 };
 
