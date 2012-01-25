@@ -17,6 +17,13 @@
  *
  */
 
+#include <linux/workqueue.h>
+#include <linux/completion.h>
+#include <linux/cpu.h>
+#include <linux/cpumask.h>
+#include <linux/sched.h>
+#include <linux/suspend.h>
+
 #include <linux/cpufreq.h>
 #include <linux/earlysuspend.h>
 #include <linux/init.h>
@@ -49,6 +56,7 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 				unsigned int target_freq,
 				unsigned int relation)
 {
+	int ret = -EFAULT;
 	int index;
 	struct cpufreq_freqs freqs;
 	struct cpufreq_frequency_table *table =
@@ -57,12 +65,11 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 	if (cpufreq_frequency_table_target(policy, table, target_freq, relation,
 			&index)) {
 		pr_err("cpufreq: invalid target_freq: %d\n", target_freq);
-		return -EINVAL;
+		ret = -EINVAL;
 	}
 
 	if (policy->cur == table[index].frequency) {
-	  ret = 0;
-	  goto done;
+	  	ret = 0;
 
 	}
 
