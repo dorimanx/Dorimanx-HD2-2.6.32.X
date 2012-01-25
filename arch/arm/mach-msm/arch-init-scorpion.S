@@ -383,6 +383,13 @@ SYSI2:
         ORR    r2, r2, #0x00000800
         MCR    p15, 0, r2, c1, c0, 0      //; WCP15_SCTLR  r2
 
+#ifdef CONFIG_ARCH_QSD8X50
+        /* disable predecode repair cache for thumb2 (DPRC, set bit 4 in PVR0F2) */
+        mrc p15, 0, r2, c15, c15, 2
+        orr r2, r2, #0x10
+        mcr p15, 0, r2, c15, c15, 2
+#endif
+
         //; Make sure Link stack is initialized with branch and links to sequential addresses
         //; This aids in creating a predictable startup environment
 //;       BL      SEQ1
