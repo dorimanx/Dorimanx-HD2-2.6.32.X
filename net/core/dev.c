@@ -127,6 +127,7 @@
 #include <linux/jhash.h>
 #include <linux/random.h>
 #include <trace/events/napi.h>
+#include <linux/iface_stat.h>
 
 #include "net-sysfs.h"
 
@@ -5380,6 +5381,9 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
 	unlist_netdevice(dev);
 
 	synchronize_net();
+
+	/* Store stats for this device in persistent iface_stat */
+	iface_stat_update(dev);
 
 	/* Shutdown queueing discipline. */
 	dev_shutdown(dev);
