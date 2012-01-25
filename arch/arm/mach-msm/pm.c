@@ -60,7 +60,7 @@ enum {
 	MSM_PM_DEBUG_SLEEP_LIMIT = 1U << 7,
 	MSM_PM_DEBUG_WAKEUP_REASON = 1U << 8,
 };
-static int msm_pm_debug_mask = MSM_PM_DEBUG_SLEEP_LIMIT | MSM_PM_DEBUG_WAKEUP_REASON;
+static int msm_pm_debug_mask = 0;
 module_param_named(debug_mask, msm_pm_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
 enum {
