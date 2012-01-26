@@ -348,12 +348,12 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
 		parser->global.unit = item_udata(item);
 		return 0;
 
-	case HID_GLOBAL_ITEM_TAG_REPORT_SIZE:
-		parser->global.report_size = item_udata(item);
-		if (parser->global.report_size > 32) {
-			dbg_hid("invalid report_size %d\n",
-					parser->global.report_size);
-			return -1;
+       case HID_GLOBAL_ITEM_TAG_REPORT_SIZE:
+               parser->global.report_size = item_udata(item);
+               if (parser->global.report_size > 96) {
+                       dbg_hid("invalid report_size %d\n",
+                                       parser->global.report_size);
+                       return -1;
 		}
 		return 0;
 

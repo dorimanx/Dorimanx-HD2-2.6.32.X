@@ -466,18 +466,18 @@ void __kprobes kprobe_flush_task(struct task_struct *tk)
 		/* Early boot.  kretprobe_table_locks not yet initialized. */
 		return;
 
-	hash = hash_ptr(tk, KPROBE_HASH_BITS);
-	head = &kretprobe_inst_table[hash];
-	kretprobe_table_lock(hash, &flags);
+       INIT_HLIST_HEAD(&empty_rp);
+       hash = hash_ptr(tk, KPROBE_HASH_BITS);
+       head = &kretprobe_inst_table[hash];
+       kretprobe_table_lock(hash, &flags);
 	hlist_for_each_entry_safe(ri, node, tmp, head, hlist) {
 		if (ri->task == tk)
 			recycle_rp_inst(ri, &empty_rp);
-	}
-	kretprobe_table_unlock(hash, &flags);
-	INIT_HLIST_HEAD(&empty_rp);
-	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
-		hlist_del(&ri->hlist);
-		kfree(ri);
+       }
+       kretprobe_table_unlock(hash, &flags);
+       hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
+               hlist_del(&ri->hlist);
+               kfree(ri);
 	}
 }
 

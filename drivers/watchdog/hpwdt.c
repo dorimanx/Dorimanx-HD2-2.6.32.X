@@ -220,7 +220,8 @@ static int __devinit cru_detect(unsigned long map_entry,
 
 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
 
-	asminline_call(&cmn_regs, bios32_entrypoint);
+       set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
+       asminline_call(&cmn_regs, bios32_entrypoint);
 
 	if (cmn_regs.u1.ral != 0) {
 		printk(KERN_WARNING
@@ -232,6 +233,15 @@ static int __devinit cru_detect(unsigned long map_entry,
 		cru_length = cmn_regs.u3.recx;
 		cru_physical_address =
 			physical_bios_base + physical_bios_offset;
+
+               if ((physical_bios_base + physical_bios_offset)) {
+                       cru_rom_addr =
+                               ioremap(cru_physical_address, cru_length);
+                       if (cru_rom_addr) {
+                               set_memory_x((unsigned long)cru_rom_addr, cru_length);
+                               retval = 0;
+                       }
+               }
 
 		/* If the values look OK, then map it in. */
 		if ((physical_bios_base + physical_bios_offset)) {

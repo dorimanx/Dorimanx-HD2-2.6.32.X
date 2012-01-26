@@ -3227,11 +3227,12 @@ static int ext4_da_write_end(struct file *file,
 	 * into that.
 	 */
 
-	new_i_size = pos + copied;
-	if (new_i_size > EXT4_I(inode)->i_disksize) {
-		if (ext4_da_should_update_i_disksize(page, end)) {
-			down_write(&EXT4_I(inode)->i_data_sem);
-			if (new_i_size > EXT4_I(inode)->i_disksize) {
+       new_i_size = pos + copied;
+       if (copied && new_i_size > EXT4_I(inode)->i_disksize) {
+               if (ext4_da_should_update_i_disksize(page, end)) {
+                       down_write(&EXT4_I(inode)->i_data_sem);
+                       if (new_i_size > EXT4_I(inode)->i_disksize) {
+
 				/*
 				 * Updating i_disksize when extending file
 				 * without needing block allocation

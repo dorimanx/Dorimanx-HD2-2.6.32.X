@@ -502,8 +502,8 @@ static int setup_vpif_input_channel_mode(int mux_mode)
 	int val;
 	u32 value;
 
-	if (!vpif_vsclkdis_reg || !cpld_client)
-		return -ENXIO;
+       if (!vpif_vidclkctl_reg || !cpld_client)
+               return -ENXIO;
 
 	val = i2c_smbus_read_byte(cpld_client);
 	if (val < 0)
@@ -519,7 +519,11 @@ static int setup_vpif_input_channel_mode(int mux_mode)
 		value &= ~VIDCH1CLK;
 	}
 	__raw_writel(value, vpif_vsclkdis_reg);
-	spin_unlock_irqrestore(&vpif_reg_lock, flags);
+               val |= VPIF_INPUT_ONE_CHANNEL;
+               value &= ~VIDCH1CLK;
+       }
+       __raw_writel(value, vpif_vidclkctl_reg);
+       spin_unlock_irqrestore(&vpif_reg_lock, flags);
 
 	err = i2c_smbus_write_byte(cpld_client, val);
 	if (err)
