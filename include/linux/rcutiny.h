@@ -26,7 +26,10 @@
 #define __LINUX_TINY_H
 
 #include <linux/cache.h>
-
+static inline void rcu_init(void) 
+{ 
+} 
+ 
 void rcu_sched_qs(int cpu);
 void rcu_bh_qs(int cpu);
 
