@@ -182,12 +182,11 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
  * - the result is undefined when n == 0
  * - this can be used to initialise global variables from constant data
  */
-#define rounddown_pow_of_two(n)			\
-(						\
-	__builtin_constant_p(n) ? (		\
-		(n == 1) ? 0 :			\
-		(1UL << ilog2(n))) :		\
-	__rounddown_pow_of_two(n)		\
+#define rounddown_pow_of_two(n)                        \
+ (                                              \
+        __builtin_constant_p(n) ? (             \
+                (1UL << ilog2(n))) :            \
+        __rounddown_pow_of_two(n)               \
  )
 
 /**

@@ -670,37 +670,35 @@ dotry:
 		struct urb *outurb = sk->outurb[u];
 		playback_prep_freqn(sk, outurb);
 		inurb->number_of_packets = outurb->number_of_packets;
-		inurb->transfer_buffer_length =
-			inurb->number_of_packets *
-			inurb->iso_frame_desc[0].length;
-		preempt_disable();
-		if (u == 0) {
-			int now;
-			struct usb_device *dev = inurb->dev;
+               inurb->transfer_buffer_length =
+                       inurb->number_of_packets *
+                       inurb->iso_frame_desc[0].length;
+
+               if (u == 0) {
+                       int now;
+                       struct usb_device *dev = inurb->dev;
 			frame = usb_get_current_frame_number(dev);
 			do {
 				now = usb_get_current_frame_number(dev);
 				++iters;
 			} while (now > -1 && now == frame);
 		}
-		err = usb_submit_urb(inurb, GFP_ATOMIC);
-		if (err < 0) {
-			preempt_enable();
-			snd_printk(KERN_ERR"usb_submit_urb(sk->inurb[%i])"
-				   " returned %i\n", u, err);
-			return err;
-		}
-		err = usb_submit_urb(outurb, GFP_ATOMIC);
-		if (err < 0) {
-			preempt_enable();
-			snd_printk(KERN_ERR"usb_submit_urb(sk->outurb[%i])"
-				   " returned %i\n", u, err);
-			return err;
-		}
-		preempt_enable();
-		if (inurb->start_frame != outurb->start_frame) {
-			snd_printd(KERN_DEBUG
-				   "u[%i] start_frames differ in:%u out:%u\n",
+               err = usb_submit_urb(inurb, GFP_ATOMIC);
+               if (err < 0) {
+                       snd_printk(KERN_ERR"usb_submit_urb(sk->inurb[%i])"
+                                  " returned %i\n", u, err);
+                       return err;
+               }
+               err = usb_submit_urb(outurb, GFP_ATOMIC);
+               if (err < 0) {
+                       snd_printk(KERN_ERR"usb_submit_urb(sk->outurb[%i])"
+                                  " returned %i\n", u, err);
+                       return err;
+               }
+
+               if (inurb->start_frame != outurb->start_frame) {
+                       snd_printd(KERN_DEBUG
+                                  "u[%i] start_frames differ in:%u out:%u\n",
 				   u, inurb->start_frame, outurb->start_frame);
 			goto check_retry;
 		}

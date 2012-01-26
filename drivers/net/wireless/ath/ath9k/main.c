@@ -2468,9 +2468,12 @@ static void ath9k_sta_notify(struct ieee80211_hw *hw,
 	struct ath_wiphy *aphy = hw->priv;
 	struct ath_softc *sc = aphy->sc;
 
-	switch (cmd) {
-	case STA_NOTIFY_ADD:
-		ath_node_attach(sc, sta);
+       if (!(sc->sc_flags & SC_OP_TXAGGR))
+               return;
+
+       switch (cmd) {
+       case STA_NOTIFY_ADD:
+               ath_node_attach(sc, sta);
 		break;
 	case STA_NOTIFY_REMOVE:
 		ath_node_detach(sc, sta);

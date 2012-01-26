@@ -835,13 +835,13 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
 	 */
 	switch (cmd) {
 		case SCSI_IOCTL_GET_IDLUN:
-		case SCSI_IOCTL_GET_BUS_NUMBER:
-			return scsi_ioctl(sdp, cmd, p);
-		default:
-			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
-			if (error != -ENOTTY)
-				return error;
-	}
+               	case SCSI_IOCTL_GET_BUS_NUMBER:
+                       return scsi_ioctl(sdp, cmd, p);
+               default:
+                       error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
+                       if (error != -ENOTTY)
+                               return error;
+        }
 	return scsi_ioctl(sdp, cmd, p);
 }
 
