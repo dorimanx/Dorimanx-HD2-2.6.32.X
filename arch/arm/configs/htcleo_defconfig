@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.55
-# Thu Jan 26 19:44:57 2012
+# Thu Jan 26 20:12:17 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -853,8 +853,7 @@ CONFIG_EXTRA_FIRMWARE=""
 # CONFIG_DEBUG_DRIVER is not set
 # CONFIG_DEBUG_DEVRES is not set
 # CONFIG_SYS_HYPERVISOR is not set
-CONFIG_CONNECTOR=y
-CONFIG_PROC_EVENTS=y
+# CONFIG_CONNECTOR is not set
 CONFIG_MTD=y
 # CONFIG_MTD_DEBUG is not set
 # CONFIG_MTD_TESTS is not set
@@ -987,7 +986,7 @@ CONFIG_DM_CRYPT=y
 # CONFIG_DM_ZERO is not set
 # CONFIG_DM_MULTIPATH is not set
 # CONFIG_DM_DELAY is not set
-CONFIG_DM_UEVENT=y
+# CONFIG_DM_UEVENT is not set
 # CONFIG_BLK_DEV_DM_BBR is not set
 CONFIG_NETDEVICES=y
 # CONFIG_IFB is not set
@@ -1390,7 +1389,6 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 #
 # Frame buffer hardware drivers
 #
-# CONFIG_FB_UVESA is not set
 # CONFIG_FB_S1D13XXX is not set
 # CONFIG_FB_VIRTUAL is not set
 # CONFIG_FB_METRONOME is not set
