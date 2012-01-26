@@ -138,10 +138,16 @@ static void rcu_report_exp_done(void);
 /*
  * Return true if the CPU has not yet responded to the current grace period.
  */
-static int rcu_cpu_cur_gp(void)
+static int rcu_cpu_blocking_cur_gp(void)
 {
 	return rcu_preempt_ctrlblk.gpcpu != rcu_preempt_ctrlblk.gpnum;
 }
+
+static int rcu_cpu_cur_gp(void)
+{
+        return rcu_preempt_ctrlblk.gpcpu != rcu_preempt_ctrlblk.gpnum;
+}
+
 
 /*
  * Check for a running RCU reader.  Because there is only one CPU,
@@ -655,7 +661,6 @@ static void rcu_preempt_check_callbacks(void)
 		rcu_preempt_cpu_qs();
 	if (&rcu_preempt_ctrlblk.rcb.rcucblist !=
 	    rcu_preempt_ctrlblk.rcb.donetail)
-//	if (rcu_preempt_gp_in_progress() && rcu_preempt_running_reader())
 		invoke_rcu_kthread();
 	if (rcu_preempt_gp_in_progress() &&
 	    rcu_cpu_blocking_cur_gp() &&
