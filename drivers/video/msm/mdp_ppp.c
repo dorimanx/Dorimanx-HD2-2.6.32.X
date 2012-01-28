@@ -501,9 +501,10 @@ static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
 		mdp_writel_dbg(mdp, regs->bg_img_sz, MDP_PPP_BG_IMAGE_SIZE);
 		mdp_writel_dbg(mdp, regs->bg_alpha_sel,
 			       MDP_PPP_BLEND_BG_ALPHA_SEL);
-			       
+#if 0			       
 #if defined(CONFIG_MACH_HTCLEO)
       		mdp_writel_dbg(mdp, 0, MDP_TFETCH_TEST_MODE);
+#endif
 #endif
 #endif
 	}
