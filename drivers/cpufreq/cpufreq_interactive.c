@@ -52,7 +52,7 @@ static cpumask_t work_cpumask;
  * The minimum ammount of time to spend at a frequency before we can ramp down,
  * default is 50ms.
  */
-#define DEFAULT_MIN_SAMPLE_TIME 40000;
+#define DEFAULT_MIN_SAMPLE_TIME 10000;
 static unsigned long min_sample_time;
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,

@@ -36,7 +36,7 @@
  */
 
 #define DEF_FREQUENCY_UP_THRESHOLD				(50)
-#define DEF_FREQUENCY_DOWN_THRESHOLD				(15)
+#define DEF_FREQUENCY_DOWN_THRESHOLD				(35)
 #define FREQ_STEP_DOWN 						(160000)
 #define FREQ_SLEEP_MAX 						(230400)
 #define FREQ_AWAKE_MIN 						(368640)
@@ -54,7 +54,7 @@
  */
 static unsigned int def_sampling_rate;
 unsigned int suspended = 0;
-#define MIN_SAMPLING_RATE_RATIO			(2)
+#define MIN_SAMPLING_RATE_RATIO			(1)
 /* for correct statistics, we need at least 10 ticks between each measure */
 #define MIN_STAT_SAMPLING_RATE			\
 	(MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(CONFIG_CPU_FREQ_MIN_TICKS))

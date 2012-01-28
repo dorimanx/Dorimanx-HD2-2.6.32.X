@@ -56,10 +56,10 @@ static unsigned int enabled = 0;
  * The minimum ammount of time to spend at a frequency before we can ramp down,
  * default is 50ms.
  */
-#define DEFAULT_MIN_SAMPLE_TIME 50000;
+#define DEFAULT_MIN_SAMPLE_TIME 10000;
 static unsigned long min_sample_time;
 
-#define FREQ_THRESHOLD 998400;
+#define FREQ_THRESHOLD 1612800;
 #define RESUME_SPEED 998400;
 
 static int cpufreq_governor_interactivex(struct cpufreq_policy *policy,
