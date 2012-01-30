@@ -148,7 +148,7 @@ static struct resource mem_res[] = {
 		.flags = IORESOURCE_MEM
 	},
 	{
-		.name = "Kernel code",
+		.name = "Kernel text",
 		.start = 0,
 		.end = 0,
 		.flags = IORESOURCE_MEM
