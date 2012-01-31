@@ -1851,7 +1851,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
 		struct sk_buff *skb;
 
 		unix_state_lock(sk);
-		skb = skb_dequeue(&sk->sk_receive_queue);
+		skb = skb_peek(&sk->sk_receive_queue);
 		if (skb == NULL) {
 			unix_sk(sk)->recursion_level = 0;
 			if (copied >= target)
@@ -1892,6 +1892,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
 			if (memcmp(UNIXCREDS(skb), &siocb->scm->creds,
 				   sizeof(siocb->scm->creds)) != 0) {
 				skb_queue_head(&sk->sk_receive_queue, skb);
+				sk->sk_data_ready(sk, skb->len);
 				break;
 			}
 		} else {
@@ -1908,7 +1909,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
 
 		chunk = min_t(unsigned int, skb->len, size);
 		if (memcpy_toiovec(msg->msg_iov, skb->data, chunk)) {
-			skb_queue_head(&sk->sk_receive_queue, skb);
 			if (copied == 0)
 				copied = -EFAULT;
 			break;
@@ -1923,11 +1923,10 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
 			if (UNIXCB(skb).fp)
 				unix_detach_fds(siocb->scm, skb);
 
-			/* put the skb back if we didn't use it up.. */
-			if (skb->len) {
-				skb_queue_head(&sk->sk_receive_queue, skb);
-				break;
-			}
+			if (skb->len)
+			  break;
+
+			skb_unlink(skb, &sk->sk_receive_queue);
 
 			kfree_skb(skb);
 
@@ -1939,8 +1938,6 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
 			if (UNIXCB(skb).fp)
 				siocb->scm->fp = scm_fp_dup(UNIXCB(skb).fp);
 
-			/* put message back and return */
-			skb_queue_head(&sk->sk_receive_queue, skb);
 			break;
 		}
 	} while (size);
