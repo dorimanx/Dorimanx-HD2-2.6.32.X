@@ -86,6 +86,7 @@
 #include <linux/poll.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/random.h>
+#include <linux/slab.h>
 
 #include <asm/uaccess.h>
 #include <asm/system.h>
@@ -104,6 +105,7 @@
 #include <net/tcp.h>
 #include <net/udp.h>
 #include <net/udplite.h>
+#include <net/ping.h>
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <net/raw.h>
@@ -1590,6 +1592,8 @@ static int __init inet_init(void)
 #ifdef CONFIG_SYSCTL
 	ip_static_sysctl_init();
 #endif
+
+	tcp_prot.sysctl_mem = init_net.ipv4.sysctl_tcp_mem;
 
 	/*
 	 *	Add all the base protocols.
