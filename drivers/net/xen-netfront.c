@@ -66,7 +66,7 @@ struct netfront_cb {
 
 #define NET_TX_RING_SIZE __RING_SIZE((struct xen_netif_tx_sring *)0, PAGE_SIZE)
 #define NET_RX_RING_SIZE __RING_SIZE((struct xen_netif_rx_sring *)0, PAGE_SIZE)
-#define TX_MAX_TARGET min_t(int, NET_RX_RING_SIZE, 256)
+#define TX_MAX_TARGET min_t(int, NET_TX_RING_SIZE, 256)
 
 struct netfront_info {
 	struct list_head list;

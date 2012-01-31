@@ -61,6 +61,8 @@ struct rtnl_link
 
 static DEFINE_MUTEX(rtnl_mutex);
 
+static u16 min_ifinfo_dump_size;
+
 void rtnl_lock(void)
 {
 	mutex_lock(&rtnl_mutex);
@@ -886,6 +888,9 @@ errout:
 
 	if (send_addr_notify)
 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
+	min_ifinfo_dump_size = max_t(u16, if_nlmsg_size(dev),
+        	   min_ifinfo_dump_size);
+
 	return err;
 }
 

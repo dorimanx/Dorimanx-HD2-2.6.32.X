@@ -914,16 +914,6 @@ static __net_initdata struct pernet_operations ipv4_sysctl_ops = {
 static __init int sysctl_ipv4_init(void)
 {
 	struct ctl_table_header *hdr;
-	struct ctl_table *i;
-
-	for (i = ipv4_table; i->procname; i++) {
-		if (strcmp(i->procname, "ip_local_reserved_ports") == 0) {
-			i->data = sysctl_local_reserved_ports;
-			break;
-		}
-	}
-	if (!i->procname)
-		return -EINVAL;
 
 	hdr = register_sysctl_paths(net_ipv4_ctl_path, ipv4_table);
 	if (hdr == NULL)

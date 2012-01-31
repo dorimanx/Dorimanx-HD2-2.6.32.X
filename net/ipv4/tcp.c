@@ -2887,9 +2887,7 @@ void tcp_init_mem(struct net *net)
    net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
    net->ipv4.sysctl_tcp_mem[1] = limit;
    net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
-
 }
-
 
 void __init tcp_init(void)
 {

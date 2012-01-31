@@ -27,6 +27,20 @@ EXPORT_SYMBOL(init_net);
 
 #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
 
+static unsigned int max_gen_ptrs = INITIAL_NET_GEN_PTRS;
+
+static struct net_generic *net_alloc_generic(void)
+{
+   struct net_generic *ng;
+   size_t generic_size = offsetof(struct net_generic, ptr[max_gen_ptrs]);
+
+   ng = kzalloc(generic_size, GFP_KERNEL);
+   if (ng)
+     ng->len = max_gen_ptrs;
+
+   return ng;
+}
+
 /*
  * setup_net runs the initializers for the network namespace object.
  */
@@ -63,19 +77,6 @@ out_undo:
 
 	rcu_barrier();
 	goto out;
-}
-
-static struct net_generic *net_alloc_generic(void)
-{
-	struct net_generic *ng;
-	size_t generic_size = sizeof(struct net_generic) +
-		INITIAL_NET_GEN_PTRS * sizeof(void *);
-
-	ng = kzalloc(generic_size, GFP_KERNEL);
-	if (ng)
-		ng->len = INITIAL_NET_GEN_PTRS;
-
-	return ng;
 }
 
 #ifdef CONFIG_NET_NS
@@ -500,8 +501,7 @@ int net_assign_generic(struct net *net, int id, void *data)
 	if (old_ng->len >= id)
 		goto assign;
 
-	ng = kzalloc(sizeof(struct net_generic) +
-			id * sizeof(void *), GFP_KERNEL);
+	ng = net_alloc_generic();
 	if (ng == NULL)
 		return -ENOMEM;
 
@@ -516,7 +516,6 @@ int net_assign_generic(struct net *net, int id, void *data)
 	 * the old copy for kfree after a grace period.
 	 */
 
-	ng->len = id;
 	memcpy(&ng->ptr, &old_ng->ptr, old_ng->len * sizeof(void*));
 
 	rcu_assign_pointer(net->gen, ng);
