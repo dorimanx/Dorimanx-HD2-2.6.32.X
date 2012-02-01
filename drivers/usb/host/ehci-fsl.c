@@ -109,7 +109,7 @@ int usb_hcd_fsl_probe(const struct hc_driver *driver,
 	if (hcd->regs == NULL) {
 		dev_dbg(&pdev->dev, "error mapping memory\n");
 		retval = -EFAULT;
-		goto err3;
+		goto err4;
 	}
 
 	/* Enable USB controller */

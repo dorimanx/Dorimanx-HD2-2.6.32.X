@@ -19,11 +19,6 @@
 
 #include <linux/usb/langwell_udc.h>
 
-#if defined(CONFIG_USB_LANGWELL_OTG)
-#include <linux/usb/langwell_otg.h>
-#endif
-
-
 /*-------------------------------------------------------------------------*/
 
 /* driver data structures and utilities */

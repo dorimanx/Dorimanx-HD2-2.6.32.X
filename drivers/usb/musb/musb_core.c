@@ -974,6 +974,8 @@ static void musb_shutdown(struct platform_device *pdev)
 	struct musb	*musb = dev_to_musb(&pdev->dev);
 	unsigned long	flags;
 
+	musb_gadget_cleanup(musb);
+
 	spin_lock_irqsave(&musb->lock, flags);
 	musb_platform_disable(musb);
 	musb_generic_disable(musb);
@@ -1833,10 +1835,6 @@ static void musb_free(struct musb *musb)
 #ifdef CONFIG_USB_GADGET_MUSB_HDRC
 	device_remove_file(musb->controller, &dev_attr_srp);
 #endif
-#endif
-
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-	musb_gadget_cleanup(musb);
 #endif
 
 	if (musb->nIrq >= 0) {

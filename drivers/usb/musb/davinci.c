@@ -32,9 +32,6 @@
 #include <linux/io.h>
 #include <linux/gpio.h>
 
-#include <mach/hardware.h>
-#include <mach/memory.h>
-#include <mach/gpio.h>
 #include <mach/cputype.h>
 
 #include <asm/mach-types.h>
