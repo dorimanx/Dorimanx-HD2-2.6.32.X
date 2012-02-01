@@ -158,6 +158,7 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 	osh = kzalloc(sizeof(osl_t), flags);
 	ASSERT(osh);
 
+
 	
 	ASSERT(ABS(BCME_LAST) == (ARRAYSIZE(linuxbcmerrormap) - 1));
 

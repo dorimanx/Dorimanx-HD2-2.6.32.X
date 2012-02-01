@@ -65,6 +65,7 @@
 
 static const char	hcd_name [] = "ehci_hcd";
 
+static struct dentry *ehci_debug_root;
 
 #undef VERBOSE_DEBUG
 #undef EHCI_URB_TRACE
