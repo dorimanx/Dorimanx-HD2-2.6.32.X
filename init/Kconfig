@@ -1133,7 +1133,7 @@ config COMPAT_BRK
 
 choice
 	prompt "Choose SLAB allocator"
-	default SLUB
+	default SLQB
 	help
 	   This option allows to select a slab allocator.
 
