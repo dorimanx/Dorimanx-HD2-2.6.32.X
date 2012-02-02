@@ -234,9 +234,9 @@ static int sdio_bus_pm_prepare(struct device *dev)
 
 static const struct dev_pm_ops sdio_bus_pm_ops = {
 	SET_RUNTIME_PM_OPS(
-		pm_generic_runtime_suspend,
-		pm_generic_runtime_resume,
-		pm_generic_runtime_idle
+		pm_runtime_suspend,
+		pm_runtime_resume,
+		pm_runtime_idle
 	)
 	.prepare = sdio_bus_pm_prepare,
 };
