@@ -1048,7 +1048,7 @@ int      i;
      */
     			if (bh->state == BUF_STATE_FULL && fsg->residue) {
 #else
-		if (bh->state == BUF_STATE_FULL) {
+			if (bh->state == BUF_STATE_FULL) {
 #endif
 			smp_rmb();
 			fsg->next_buffhd_to_drain = bh->next;
@@ -1880,11 +1880,11 @@ static int send_status(struct fsg_dev *fsg)
    * writing on to storage media, need to set
    * residue to zero,assuming that write will succeed.
    */
-  if (write_error_after_csw_sent) {
-    write_error_after_csw_sent = 0;
+  	if (write_error_after_csw_sent) {
+    	  write_error_after_csw_sent = 0;
 	csw->Residue = cpu_to_le32(fsg->residue);
-  } else
-    csw->Residue = 0;
+  	} else
+	csw->Residue = 0;
 #else
 	csw->Residue = cpu_to_le32(fsg->residue);
 #endif
