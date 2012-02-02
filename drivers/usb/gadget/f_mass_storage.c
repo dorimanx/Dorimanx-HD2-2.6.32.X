@@ -72,12 +72,15 @@
 #include <linux/usb.h>
 #include <linux/usb_usual.h>
 #include <linux/usb/ch9.h>
+#include <linux/usb/gadget.h>
+
 #include <linux/usb/android_composite.h>
 #include <mach/board.h>
 #include <mach/msm_hsusb.h>
 
 #include "gadget_chips.h"
 
+#include <asm/unaligned.h>
 
 #define BULK_BUFFER_SIZE           16384
 
@@ -1530,9 +1533,6 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 
 	/* No block descriptors */
 
-	/* Disabled to workaround USB reset problems with a Vista host.
-	 */
-#if 0
 	/* The mode pages, in numerical order.  The only page we support
 	 * is the Caching page. */
 	if (page_code == 0x08 || all_pages) {
@@ -1542,20 +1542,19 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 		memset(buf+2, 0, 10);	/* None of the fields are changeable */
 
 		if (!changeable_values) {
-			buf[2] = 0x00;	/* Write cache disable, */
+			buf[2] = 0x04;	/* Write cache disable, */
 					/* Read cache not disabled */
 					/* No cache retention priorities */
-			put_be16(&buf[4], 0xffff);  /* Don't disable prefetch */
+			put_unaligned_be16(0xffff, &buf[4]);
+					/* Don't disable prefetch */
 					/* Minimum prefetch = 0 */
-			put_be16(&buf[8], 0xffff);  /* Maximum prefetch */
-			/* Maximum prefetch ceiling */
-			put_be16(&buf[10], 0xffff);
+			put_unaligned_be16(0xffff, &buf[8]);
+					/* Maximum prefetch */
+					/* Maximum prefetch ceiling */
+			put_unaligned_be16(0xffff, &buf[10]);
 		}
 		buf += 12;
 	}
-#else
-	valid_page = 1;
-#endif
 
 	/* Check that a valid page was requested and the mode data length
 	 * isn't too long. */
@@ -1569,7 +1568,7 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 	if (mscmnd == SC_MODE_SENSE_6)
 		buf0[0] = len - 1;
 	else
-		put_be16(buf0, len - 2);
+		put_unaligned_be16(len - 2, buf0);
 	return len;
 }
 
