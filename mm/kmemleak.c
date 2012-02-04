@@ -931,10 +931,10 @@ void __ref kmemleak_scan_area(const void *ptr, unsigned long offset,
 {
 	pr_debug("%s(0x%p)\n", __func__, ptr);
 
-	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
+	if (atomic_read(&kmemleak_enabled) && ptr && size && !IS_ERR(ptr))
 		add_scan_area((unsigned long)ptr, offset, length, gfp);
 	else if (atomic_read(&kmemleak_early_log))
-		log_early(KMEMLEAK_SCAN_AREA, ptr, 0, 0, offset, length);
+		log_early(KMEMLEAK_SCAN_AREA, ptr, size, 0, offset, length);
 }
 EXPORT_SYMBOL(kmemleak_scan_area);
 
@@ -1604,6 +1604,14 @@ void __init kmemleak_init(void)
 {
 	int i;
 	unsigned long flags;
+
+#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
+	if (!kmemleak_skip_disable) {
+		atomic_set(&kmemleak_early_log, 0);
+		kmemleak_disable();
+		return;
+	}
+#endif
 
 	jiffies_min_age = msecs_to_jiffies(MSECS_MIN_AGE);
 	jiffies_scan_wait = msecs_to_jiffies(SECS_SCAN_WAIT * 1000);
