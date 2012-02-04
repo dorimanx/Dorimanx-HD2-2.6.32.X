@@ -57,11 +57,13 @@
 #define BMA_IOCTL_SET_CALI_MODE		_IOW(BMAIO, 0x39, short)
 #define BMA_IOCTL_READ_CALI_VALUE       _IOR(BMAIO, 0x3a, char[3])
 #define BMA_IOCTL_WRITE_CALI_VALUE      _IOW(BMAIO, 0x3b, int)
+#define BMA_IOCTL_GET_UPDATE_USER_CALI_DATA	_IOR(BMAIO, 0x3c, short)
+#define BMA_IOCTL_SET_UPDATE_USER_CALI_DATA	_IOW(BMAIO, 0x3d, short)
 
 /* range and bandwidth */
-#define BMA_RANGE_2G			0
+/*#define BMA_RANGE_2G			0
 #define BMA_RANGE_4G			1
-#define BMA_RANGE_8G			2
+#define BMA_RANGE_8G			2*/
 
 #define BMA_BW_25HZ		0
 #define BMA_BW_50HZ		1
