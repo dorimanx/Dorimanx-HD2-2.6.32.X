@@ -503,7 +503,7 @@ static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
 			       MDP_PPP_BLEND_BG_ALPHA_SEL);
 #endif
 	}
-	if( src_file != -1 && dst_file != -1 )
+//	if( src_file != -1 && dst_file != -1 )
 		flush_imgs(req, regs, src_file, dst_file);
 	mdp_writel_dbg(mdp, 0x1000, MDP_DISPLAY0_START);
 	return 0;

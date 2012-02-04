@@ -202,6 +202,7 @@ void deactivate_super(struct super_block *s)
                 put_super(s);
         }
 }
+EXPORT_SYMBOL(deactivate_super);
 
 /**
  *	deactivate_locked_super	-	drop an active reference to superblock

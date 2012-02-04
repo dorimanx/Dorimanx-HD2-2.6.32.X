@@ -2457,6 +2457,7 @@ static int msm_open_control(struct inode *inode, struct file *filep)
 	return rc;
 }
 
+#ifdef CONFIG_MSM_CAMERA_V4L2
 static int __msm_v4l2_control(struct msm_sync *sync,
 		struct msm_ctrl_cmd *out)
 {
@@ -2493,6 +2494,7 @@ end:
 	CDBG("%s: rc %d\n", __func__, rc);
 	return rc;
 }
+#endif
 
 static const struct file_operations msm_fops_config = {
 	.owner = THIS_MODULE,
@@ -2718,7 +2720,7 @@ error:
 	return ret;
 }
 
-
+#ifdef CONFIG_MSM_CAMERA_V4L2
 int msm_v4l2_register(struct msm_v4l2_driver *drv)
 {
 	/* FIXME: support multiple sensors */
@@ -2738,6 +2740,7 @@ int msm_v4l2_register(struct msm_v4l2_driver *drv)
 	return 0;
 }
 EXPORT_SYMBOL(msm_v4l2_register);
+#endif
 
 int msm_v4l2_unregister(struct msm_v4l2_driver *drv)
 {

@@ -5382,8 +5382,10 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
 
 	synchronize_net();
 
+#ifdef CONFIG_IFACE_STAT
 	/* Store stats for this device in persistent iface_stat */
 	iface_stat_update(dev);
+#endif
 
 	/* Shutdown queueing discipline. */
 	dev_shutdown(dev);

@@ -374,8 +374,10 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
 	rtmsg_ifa(RTM_NEWADDR, ifa, nlh, pid);
 	blocking_notifier_call_chain(&inetaddr_chain, NETDEV_UP, ifa);
 
+#ifdef CONFIG_IFACE_STAT
 	/* Start persistent interface stat monitoring. Ignores if loopback. */
 	create_iface_stat(in_dev);
+#endif
 
 	return 0;
 }
