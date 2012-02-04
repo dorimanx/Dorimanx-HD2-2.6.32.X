@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.55
-# Sat Feb  4 03:50:06 2012
+# Sat Feb  4 17:02:01 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -370,9 +370,9 @@ CONFIG_ARM_THUMBEE=y
 # CONFIG_CPU_BPREDICT_DISABLE is not set
 CONFIG_HAS_TLS_REG=y
 CONFIG_ARM_L1_CACHE_SHIFT=5
-# CONFIG_ARM_ERRATA_430973 is not set
-# CONFIG_ARM_ERRATA_458693 is not set
-# CONFIG_ARM_ERRATA_460075 is not set
+CONFIG_ARM_ERRATA_430973=y
+CONFIG_ARM_ERRATA_458693=y
+CONFIG_ARM_ERRATA_460075=y
 
 #
 # Bus support
@@ -1057,9 +1057,9 @@ CONFIG_INPUT_GPIO=y
 #
 CONFIG_VT=y
 CONFIG_CONSOLE_TRANSLATIONS=y
-CONFIG_VT_CONSOLE=y
+# CONFIG_VT_CONSOLE is not set
 CONFIG_HW_CONSOLE=y
-CONFIG_VT_HW_CONSOLE_BINDING=y
+# CONFIG_VT_HW_CONSOLE_BINDING is not set
 # CONFIG_DEVMEM is not set
 # CONFIG_DEVKMEM is not set
 # CONFIG_SERIAL_NONSTANDARD is not set
@@ -1638,7 +1638,29 @@ CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 # RAR Register Driver
 #
 # CONFIG_RAR_REGISTER is not set
-# CONFIG_IIO is not set
+CONFIG_IIO=y
+# CONFIG_IIO_RING_BUFFER is not set
+# CONFIG_IIO_TRIGGER is not set
+
+#
+# Accelerometers
+#
+# CONFIG_KXSD9 is not set
+# CONFIG_LIS3L02DQ is not set
+
+#
+# Analog to digital convertors
+#
+# CONFIG_MAX1363 is not set
+
+#
+# Light sensors
+#
+# CONFIG_TSL2561 is not set
+
+#
+# Triggers - standalone
+#
 CONFIG_XVMALLOC=y
 CONFIG_ZRAM=m
 CONFIG_ZRAM_NUM_DEVICES=1
