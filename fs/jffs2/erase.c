@@ -330,7 +330,8 @@ static int jffs2_block_check_erase(struct jffs2_sb_info *c, struct jffs2_erasebl
 	void *ebuf;
 	uint32_t ofs;
 	size_t retlen;
-	int ret = -EIO;
+//	int ret = -EIO;
+	int ret;
 
 	if (c->mtd->point) {
 		unsigned long *wordebuf;
