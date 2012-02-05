@@ -366,16 +366,29 @@ static void remove_35mm_do_work(struct work_struct *work)
 	mutex_lock(&hi->mutex_lock);
 	state = switch_get_state(&hi->sdev);
 
+#ifdef CONFIG_ICS
 	if (hi->usb_dev_type == USB_HEADSET) {
 		hi->usb_dev_status = STATUS_CONNECTED_ENABLED;
-		state &= ~(BIT_35MM_HEADSET | BIT_HEADSET);
+		state &= ~BIT_HEADSET;
 		state |= BIT_HEADSET_NO_MIC;
 		switch_set_state(&hi->sdev, state);
 		mutex_unlock(&hi->mutex_lock);
 	} else if (hi->usb_dev_type == H2W_TVOUT) {
-		state &= ~(BIT_HEADSET | BIT_35MM_HEADSET);
+		state &= ~BIT_HEADSET;
 		state |= BIT_HEADSET_NO_MIC;
 		switch_set_state(&hi->sdev, state);
+#else
+        if (hi->usb_dev_type == USB_HEADSET) {
+                hi->usb_dev_status = STATUS_CONNECTED_ENABLED;
+                state &= ~(BIT_35MM_HEADSET | BIT_HEADSET);
+                state |= BIT_HEADSET_NO_MIC;
+                switch_set_state(&hi->sdev, state);
+                mutex_unlock(&hi->mutex_lock);
+        } else if (hi->usb_dev_type == H2W_TVOUT) {
+                state &= ~(BIT_HEADSET | BIT_35MM_HEADSET);
+                state |= BIT_HEADSET_NO_MIC;
+                switch_set_state(&hi->sdev, state);
+#endif
 #if 0
 	} else if (hi->cable_in1 && !gpio_get_value(hi->cable_in1)) {
 		state &= ~BIT_35MM_HEADSET;
@@ -383,12 +396,18 @@ static void remove_35mm_do_work(struct work_struct *work)
 		queue_delayed_work(detect_wq, &detect_h2w_work,
 				   HS_DELAY_ZERO_JIFFIES);
 #endif
+#ifdef CONFIG_ICS
 	} else {
-		state &= ~(BIT_HEADSET | BIT_HEADSET_NO_MIC |
-			BIT_35MM_HEADSET);
+		state &= ~(BIT_HEADSET | BIT_HEADSET_NO_MIC);
 		switch_set_state(&hi->sdev, state);
 	}
-
+#else
+        } else {
+                state &= ~(BIT_HEADSET | BIT_HEADSET_NO_MIC |
+                        BIT_35MM_HEADSET);
+                switch_set_state(&hi->sdev, state);
+        }
+#endif
 	mutex_unlock(&hi->mutex_lock);
 }
 
@@ -447,9 +466,12 @@ static void insert_35mm_do_work(struct work_struct *work)
 			state |= BIT_HEADSET;
 			printk(KERN_INFO "3.5mm_headset with microphone\n");
 		}
-
+#ifdef CONFIG_ICS
+#else
 		state |= BIT_35MM_HEADSET;
+#endif
 		switch_set_state(&hi->sdev, state);
+
 		if (state & BIT_HEADSET_NO_MIC)
 			hi->ext_35mm_status = HTC_35MM_NO_MIC;
 		else

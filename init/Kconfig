@@ -517,6 +517,13 @@ config LOG_BUF_SHIFT
 config HAVE_UNSTABLE_SCHED_CLOCK
 	bool
 
+config ICS
+	bool "Configuration for ICS ROM"
+	---help---
+	  This is Global SET for Making ICS Kernel, i will add more trigers in time.
+
+  	  Say N if unsure.
+
 menuconfig CGROUPS
         boolean "Control Group support"
         depends on EVENTFD
