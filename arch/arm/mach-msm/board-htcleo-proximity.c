@@ -141,7 +141,7 @@ static ssize_t capella_cm3602_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(proximity, 0644, capella_cm3602_show, capella_cm3602_store);
+static DEVICE_ATTR(proximity, 0666, capella_cm3602_show, capella_cm3602_store);
 
 static int capella_cm3602_open(struct inode *inode, struct file *file)
 {
