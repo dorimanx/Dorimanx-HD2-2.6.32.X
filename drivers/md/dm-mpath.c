@@ -1464,7 +1464,13 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
 
 	spin_unlock_irqrestore(&m->lock, flags);
 
-	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
+       /*
+        * Only pass ioctls through if the device sizes match exactly.
+        */
+       if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
+               r = scsi_verify_blk_ioctl(NULL, cmd);
+
+       return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
 }
 
 static int multipath_iterate_devices(struct dm_target *ti,

@@ -245,30 +245,12 @@ static int __devexit msm_spi_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int msm_spi_suspend(struct platform_device *pdev, pm_message_t state)
-{
-	printk("+%s()\n", __FUNCTION__);
-	clk_disable(spi_clk);
-	return 0 ;
-}
-
-static int msm_spi_resume(struct platform_device *pdev)
-{
-	printk("+%s()\n", __FUNCTION__);
-	clk_enable(spi_clk);
-	return 0 ;
-}
-
 static struct platform_driver msm_spi_driver = {
 	.probe          = msm_spi_probe,
 	.driver		= {
 		.name	= "spi_qsd",
 		.owner	= THIS_MODULE,
 	},
-#if 0
-	.suspend        = msm_spi_suspend,
-	.resume         = msm_spi_resume,
-#endif
 	.remove		= __exit_p(msm_spi_remove),
 };
 

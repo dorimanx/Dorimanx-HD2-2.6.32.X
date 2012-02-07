@@ -817,6 +817,10 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
 	SCSI_LOG_IOCTL(1, printk("sd_ioctl: disk=%s, cmd=0x%x\n",
 						disk->disk_name, cmd));
 
+	error = scsi_verify_blk_ioctl(bdev, cmd);
+	if (error < 0)
+		return error;
+
 	/*
 	 * If we are in the middle of error recovery, don't let anyone
 	 * else try and use this device.  Also, if error recovery fails, it
@@ -835,13 +839,13 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
 	 */
 	switch (cmd) {
 		case SCSI_IOCTL_GET_IDLUN:
-               	case SCSI_IOCTL_GET_BUS_NUMBER:
-                       return scsi_ioctl(sdp, cmd, p);
-               default:
-                       error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
-                       if (error != -ENOTTY)
-                               return error;
-        }
+		case SCSI_IOCTL_GET_BUS_NUMBER:
+			return scsi_ioctl(sdp, cmd, p);
+		default:
+			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
+			if (error != -ENOTTY)
+				return error;
+	}
 	return scsi_ioctl(sdp, cmd, p);
 }
 
@@ -971,6 +975,7 @@ static void sd_prepare_flush(struct request_queue *q, struct request *rq)
 {
 	rq->cmd_type = REQ_TYPE_BLOCK_PC;
 	rq->timeout = SD_TIMEOUT;
+	rq->retries = SD_MAX_RETRIES;
 	rq->cmd[0] = SYNCHRONIZE_CACHE;
 	rq->cmd_len = 10;
 }
@@ -995,6 +1000,11 @@ static int sd_compat_ioctl(struct block_device *bdev, fmode_t mode,
 			   unsigned int cmd, unsigned long arg)
 {
 	struct scsi_device *sdev = scsi_disk(bdev->bd_disk)->device;
+	int ret;
+
+	ret = scsi_verify_blk_ioctl(bdev, cmd);
+	if (ret < 0)
+		return -ENOIOCTLCMD;
 
 	/*
 	 * If we are in the middle of error recovery, don't let anyone
@@ -1006,8 +1016,6 @@ static int sd_compat_ioctl(struct block_device *bdev, fmode_t mode,
 		return -ENODEV;
 	       
 	if (sdev->host->hostt->compat_ioctl) {
-		int ret;
-
 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
 
 		return ret;
@@ -2439,4 +2447,5 @@ static void sd_print_result(struct scsi_disk *sdkp, int result)
 	sd_printk(KERN_INFO, sdkp, "");
 	scsi_show_result(result);
 }
+
 

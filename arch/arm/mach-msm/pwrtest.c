@@ -14,6 +14,7 @@
  *
  */
 #include <linux/gpio.h>
+#include <linux/module.h>
 #include "devices.h"
 #include "proc_comm.h"
 
@@ -50,6 +51,8 @@ void gpio_set_diag_gpio_table(unsigned long * dwMFG_gpio_table)
 	for (i = 0; i <= 164; i++)
 #elif defined(CONFIG_ARCH_MSM7X30)
 	for (i = 0; i <= 181; i++)
+#elif defined(CONFIG_ARCH_MSM8X60)
+	for (i = 0; i < 173; i++)
 #endif
 	{
 		unsigned char tempGpio = pSuspendPinConfig->arGpio[i];
@@ -78,10 +81,14 @@ void gpio_set_diag_gpio_table(unsigned long * dwMFG_gpio_table)
 			else
 				dwGpioConfig = GPIO_NO_PULL;
 
+#if defined(CONFIG_ARCH_MSM8X60)
+			cfg = GPIO_CFG(i, 0, dwGpioKind, dwGpioConfig, GPIO_2MA);
+			gpio_tlmm_config(cfg, GPIO_CFG_ENABLE);
+#else
 			cfg = PCOM_GPIO_CFG(i, 0, dwGpioKind, dwGpioConfig, GPIO_2MA);
 
 			msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &cfg, 0);
-
+#endif
 			if (dwGpioKind == GPIO_OUTPUT)
 				gpio_direction_output(i, dwOutputLevel);
 		} else {
