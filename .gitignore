@@ -63,6 +63,7 @@ include/generated/compile.h
 
 # stgit generated dirs
 patches-*
+file-bkp/
 
 # quilt's files
 patches
