@@ -494,11 +494,13 @@ static u32 get_be32(u8 *buf)
 			((u32) buf[2] << 8) | ((u32) buf[3]);
 }
 
+#if 0 //unused
 static void put_be16(u8 *buf, u16 val)
 {
 	buf[0] = val >> 8;
 	buf[1] = val;
 }
+#endif
 
 static void put_be32(u8 *buf, u32 val)
 {
