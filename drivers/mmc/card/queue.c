@@ -9,13 +9,14 @@
  * published by the Free Software Foundation.
  *
  */
-#include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/blkdev.h>
 #include <linux/freezer.h>
 #include <linux/kthread.h>
 #include <linux/scatterlist.h>
+#include <linux/delay.h>
 
+#include <linux/mmc/mmc.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include "queue.h"
@@ -30,9 +31,9 @@
 static int mmc_prep_request(struct request_queue *q, struct request *req)
 {
 	/*
-	 * We only like normal block requests and discards.
+	 * We only like normal block requests.
 	 */
-	if (req->cmd_type != REQ_TYPE_FS && !(req->cmd_flags & REQ_DISCARD)) {
+	if (!blk_fs_request(req)) {
 		blk_dump_rq_flags(req, "MMC bad request");
 		return BLKPREP_KILL;
 	}
@@ -46,12 +47,13 @@ static int mmc_queue_thread(void *d)
 {
 	struct mmc_queue *mq = d;
 	struct request_queue *q = mq->queue;
+	struct request *req;
 
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
 	do {
-		struct request *req = NULL;
+		req = NULL;	/* Must be set to NULL at each iteration */
 
 		spin_lock_irq(q->queue_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -71,7 +73,39 @@ static int mmc_queue_thread(void *d)
 			continue;
 		}
 		set_current_state(TASK_RUNNING);
+#ifdef CONFIG_MMC_AUTO_SUSPEND
+		mmc_auto_suspend(mq->card->host, 0);
+#endif
+#ifdef CONFIG_MMC_BLOCK_PARANOID_RESUME
+		if (mq->check_status) {
+			struct mmc_command cmd;
+			int retries = 3;
 
+			do {
+				int err;
+
+				cmd.opcode = MMC_SEND_STATUS;
+				cmd.arg = mq->card->rca << 16;
+				cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
+
+				mmc_claim_host(mq->card->host);
+				err = mmc_wait_for_cmd(mq->card->host, &cmd, 5);
+				mmc_release_host(mq->card->host);
+
+				if (err) {
+					printk(KERN_ERR "%s: failed to get status (%d)\n",
+					       __func__, err);
+					msleep(5);
+					retries--;
+					continue;
+				}
+				printk(KERN_DEBUG "%s: status 0x%.8x\n", __func__, cmd.resp[0]);
+			} while (retries &&
+				(!(cmd.resp[0] & R1_READY_FOR_DATA) ||
+				(R1_CURRENT_STATE(cmd.resp[0]) == 7)));
+			mq->check_status = 0;
+		}
+#endif
 		mq->issue_fn(mq, req);
 	} while (1);
 	up(&mq->thread_sem);
@@ -128,25 +162,11 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
 	mq->req = NULL;
 
 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
+	blk_queue_ordered(mq->queue, QUEUE_ORDERED_DRAIN, NULL);
 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
-	if (mmc_can_erase(card)) {
-		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, mq->queue);
-		mq->queue->limits.max_discard_sectors = UINT_MAX;
-		if (card->erased_byte == 0)
-			mq->queue->limits.discard_zeroes_data = 1;
-		if (!mmc_can_trim(card) && is_power_of_2(card->erase_size)) {
-			mq->queue->limits.discard_granularity =
-							card->erase_size << 9;
-			mq->queue->limits.discard_alignment =
-							card->erase_size << 9;
-		}
-		if (mmc_can_secure_erase_trim(card))
-			queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD,
-						mq->queue);
-	}
 
 #ifdef CONFIG_MMC_BLOCK_BOUNCE
-	if (host->max_segs == 1) {
+	if (host->max_hw_segs == 1) {
 		unsigned int bouncesz;
 
 		bouncesz = MMC_QUEUE_BOUNCESZ;
@@ -169,7 +189,8 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
 
 		if (mq->bounce_buf) {
 			blk_queue_bounce_limit(mq->queue, BLK_BOUNCE_ANY);
-			blk_queue_max_hw_sectors(mq->queue, bouncesz / 512);
+			blk_queue_max_sectors(mq->queue, bouncesz / 512);
+			blk_queue_max_phys_segments(mq->queue, bouncesz / 512);
 			blk_queue_max_hw_segments(mq->queue, bouncesz / 512);
 			blk_queue_max_segment_size(mq->queue, bouncesz);
 
@@ -194,25 +215,24 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
 
 	if (!mq->bounce_buf) {
 		blk_queue_bounce_limit(mq->queue, limit);
-		blk_queue_max_hw_sectors(mq->queue,
+		blk_queue_max_sectors(mq->queue,
 			min(host->max_blk_count, host->max_req_size / 512));
-		blk_queue_max_hw_segments(mq->queue, host->max_segs);
+		blk_queue_max_phys_segments(mq->queue, host->max_phys_segs);
+		blk_queue_max_hw_segments(mq->queue, host->max_hw_segs);
 		blk_queue_max_segment_size(mq->queue, host->max_seg_size);
 
 		mq->sg = kmalloc(sizeof(struct scatterlist) *
-			host->max_segs, GFP_KERNEL);
+			host->max_phys_segs, GFP_KERNEL);
 		if (!mq->sg) {
 			ret = -ENOMEM;
 			goto cleanup_queue;
 		}
-		sg_init_table(mq->sg, host->max_segs);
+		sg_init_table(mq->sg, host->max_phys_segs);
 	}
 
-	sema_init(&mq->thread_sem, 1);
+	init_MUTEX(&mq->thread_sem);
 
-	mq->thread = kthread_run(mmc_queue_thread, mq, "mmcqd/%d",
-		host->index);
-
+	mq->thread = kthread_run(mmc_queue_thread, mq, "mmcqd");
 	if (IS_ERR(mq->thread)) {
 		ret = PTR_ERR(mq->thread);
 		goto free_bounce_sg;

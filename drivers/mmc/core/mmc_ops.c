@@ -9,7 +9,6 @@
  * your option) any later version.
  */
 
-#include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/scatterlist.h>
 
@@ -390,6 +389,7 @@ int mmc_spi_set_crc(struct mmc_host *host, int use_crc)
 int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value)
 {
 	int err;
+	int retries = 3;
 	struct mmc_command cmd;
 	u32 status;
 
@@ -409,16 +409,23 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value)
 	if (err)
 		return err;
 
+	mmc_delay(1);
 	/* Must check status to be sure of no errors */
 	do {
 		err = mmc_send_status(card, &status);
-		if (err)
-			return err;
+
+		if (err) {
+			printk(KERN_ERR "%s: failed to get status (%d)\n", __func__, err);
+			mmc_delay(5);
+			retries--;
+			continue;
+		}
+
 		if (card->host->caps & MMC_CAP_WAIT_WHILE_BUSY)
 			break;
 		if (mmc_host_is_spi(card->host))
 			break;
-	} while (R1_CURRENT_STATE(status) == 7);
+	} while (retries && R1_CURRENT_STATE(status) == 7);
 
 	if (mmc_host_is_spi(card->host)) {
 		if (status & R1_SPI_ILLEGAL_COMMAND)
