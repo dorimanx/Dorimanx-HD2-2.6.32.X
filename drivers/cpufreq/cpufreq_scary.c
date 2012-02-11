@@ -26,8 +26,8 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_UP_THRESHOLD		(50)
-#define DEF_FREQUENCY_DOWN_THRESHOLD		(35)
+#define DEF_FREQUENCY_UP_THRESHOLD		(65)
+#define DEF_FREQUENCY_DOWN_THRESHOLD		(10)
 #define DEFAULT_SLEEP_MAX_FREQ 245000
 #define DEFAULT_SLEEP_MIN_FREQ 96000
 #define DEFAULT_SLEEP_PREV_FREQ 128000 //This is so that if there are any issues resulting in sleep_prev_freq getting set, there will be a backup freq
@@ -48,11 +48,11 @@ static unsigned int sleep_prev_max=DEFAULT_PREV_MAX;
  * this governor will not work.
  * All times here are in uS.
  */
-#define MIN_SAMPLING_RATE_RATIO			(1)
+#define MIN_SAMPLING_RATE_RATIO			(2)
 
 static unsigned int min_sampling_rate;
 
-#define LATENCY_MULTIPLIER			(1000)
+#define LATENCY_MULTIPLIER			(250)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(11)

@@ -35,11 +35,11 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_UP_THRESHOLD				(50)
-#define DEF_FREQUENCY_DOWN_THRESHOLD				(35)
+#define DEF_FREQUENCY_UP_THRESHOLD				(65)
+#define DEF_FREQUENCY_DOWN_THRESHOLD				(20)
 #define FREQ_STEP_DOWN 						(160000)
 #define FREQ_SLEEP_MAX 						(230400)
-#define FREQ_AWAKE_MIN 						(368640)
+#define FREQ_AWAKE_MIN 						(499200)
 #define FREQ_STEP_UP_SLEEP_PERCENT				(20)
 
 /*
@@ -54,7 +54,7 @@
  */
 static unsigned int def_sampling_rate;
 unsigned int suspended = 0;
-#define MIN_SAMPLING_RATE_RATIO			(1)
+#define MIN_SAMPLING_RATE_RATIO			(2)
 /* for correct statistics, we need at least 10 ticks between each measure */
 #define MIN_STAT_SAMPLING_RATE			\
 	(MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(CONFIG_CPU_FREQ_MIN_TICKS))
@@ -62,7 +62,7 @@ unsigned int suspended = 0;
 			(def_sampling_rate / MIN_SAMPLING_RATE_RATIO)
 #define MAX_SAMPLING_RATE			(500 * def_sampling_rate)
 #define DEF_SAMPLING_DOWN_FACTOR		(4)
-#define MAX_SAMPLING_DOWN_FACTOR		(10)
+#define MAX_SAMPLING_DOWN_FACTOR		(11)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 static void do_dbs_timer(struct work_struct *work);
