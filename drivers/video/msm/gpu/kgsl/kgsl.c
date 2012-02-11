@@ -123,16 +123,18 @@ static void kgsl_clk_enable(void)
 {
 	clk_set_rate(kgsl_driver.ebi1_clk, 128000000);
 	clk_enable(kgsl_driver.imem_clk);
-	if (kgsl_driver.grp_pclk)
-		clk_enable(kgsl_driver.grp_pclk);
 	clk_enable(kgsl_driver.grp_clk);
+#ifdef CONFIG_ARCH_MSM7227
+	clk_enable(kgsl_driver.grp_pclk);
+#endif
 }
 
 static void kgsl_clk_disable(void)
 {
+#ifdef CONFIG_ARCH_MSM7227
+        clk_disable(kgsl_driver.grp_pclk);
+#endif
 	clk_disable(kgsl_driver.grp_clk);
-	if (kgsl_driver.grp_pclk)
-		clk_disable(kgsl_driver.grp_pclk);
 	clk_disable(kgsl_driver.imem_clk);
 	clk_set_rate(kgsl_driver.ebi1_clk, 0);
 }
@@ -1188,6 +1190,9 @@ static int __devinit kgsl_platform_probe(struct platform_device *pdev)
 	BUG_ON(kgsl_driver.grp_clk != NULL);
 	BUG_ON(kgsl_driver.imem_clk != NULL);
 	BUG_ON(kgsl_driver.ebi1_clk != NULL);
+#ifdef CONFIG_ARCH_MSM7227
+	BUG_ON(kgsl_driver.grp_pclk != NULL);
+#endif
 
 	kgsl_driver.pdev = pdev;
 
@@ -1225,6 +1230,15 @@ static int __devinit kgsl_platform_probe(struct platform_device *pdev)
 	}
 	kgsl_driver.ebi1_clk = clk;
 
+#ifdef CONFIG_ARCH_MSM7227
+	clk = clk_get(&pdev->dev, "grp_pclk");
+	if (IS_ERR(clk)) {
+		result = PTR_ERR(clk);
+		KGSL_DRV_ERR("clk_get(grp_pclk) returned %d\n", result);
+		goto done;
+	}
+	kgsl_driver.grp_pclk = clk;
+#endif
 	/*acquire interrupt */
 	kgsl_driver.interrupt_num = platform_get_irq(pdev, 0);
 	if (kgsl_driver.interrupt_num <= 0) {
