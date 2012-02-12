@@ -122,6 +122,12 @@ msmsdcc_print_status(struct msmsdcc_host *host, char *hdr, uint32_t status)
 }
 #endif
 
+#ifdef CONFIG_MMC_BUSCLK_PWRSAVE
+
+/* All already defined below, so this was ON all the time! */
+
+#endif
+
 static int is_sd_platform(struct mmc_platform_data *plat)
 {
 	if (plat->slot_type && *plat->slot_type == MMC_TYPE_SD)
@@ -157,6 +163,7 @@ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
 		mod_timer(&host->busclk_timer, jiffies + delay);
 	} else {
 		del_timer_sync(&host->busclk_timer);
+		/* dev_info(mmc_dev(host->mmc), "Immediate clock shutdown\n"); */
 		if (host->clks_on) {
 			clk_disable(host->clk);
 			clk_disable(host->pclk);

@@ -28,7 +28,7 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(20)
 #define DEF_FREQUENCY_UP_THRESHOLD		(65)
 #define DEF_SAMPLING_DOWN_FACTOR		(5)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
@@ -52,7 +52,6 @@
 
 static unsigned int min_sampling_rate;
 
-#define LATENCY_MULTIPLIER			(250)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
@@ -775,7 +774,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					MIN_LATENCY_MULTIPLIER * latency);
 			dbs_tuners_ins.sampling_rate =
 				max(min_sampling_rate,
-				    latency * LATENCY_MULTIPLIER);
+				    latency * CONFIG_LATENCY_MULTIPLIER);
 			dbs_tuners_ins.io_is_busy = should_io_be_busy();
 		}
 		mutex_unlock(&dbs_mutex);

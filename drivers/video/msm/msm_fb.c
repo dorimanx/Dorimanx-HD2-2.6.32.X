@@ -65,6 +65,7 @@ do { \
 		printk(KERN_INFO "msmfb: "fmt, ##args); \
 } while (0)
 
+#define BITS_PER_PIXEL(info) (info->fb->var.bits_per_pixel)
 #define BYTES_PER_PIXEL(info) (info->fb->var.bits_per_pixel >> 3)
 static int msmfb_debug_mask;
 module_param_named(msmfb_debug_mask, msmfb_debug_mask, int,

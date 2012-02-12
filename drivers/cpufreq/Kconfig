@@ -403,12 +403,12 @@ config CPU_FREQ_MIN_TICKS
 	help
 	  Minimum number of ticks between polling interval for governors.
 
-config CPU_FREQ_SAMPLING_LATENCY_MULTIPLIER
-	int "Sampling rate multiplier for governors."
-	default 1000
-	help
-	  Sampling latency rate multiplied by the cpu switch latency.
-	  Affects governor polling.
+config LATENCY_MULTIPLIER
+        int "Sampling rate multiplier for advanced governors."
+        default 1000
+        help
+          Sampling latency rate multiplied by the cpu switch latency.
+          Affects governor polling.
 
 config CPU_FREQ_VDD_LEVELS
 	bool "CPU Vdd levels sysfs interface"

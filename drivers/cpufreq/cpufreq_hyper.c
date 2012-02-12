@@ -44,7 +44,7 @@
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
-#define DEF_SUSPEND_FREQ				(499200)
+#define DEF_SUSPEND_FREQ				(245000)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -82,7 +82,6 @@ static struct notifier_block idle_notifier_block = {
 	.notifier_call  = idle_event_handler,
 };
 
-#define LATENCY_MULTIPLIER			(250)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
@@ -931,7 +930,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					MIN_LATENCY_MULTIPLIER * latency);
 			dbs_tuners_ins.sampling_rate =
 				max(min_sampling_rate,
-				    latency * LATENCY_MULTIPLIER);
+				    latency * CONFIG_LATENCY_MULTIPLIER);
 			dbs_tuners_ins.io_is_busy = should_io_be_busy();
 		}
 		mutex_unlock(&dbs_mutex);
@@ -1003,6 +1002,8 @@ static int __init cpufreq_gov_dbs_init(void)
 		return -EFAULT;
 	}
 
+	idle_notifier_register(&idle_notifier_block);
+
 	err = cpufreq_register_governor(&cpufreq_gov_hyper);
 	if (err)
 		destroy_workqueue(khyper_wq);
@@ -1012,6 +1013,7 @@ static int __init cpufreq_gov_dbs_init(void)
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
+	idle_notifier_unregister(&idle_notifier_block);
 	cpufreq_unregister_governor(&cpufreq_gov_hyper);
 	destroy_workqueue(khyper_wq);
 }

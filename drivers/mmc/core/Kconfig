@@ -14,6 +14,10 @@ config MMC_UNSAFE_RESUME
 	  This option is usually just for embedded systems which use
 	  a MMC/SD card for rootfs. Most people should say N here.
 
+	  !!!ALERT!!!
+	  if you say NO here, sdcard will be removed on suspend and phone will stuck!
+	  For Phone kernel DO not remove this option!
+
 config MMC_EMBEDDED_SDIO
 	boolean "MMC embedded SDIO device support (EXPERIMENTAL)"
 	depends on EXPERIMENTAL

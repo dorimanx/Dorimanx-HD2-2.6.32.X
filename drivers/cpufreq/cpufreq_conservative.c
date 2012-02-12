@@ -46,7 +46,6 @@
 
 static unsigned int min_sampling_rate;
 
-#define LATENCY_MULTIPLIER			(250)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(11)
@@ -651,7 +650,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					MIN_LATENCY_MULTIPLIER * latency);
 			dbs_tuners_ins.sampling_rate =
 				max(min_sampling_rate,
-				    latency * LATENCY_MULTIPLIER);
+				    latency * CONFIG_LATENCY_MULTIPLIER);
 
 			cpufreq_register_notifier(
 					&dbs_cpufreq_notifier_block,
