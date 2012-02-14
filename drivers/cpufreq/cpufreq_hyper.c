@@ -30,6 +30,8 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 
+#include <../arch/x86/include/asm/idle.h>
+
 #define CPUMON 0
 
 /*
