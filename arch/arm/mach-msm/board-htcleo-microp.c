@@ -555,7 +555,8 @@ static int microp_i2c_probe(struct i2c_client *client,
 	if (!cdata) {
 		ret = -ENOMEM;
 		dev_err(&client->dev, "failed on allocat cdata\n");
-                goto err_exit; //If there is no cdata, then there is no pdata
+//		goto err_cdata;
+		goto err_exit; //If there is no cdata, then there is no pdata
 	}
 	i2c_set_clientdata(client, cdata);
 
@@ -644,6 +645,7 @@ err_intr:
 	kfree(cdata);
 	i2c_set_clientdata(client, NULL);
 
+//err_cdata:
 err_gpio_reset:
 	gpio_free(pdata->gpio_reset);
 err_exit:
