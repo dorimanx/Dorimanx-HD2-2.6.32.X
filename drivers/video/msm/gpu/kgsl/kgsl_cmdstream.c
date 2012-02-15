@@ -45,8 +45,8 @@ kgsl_cmdstream_readtimestamp(struct kgsl_device *device,
 	else if (type == KGSL_TIMESTAMP_RETIRED)
 		KGSL_CMDSTREAM_GET_EOP_TIMESTAMP(device,
 						 (unsigned int *)&timestamp);
-
-   	rmb();
+						 
+	rmb();					 
 
 	KGSL_CMD_VDBG("return %d\n", timestamp);
 
