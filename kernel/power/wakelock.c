@@ -215,21 +215,25 @@ static void expire_wake_lock(struct wake_lock *lock)
 static void print_active_locks_locked(int type)
 {
 	struct wake_lock *lock;
+	bool print_expired = true;
 
 	BUG_ON(type >= WAKE_LOCK_TYPE_COUNT);
 	list_for_each_entry(lock, &active_wake_locks[type], link) {
 		if (lock->flags & WAKE_LOCK_AUTO_EXPIRE) {
 			long timeout = lock->expires - jiffies;
-			if (timeout <= 0)
+			if (timeout > 0)
+				pr_info("active wake lock %s, time left %ld\n",
+					lock->name, timeout);
+			else if (print_expired)
 				pr_info("wake lock %s, expired\n", lock->name);
-			else
-				pr_info("active wake lock %s, time left %ld.%03lu\n",
-					lock->name, timeout / HZ,
-					(timeout % HZ) * MSEC_PER_SEC / HZ);
-		} else
+		} else {
 			pr_info("active wake lock %s\n", lock->name);
+			if (!(debug_mask & DEBUG_EXPIRE))
+				print_expired = false;
+		}
 	}
 }
+
 
 void print_active_locks(int type)
 {
@@ -264,6 +268,8 @@ long has_wake_lock(int type)
 	unsigned long irqflags;
 	spin_lock_irqsave(&list_lock, irqflags);
 	ret = has_wake_lock_locked(type);
+	if (ret && (debug_mask & DEBUG_SUSPEND) && type == WAKE_LOCK_SUSPEND)
+		print_active_locks(type);
 	spin_unlock_irqrestore(&list_lock, irqflags);
 	return ret;
 }
@@ -421,7 +427,6 @@ void wake_lock_init(struct wake_lock *lock, int type, const char *name)
 	if (name)
 		lock->name = name;
 	BUG_ON(!lock->name);
-	BUG_ON(lock->flags & WAKE_LOCK_INITIALIZED);
 
 	if (debug_mask & DEBUG_WAKE_LOCK)
 		pr_info("wake_lock_init name=%s\n", lock->name);
@@ -650,7 +655,7 @@ static int __init wakelocks_init(void)
 	if (suspend_sys_sync_work_queue == NULL) {
      	  	ret = -ENOMEM;
      	  	goto err_suspend_sys_sync_work_queue;
-   }
+        }
 
 	suspend_work_queue = create_singlethread_workqueue("suspend");
 	if (suspend_work_queue == NULL) {
