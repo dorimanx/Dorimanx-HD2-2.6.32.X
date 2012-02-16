@@ -29,7 +29,7 @@ ret_fast_syscall:
 	ldr	r1, [tsk, #TI_FLAGS]
 	tst	r1, #_TIF_WORK_MASK
 	bne	fast_work_pending
-	#if defined(CONFIG_IRQSOFF_TRACER)
+#if defined(CONFIG_IRQSOFF_TRACER)
         asm_trace_hardirqs_on
 #endif
 
