@@ -643,7 +643,7 @@ static inline struct address_space *page_mapping(struct page *page)
 		mapping = &swapper_space;
 	else
 #endif
-	if (unlikely((unsigned long)mapping & PAGE_MAPPING_ANON))
+	if ((unsigned long)mapping & PAGE_MAPPING_ANON)
 		mapping = NULL;
 	return mapping;
 }

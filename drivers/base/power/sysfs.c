@@ -38,6 +38,8 @@
  *	wakeup events internally (unless they are disabled), keeping
  *	their hardware in low power modes whenever they're unused.  This
  *	saves runtime power, without requiring system-wide sleep states.
+ *
+ *	wakeup_count - Report the number of wakeup events related to the device 
  */
 
 static const char enabled[] = "enabled";
@@ -77,9 +79,21 @@ wake_store(struct device * dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(wakeup, 0644, wake_show, wake_store);
 
+#ifdef CONFIG_PM_SLEEP
+static ssize_t wakeup_count_show(struct device *dev,
+         struct device_attribute *attr, char *buf)
+{
+   return sprintf(buf, "%lu\n", dev->power.wakeup_count);
+}
+
+static DEVICE_ATTR(wakeup_count, 0444, wakeup_count_show, NULL);
+#endif
 
 static struct attribute * power_attrs[] = {
 	&dev_attr_wakeup.attr,
+#ifdef CONFIG_PM_SLEEP
+	&dev_attr_wakeup_count.attr,
+#endif
 	NULL,
 };
 static struct attribute_group pm_attr_group = {
@@ -96,3 +110,4 @@ void dpm_sysfs_remove(struct device * dev)
 {
 	sysfs_remove_group(&dev->kobj, &pm_attr_group);
 }
+

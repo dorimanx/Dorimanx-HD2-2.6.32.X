@@ -249,7 +249,7 @@ static int create_image(int platform_mode)
 		goto Enable_irqs;
 	}
 
-	if (hibernation_test(TEST_CORE))
+	if (hibernation_test(TEST_CORE) || !pm_check_wakeup_events())
 		goto Power_up;
 
 	in_suspend = 1;
@@ -260,8 +260,10 @@ static int create_image(int platform_mode)
 			error);
 	/* Restore control flow magically appears here */
 	restore_processor_state();
-	if (!in_suspend)
+	if (!in_suspend) {
+		events_check_enabled = false;
 		platform_leave(platform_mode);
+	}
 
  Power_up:
 	syscore_resume();
@@ -480,15 +482,21 @@ int hibernation_platform_enter(void)
 	local_irq_disable();
 	sysdev_suspend(PMSG_HIBERNATE);
 	syscore_suspend();
+	if (!pm_check_wakeup_events()) {
+	  error = -EAGAIN;
+	  goto Power_up;
+	}
+
 	hibernation_ops->enter();
 	/* We should never get here */
 	while (1);
 
-	/*
-	 * We don't need to reenable the nonboot CPUs or resume consoles, since
-	 * the system is going to be halted anyway.
-	 */
- Platform_finish:
+Power_up:
+	sysdev_resume();
+	local_irq_enable();
+	enable_nonboot_cpus();
+ 
+Platform_finish:
 	hibernation_ops->finish();
 
 	dpm_suspend_noirq(PMSG_RESTORE);

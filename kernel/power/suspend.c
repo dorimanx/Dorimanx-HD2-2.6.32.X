@@ -16,6 +16,7 @@
 #include <linux/cpu.h>
 #include <linux/syscalls.h>
 #include <linux/syscore_ops.h>
+#include <linux/gfp.h>
 
 #include "power.h"
 
@@ -162,8 +163,10 @@ static int suspend_enter(suspend_state_t state)
 	if (!error)
 	  error = syscore_suspend();
 	if (!error) {
-		if (!suspend_test(TEST_CORE))
+		if (!suspend_test(TEST_CORE) && pm_check_wakeup_events()) {
 			error = suspend_ops->enter(state);
+			events_check_enabled = false;
+	}
 		syscore_resume();
 		sysdev_resume();
 	}
@@ -247,6 +250,37 @@ static void suspend_finish(void)
 	pm_notifier_call_chain(PM_POST_SUSPEND);
 	pm_restore_console();
 }
+
+#ifdef CONFIG_PM_SLEEP
+
+/*
+ * The following functions are used by the suspend/hibernate code to temporarily
+ * change gfp_allowed_mask in order to avoid using I/O during memory allocations
+ * while devices are suspended.  To avoid races with the suspend/hibernate code,
+ * they should always be called with pm_mutex held (gfp_allowed_mask also should
+ * only be modified with pm_mutex held, unless the suspend/hibernate code is
+ * guaranteed not to run in parallel with that modification).
+ */
+
+static gfp_t saved_gfp_mask;
+
+void pm_restore_gfp_mask(void)
+{
+        WARN_ON(!mutex_is_locked(&pm_mutex));
+        if (saved_gfp_mask) {
+                gfp_allowed_mask = saved_gfp_mask;
+                saved_gfp_mask = 0;
+        }
+}
+
+void pm_restrict_gfp_mask(void)
+{
+        WARN_ON(!mutex_is_locked(&pm_mutex));
+        WARN_ON(saved_gfp_mask);
+        saved_gfp_mask = gfp_allowed_mask;
+        gfp_allowed_mask &= ~GFP_IOFS;
+}
+#endif /* CONFIG_PM_SLEEP */
 
 /**
  *	enter_state - Do common work of entering low-power state.
