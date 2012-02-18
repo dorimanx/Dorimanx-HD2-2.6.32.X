@@ -36,6 +36,9 @@
 #include <dhd_proto.h>
 #include <dhd_dbg.h>
 #include <msgtrace.h>
+#ifdef CONFIG_HAS_WAKELOCK
+#include <linux/wakelock.h>
+#endif
 
 #include <wlioctl.h>
 
@@ -885,6 +888,17 @@ wl_host_event(struct dhd_info *dhd, int *ifidx, void *pktdata,
 		default:
 		/* Fall through: this should get _everything_  */
 
+#ifdef CONFIG_HAS_WAKELOCK
+#if defined(LINUX)
+			if (type == WLC_E_LINK) {//link up/down event
+				dhd_htc_wake_lock_timeout(dhd, 15);
+				  printf("wake lock 15 secs!\n");
+			}else if (type == WLC_E_PFN_NET_FOUND) {
+				  printf("pfn lock 30 secs!\n");
+				dhd_htc_wake_lock_timeout(dhd, 30);
+			}
+#endif
+#endif
 			*ifidx = dhd_ifname2idx(dhd, event->ifname);
 			/* push up to external supp/auth */
 			dhd_event(dhd, (char *)pvt_data, evlen, *ifidx);

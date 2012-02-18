@@ -306,6 +306,7 @@ typedef struct dhd_info {
 #ifdef CONFIG_HAS_WAKELOCK
 	struct wake_lock wl_wifi;   /* Wifi wakelock */
 	struct wake_lock wl_rxwake; /* Wifi rx wakelock */
+	struct wake_lock wl_htc; /* Wifi hTC wakelock */
 #endif
 	spinlock_t wl_lock;
 	int wl_count;
@@ -2116,6 +2117,7 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 #ifdef CONFIG_HAS_WAKELOCK
 	wake_lock_init(&dhd->wl_wifi, WAKE_LOCK_SUSPEND, "wlan_wake");
 	wake_lock_init(&dhd->wl_rxwake, WAKE_LOCK_SUSPEND, "wlan_rx_wake");
+	wake_lock_init(&dhd->wl_htc, WAKE_LOCK_SUSPEND, "wlan_htc");
 #endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25))
 	mutex_init(&dhd->wl_start_lock);
@@ -2606,6 +2608,7 @@ dhd_detach(dhd_pub_t *dhdp)
 #ifdef CONFIG_HAS_WAKELOCK
 			wake_lock_destroy(&dhd->wl_wifi);
 			wake_lock_destroy(&dhd->wl_rxwake);
+			wake_lock_destroy(&dhd->wl_htc);
 #endif
 			MFREE(dhd->pub.osh, ifp, sizeof(*ifp));
 			MFREE(dhd->pub.osh, dhd, sizeof(*dhd));
@@ -3299,6 +3302,13 @@ exit:
 	return ret;
 }
 #endif /* DHD_DEBUG */
+
+void
+dhd_htc_wake_lock_timeout(dhd_info_t *dhd, int sec)
+{
+   wake_lock_timeout(&dhd->wl_htc, sec*HZ);
+   return;
+}
 
 int dhd_os_wake_lock_timeout(dhd_pub_t *pub)
 {

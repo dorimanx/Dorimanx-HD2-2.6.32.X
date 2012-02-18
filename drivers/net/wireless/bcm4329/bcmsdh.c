@@ -40,7 +40,9 @@
 
 #include <sdio.h>	/* sdio spec */
 
+/* Defines number of access retries to configuration registers */
 #define SDIOH_API_ACCESS_RETRY_LIMIT	2
+
 const uint bcmsdh_msglevel = BCMSDH_ERROR_VAL;
 
 
@@ -57,6 +59,7 @@ struct bcmsdh_info
 bcmsdh_info_t * l_bcmsdh = NULL;
 
 #if defined(OOB_INTR_ONLY) && defined(HW_OOB)
+
 extern int
 sdioh_enable_hw_oob_intr(void *sdioh, bool enable);
 
@@ -65,6 +68,7 @@ bcmsdh_enable_hw_oob_intr(bcmsdh_info_t *sdh, bool enable)
 {
 	sdioh_enable_hw_oob_intr(sdh->sdioh, enable);
 }
+
 #endif
 
 bcmsdh_info_t *
