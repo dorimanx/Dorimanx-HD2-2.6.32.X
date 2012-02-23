@@ -783,18 +783,17 @@ static struct resource msm_kgsl_resources[] =
 	},
 };
 
-#define PWR_RAIL_GRP_CLK		8
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
-	int rail_id = PWR_RAIL_GRP_CLK;
+	int rail_id = 0;
 	return msm_proc_comm(PCOM_CLK_REGIME_SEC_RAIL_CONTROL, &rail_id, &mode);
 }
 
 static int htcleo_kgsl_power(bool on)
 {
 	int cmd;
-	int rail_id = PWR_RAIL_GRP_CLK;
+	int rail_id = 0;
 
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
     	return msm_proc_comm(cmd, &rail_id, NULL);
