@@ -141,43 +141,6 @@ static const struct sdio_device_id bcmsdh_sdmmc_ids[] = {
 
 MODULE_DEVICE_TABLE(sdio, bcmsdh_sdmmc_ids);
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM)
-static int bcmsdh_sdmmc_suspend(struct device *pdev)
-{
-	struct sdio_func *func = dev_to_sdio_func(pdev);
-
-	if (func->num != 2)
-		return 0;
-	if (dhd_os_check_wakelock(bcmsdh_get_drvdata()))
-		return -EBUSY;
-#if defined(OOB_INTR_ONLY)
-	bcmsdh_oob_intr_set(0);
-#endif
-	dhd_mmc_suspend = TRUE;
-	smp_mb();
-
-	return 0;
-}
-
-static int bcmsdh_sdmmc_resume(struct device *pdev)
-{
-	struct sdio_func *func = dev_to_sdio_func(pdev);
-
-	dhd_mmc_suspend = FALSE;
-#if defined(OOB_INTR_ONLY)
-	if ((func->num == 2) && dhd_os_check_if_up(bcmsdh_get_drvdata()))
-		bcmsdh_oob_intr_set(1);
-#endif
-	smp_mb();
-	return 0;
-}
-
-static const struct dev_pm_ops bcmsdh_sdmmc_pm_ops = {
-	.suspend	= bcmsdh_sdmmc_suspend,
-	.resume		= bcmsdh_sdmmc_resume,
-};
-#endif
-
 static struct sdio_driver bcmsdh_sdmmc_driver = {
 	.probe		= bcmsdh_sdmmc_probe,
 	.remove		= bcmsdh_sdmmc_remove,

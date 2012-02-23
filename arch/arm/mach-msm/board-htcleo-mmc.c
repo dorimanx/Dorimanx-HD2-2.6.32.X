@@ -218,7 +218,7 @@ static struct mmc_platform_data htcleo_wifi_data = {
 	 * incredible uses 2050 and seems to work without issues
 	 * by marc1706
 	 */
-	.ocr_mask		= MMC_VDD_26_27,
+	.ocr_mask		= MMC_VDD_20_21,
 	.status			= htcleo_wifi_status,
 	.register_status_notify	= htcleo_wifi_status_register,
 	.embedded_sdio		= &htcleo_wifi_emb_data,
@@ -235,6 +235,8 @@ int htcleo_wifi_set_carddetect(int val)
 	return 0;
 }
 
+static int htcleo_wifi_power_state;
+
 int htcleo_wifi_power(int on)
 {
 	printk("%s: %d\n", __func__, on);
@@ -250,11 +252,13 @@ int htcleo_wifi_power(int on)
 	
 	mdelay(100);
 	gpio_set_value(HTCLEO_GPIO_WIFI_SHUTDOWN_N, on); /* WIFI_SHUTDOWN */
-	mdelay(100);
+	mdelay(200);
 
 	htcleo_wifi_power_state = on;
 	return 0;
 }
+
+static int htcleo_wifi_reset_state;
 
 int htcleo_wifi_reset(int on)
 {
@@ -390,7 +394,7 @@ static int __init htcleommc_dbg_init(void)
 {
 	struct dentry *dent;
 
-	if (!machine_is_htcleo() && !machine_is_htcleo())
+	if (!machine_is_htcleo() && !machine_is_htcleoc())
 		return 0;
 
 	dent = debugfs_create_dir("htcleo_mmc_dbg", 0);

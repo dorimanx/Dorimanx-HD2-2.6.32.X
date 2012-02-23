@@ -26,7 +26,9 @@
 #include <linux/kernel.h>
 #include <linux/bootmem.h>
 #include <linux/platform_device.h>
+#include <linux/usb/android_composite.h>
 #include <linux/android_pmem.h>
+#include <linux/synaptics_i2c_rmi.h>
 #include <linux/regulator/machine.h>
 #include <linux/leds.h>
 #include <linux/spi/spi.h>
@@ -35,6 +37,8 @@
 #endif
 #include <linux/akm8973.h>
 #include <../../../drivers/staging/android/timed_gpio.h>
+#include <../../../drivers/w1/w1.h>
+#include <linux/ds2784_battery.h>
 #include <linux/ds2746_battery.h>
 
 #include <asm/mach-types.h>
@@ -55,7 +59,10 @@
 #ifdef CONFIG_SERIAL_BCM_BT_LPM
 #include <mach/bcm_bt_lpm.h>
 #endif
+#ifdef CONFIG_PERFLOCK
 #include <mach/perflock.h>
+#endif
+#include <mach/vreg.h>
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
 
@@ -67,6 +74,16 @@
 #include "proc_comm.h"
 #include "dex_comm.h"
 
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+#include <linux/curcial_oj.h>
+#endif
+
+static uint debug_uart;
+
+module_param_named(debug_uart, debug_uart, uint, 0);
+
+extern void notify_usb_connected(int);
+extern void msm_init_pmic_vibrator(void);
 
 #define ATAG_MAGLDR_BOOT    0x4C47414D
 struct tag_magldr_entry
@@ -76,6 +93,7 @@ struct tag_magldr_entry
 
 extern int __init htcleo_init_mmc(unsigned debug_uart);
 extern void __init htcleo_audio_init(void);
+extern int microp_headset_has_mic(void);
 extern unsigned char *get_bt_bd_ram(void);
 static unsigned int nand_boot = 0;
 
@@ -765,17 +783,18 @@ static struct resource msm_kgsl_resources[] =
 	},
 };
 
+#define PWR_RAIL_GRP_CLK		8
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
-	int rail_id = 0;
+	int rail_id = PWR_RAIL_GRP_CLK;
 	return msm_proc_comm(PCOM_CLK_REGIME_SEC_RAIL_CONTROL, &rail_id, &mode);
 }
 
 static int htcleo_kgsl_power(bool on)
 {
 	int cmd;
-	int rail_id = 0;
+	int rail_id = PWR_RAIL_GRP_CLK;
 
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
     	return msm_proc_comm(cmd, &rail_id, NULL);
@@ -862,6 +881,7 @@ static struct platform_device ram_console_device = {
 	.num_resources	= ARRAY_SIZE(ram_console_resources),
 	.resource	= ram_console_resources,
 };
+
 ///////////////////////////////////////////////////////////////////////
 // Power/Battery
 ///////////////////////////////////////////////////////////////////////
@@ -1007,11 +1027,12 @@ static struct msm_acpu_clock_platform_data htcleo_clock_data = {
 	.acpu_switch_time_us	= 20,
 	.max_speed_delta_khz	= 256000,
 	.vdd_switch_time_us	= 62,
-	.power_collapse_khz	= 128000,
-	.wait_for_irq_khz	= 128000,
+	.power_collapse_khz	= 245000,
+	.wait_for_irq_khz	= 245000,
 //	.wait_for_irq_khz	= 19200,   // TCXO
 };
 
+#ifdef CONFIG_PERFLOCK
 static unsigned htcleo_perf_acpu_table[] = {
 	128000000,
 	245000000,
@@ -1023,6 +1044,8 @@ static struct perflock_platform_data htcleo_perflock_data = {
 	.perf_acpu_table = htcleo_perf_acpu_table,
 	.table_size = ARRAY_SIZE(htcleo_perf_acpu_table),
 };
+#endif
+
 ///////////////////////////////////////////////////////////////////////
 // Reset
 ///////////////////////////////////////////////////////////////////////
@@ -1069,7 +1092,9 @@ static void __init htcleo_init(void)
 
 	msm_acpu_clock_init(&htcleo_clock_data);
 
+#ifdef CONFIG_PERFLOCK
 	perflock_init(&htcleo_perflock_data);
+#endif
 
 #if defined(CONFIG_MSM_SERIAL_DEBUGGER)
 	msm_serial_debug_init(MSM_UART1_PHYS, INT_UART1,
