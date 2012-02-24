@@ -267,6 +267,10 @@
 #include <linux/time.h>
 #include <linux/slab.h>
 
+#ifdef CONFIG_UID_STAT
+#include <linux/uid_stat.h>
+#endif
+
 #include <net/icmp.h>
 #include <net/tcp.h>
 #include <net/xfrm.h>
@@ -1103,6 +1107,11 @@ out:
 		tcp_push(sk, flags, mss_now, tp->nonagle);
 	TCP_CHECK_TIMER(sk);
 	release_sock(sk);
+
+#ifdef CONFIG_UID_STAT
+        if (copied > 0)
+        	update_tcp_snd(current_uid(), copied);
+#endif
 	return copied;
 
 do_fault:
@@ -1346,8 +1355,12 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
 	tcp_rcv_space_adjust(sk);
 
 	/* Clean up data we have read: This will do ACK frames. */
-	if (copied > 0)
+	if (copied > 0) {
 		tcp_cleanup_rbuf(sk, copied);
+#ifdef CONFIG_UID_STAT
+	update_tcp_rcv(current_uid(), copied);
+#endif
+	}
 	return copied;
 }
 
@@ -1743,6 +1756,10 @@ skip_copy:
 
 	TCP_CHECK_TIMER(sk);
 	release_sock(sk);
+#ifdef CONFIG_UID_STAT
+	if (copied > 0)
+		update_tcp_rcv(current_uid(), copied);
+#endif
 	return copied;
 
 out:
@@ -1752,6 +1769,10 @@ out:
 
 recv_urg:
 	err = tcp_recv_urg(sk, msg, len, flags);
+#ifdef CONFIG_UID_STAT
+	if (err > 0)
+		update_tcp_rcv(current_uid(), err);
+#endif
 	goto out;
 }
 
@@ -2893,7 +2914,8 @@ void __init tcp_init(void)
 {
 	struct sk_buff *skb = NULL;
 	unsigned long nr_pages, limit;
-	int i, max_share, cnt;
+	int max_share, cnt;
+	unsigned int i;
 
 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
 
@@ -2936,7 +2958,7 @@ void __init tcp_init(void)
 					&tcp_hashinfo.bhash_size,
 					NULL,
 					64 * 1024);
-	tcp_hashinfo.bhash_size = 1 << tcp_hashinfo.bhash_size;
+	tcp_hashinfo.bhash_size = 1U << tcp_hashinfo.bhash_size;
 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
 		spin_lock_init(&tcp_hashinfo.bhash[i].lock);
 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);

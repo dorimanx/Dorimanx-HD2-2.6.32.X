@@ -38,5 +38,6 @@ void create_iface_stat(const struct in_device *in_dev);
 void iface_stat_update(struct net_device *dev);
 
 #endif
+
 #endif /* __IFACE_STAT_H */
 
