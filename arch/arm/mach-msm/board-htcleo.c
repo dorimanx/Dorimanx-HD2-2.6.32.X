@@ -26,9 +26,7 @@
 #include <linux/kernel.h>
 #include <linux/bootmem.h>
 #include <linux/platform_device.h>
-#include <linux/usb/android_composite.h>
 #include <linux/android_pmem.h>
-#include <linux/synaptics_i2c_rmi.h>
 #include <linux/regulator/machine.h>
 #include <linux/leds.h>
 #include <linux/spi/spi.h>
@@ -37,8 +35,6 @@
 #endif
 #include <linux/akm8973.h>
 #include <../../../drivers/staging/android/timed_gpio.h>
-#include <../../../drivers/w1/w1.h>
-#include <linux/ds2784_battery.h>
 #include <linux/ds2746_battery.h>
 
 #include <asm/mach-types.h>
@@ -62,7 +58,6 @@
 #ifdef CONFIG_PERFLOCK
 #include <mach/perflock.h>
 #endif
-#include <mach/vreg.h>
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
 
@@ -74,17 +69,6 @@
 #include "proc_comm.h"
 #include "dex_comm.h"
 
-#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
-#include <linux/curcial_oj.h>
-#endif
-
-static uint debug_uart;
-
-module_param_named(debug_uart, debug_uart, uint, 0);
-
-extern void notify_usb_connected(int);
-extern void msm_init_pmic_vibrator(void);
-
 #define ATAG_MAGLDR_BOOT    0x4C47414D
 struct tag_magldr_entry
 {
@@ -93,7 +77,6 @@ struct tag_magldr_entry
 
 extern int __init htcleo_init_mmc(unsigned debug_uart);
 extern void __init htcleo_audio_init(void);
-extern int microp_headset_has_mic(void);
 extern unsigned char *get_bt_bd_ram(void);
 static unsigned int nand_boot = 0;
 

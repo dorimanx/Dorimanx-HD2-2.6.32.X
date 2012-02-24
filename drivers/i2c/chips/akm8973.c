@@ -574,14 +574,14 @@ static struct file_operations akmd_fops = {
 	.owner = THIS_MODULE,
 	.open = akmd_open,
 	.release = akmd_release,
-	.compat_ioctl = akmd_ioctl,
+	.ioctl = akmd_ioctl,
 };
 
 static struct file_operations akm_aot_fops = {
 	.owner = THIS_MODULE,
 	.open = akm_aot_open,
 	.release = akm_aot_release,
-	.compat_ioctl = akm_aot_ioctl,
+	.ioctl = akm_aot_ioctl,
 };
 
 
