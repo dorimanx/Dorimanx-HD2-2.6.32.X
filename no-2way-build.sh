@@ -4,7 +4,7 @@ rm -f /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage
 rm -f  /home/root/kernel/dorimanx-tytyng/output_gb/boot/boot.img
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules/*
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/devs/*
-make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- zImage -j4
+make ARCH=arm CONFIG_DEBUG_SECTION_MISMATCH=y CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- zImage -j4
 #make ARCH=arm CROSS_COMPILE=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi- zImage -j4
 if [ -f arch/arm/boot/zImage ]; then
 if [ ! -d /home/root/kernel/dorimanx-tytyng/output_gb ]; then
