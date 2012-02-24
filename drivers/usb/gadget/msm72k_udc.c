@@ -63,7 +63,6 @@ static const char driver_name[] = "msm72k_udc";
 
 #define SETUP_BUF_SIZE      4096
 
-typedef void (*completion_func)(struct usb_ep *ep, struct usb_request *req);
 
 static const char *const ep_name[] = {
 	"ep0out", "ep1out", "ep2out", "ep3out",
@@ -100,7 +99,9 @@ struct msm_request {
 	struct usb_request req;
 
 	/* saved copy of req.complete */
-	completion_func gadget_complete;
+	void	(*gadget_complete)(struct usb_ep *ep,
+					struct usb_request *req);
+
 
 	struct usb_info *ui;
 	struct msm_request *next;
@@ -610,7 +611,7 @@ static void ep0_complete(struct usb_ep *ep, struct usb_request *req)
 	struct usb_info *ui = ept->ui;
 
 	req->complete = r->gadget_complete;
-	r->gadget_complete = NULL;
+	r->gadget_complete = 0;
 	if	(req->complete)
 		req->complete(&ui->ep0in.ep, req);
 }
@@ -622,12 +623,6 @@ static void ep0_queue_ack_complete(struct usb_ep *ep,
 	struct msm_endpoint *ept = to_msm_endpoint(ep);
 	struct usb_info *ui = ept->ui;
 	struct usb_request *req = ui->setup_req;
-	completion_func gadget_complete = r->gadget_complete;
-
-	if (gadget_complete) {
-	  r->gadget_complete = NULL;
-	  gadget_complete(ep, req);
-	}
 
 	/* queue up the receive of the ACK response from the host */
 	if (_req->status == 0 && _req->actual == _req->length) {
@@ -637,7 +632,7 @@ static void ep0_queue_ack_complete(struct usb_ep *ep,
 		else
 			usb_ept_queue_xfer(&ui->ep0in, req);
 		_req->complete = r->gadget_complete;
-		r->gadget_complete = NULL;
+		r->gadget_complete = 0;
 		if (_req->complete)
 			_req->complete(&ui->ep0in.ep, _req);
 	} else
@@ -701,7 +696,7 @@ static void ep0_setup_send(struct usb_info *ui, unsigned length)
 
 	req->length = length;
 	req->complete = ep0_queue_ack_complete;
-	r->gadget_complete = NULL;
+	r->gadget_complete = 0;
 	usb_ept_queue_xfer(ept, req);
 }
 

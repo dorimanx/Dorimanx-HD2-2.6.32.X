@@ -1127,6 +1127,7 @@ void mmc_rescan(struct work_struct *work)
 	if (host->ops->get_cd && host->ops->get_cd(host) == 0)
 		goto out;
 
+retry:
 	mmc_claim_host(host);
 
 	mmc_power_up(host);
@@ -1169,49 +1170,6 @@ void mmc_rescan(struct work_struct *work)
 
 	mmc_release_host(host);
 	mmc_power_off(host);
-retry:
-        mmc_claim_host(host);
-
-        mmc_power_up(host);
-        mmc_go_idle(host);
-
-        mmc_send_if_cond(host, host->ocr_avail);
-
-        /*
-         * First we search for SDIO...
-         */
-        err = mmc_send_io_op_cond(host, 0, &ocr);
-        if (!err) {
-                if (mmc_attach_sdio(host, ocr))
-                        mmc_power_off(host);
-                extend_wakelock = 1;
-                goto out;
-        }
-
-        /*
-         * ...then normal SD...
-         */
-        err = mmc_send_app_op_cond(host, 0, &ocr);
-        if (!err) {
-                if (mmc_attach_sd(host, ocr))
-                        mmc_power_off(host);
-                extend_wakelock = 1;
-                goto out;
-        }
-
-        /*
-         * ...and finally MMC.
-         */
-        err = mmc_send_op_cond(host, 0, &ocr);
-        if (!err) {
-                if (mmc_attach_mmc(host, ocr))
-                        mmc_power_off(host);
-                extend_wakelock = 1;
-                goto out;
-        }
-
-        mmc_release_host(host);
-        mmc_power_off(host);
 
 out:
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
