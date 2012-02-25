@@ -37,9 +37,6 @@ struct local_ports sysctl_local_ports __read_mostly = {
 	.range = { 32768, 61000 },
 };
 
-unsigned long *sysctl_local_reserved_ports;
-EXPORT_SYMBOL(sysctl_local_reserved_ports);
-
 void inet_get_local_port_range(int *low, int *high)
 {
 	unsigned seq;
@@ -123,13 +120,10 @@ again:
 						smallest_size = tb->num_owners;
 						smallest_rover = rover;
 						if (atomic_read(&hashinfo->bsockets) > (high - low) + 1) {
+							spin_unlock(&head->lock);
 							snum = smallest_rover;
-							goto tb_found;
+							goto have_snum;
 						}
-					}
-					if (!inet_csk(sk)->icsk_af_ops->bind_conflict(sk, tb)) {
-					  snum = rover;
-					  goto tb_found;
 					}
 					goto next;
 				}

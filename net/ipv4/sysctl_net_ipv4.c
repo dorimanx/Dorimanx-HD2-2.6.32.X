@@ -12,9 +12,6 @@
 #include <linux/inetdevice.h>
 #include <linux/seqlock.h>
 #include <linux/init.h>
-#include <linux/slab.h>
-#include <linux/nsproxy.h>
-#include <linux/swap.h>
 #include <net/snmp.h>
 #include <net/icmp.h>
 #include <net/ip.h>
@@ -23,7 +20,6 @@
 #include <net/udp.h>
 #include <net/cipso_ipv4.h>
 #include <net/inet_frag.h>
-#include <net/ping.h>
 
 static int zero;
 static int tcp_retr1_max = 255;
@@ -164,7 +160,7 @@ static int proc_allowed_congestion_control(ctl_table *ctl,
 	tcp_get_allowed_congestion_control(tbl.data, tbl.maxlen);
 	ret = proc_dostring(&tbl, write, buffer, lenp, ppos);
 	if (write && ret == 0)
-	ret = tcp_set_allowed_congestion_control(tbl.data);
+		ret = tcp_set_allowed_congestion_control(tbl.data);
 	kfree(tbl.data);
 	return ret;
 }
@@ -191,37 +187,6 @@ static int strategy_allowed_congestion_control(ctl_table *table,
 	return ret;
 
 }
-
-static int ipv4_tcp_mem(ctl_table *ctl, int write,
-          void __user *buffer, size_t *lenp,
-          loff_t *ppos)
-{
-   int ret;
-   unsigned long vec[3];
-   struct net *net = current->nsproxy->net_ns;
-
-   ctl_table tmp = {
-     .data = &vec,
-     .maxlen = sizeof(vec),
-     .mode = ctl->mode,
-   };
- 
-   if (!write) {
-     ctl->data = &net->ipv4.sysctl_tcp_mem;
-     return proc_doulongvec_minmax(ctl, write, buffer, lenp, ppos);
-   }
-
-   ret = proc_doulongvec_minmax(&tmp, write, buffer, lenp, ppos);
-   if (ret)
-     return ret;
-
-   net->ipv4.sysctl_tcp_mem[0] = vec[0];
-   net->ipv4.sysctl_tcp_mem[1] = vec[1];
-   net->ipv4.sysctl_tcp_mem[2] = vec[2];
-
-   return 0;
-}
-
 
 static struct ctl_table ipv4_table[] = {
 	{
@@ -538,6 +503,14 @@ static struct ctl_table ipv4_table[] = {
 		.proc_handler	= proc_dointvec
 	},
 	{
+		.ctl_name	= NET_TCP_MEM,
+		.procname	= "tcp_mem",
+		.data		= &sysctl_tcp_mem,
+		.maxlen		= sizeof(sysctl_tcp_mem),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec
+	},
+	{
 		.ctl_name	= NET_TCP_WMEM,
 		.procname	= "tcp_wmem",
 		.data		= &sysctl_tcp_wmem,
@@ -830,13 +803,6 @@ static struct ctl_table ipv4_net_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec
 	},
-	{
-		.ctl_name       = NET_TCP_MEM,
-		.procname  	= "tcp_mem",
-		.maxlen    	= sizeof(init_net.ipv4.sysctl_tcp_mem),
-		.mode    	= 0644,
-		.proc_handler  	= ipv4_tcp_mem,
-	},
 	{ }
 };
 
@@ -850,7 +816,6 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
 static __net_init int ipv4_sysctl_init_net(struct net *net)
 {
 	struct ctl_table *table;
-	unsigned long limit;
 
 	table = ipv4_net_table;
 	if (net != &init_net) {
@@ -875,13 +840,6 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
 	}
 
 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
-
-	tcp_init_mem(net);
-	limit = nr_free_buffer_pages() / 8;
-	limit = max(limit, 128UL);
-	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-	net->ipv4.sysctl_tcp_mem[1] = limit;
-	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
 
 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
 			net_ipv4_ctl_path, table);

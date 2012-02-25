@@ -62,7 +62,7 @@ ieee80211_bss_info_update(struct ieee80211_local *local,
 			  bool beacon)
 {
 	struct ieee80211_bss *bss;
-	int clen, srlen;
+	int clen;
 	s32 signal = 0;
 
 	if (local->hw.flags & IEEE80211_HW_SIGNAL_DBM)
@@ -94,24 +94,23 @@ ieee80211_bss_info_update(struct ieee80211_local *local,
 	if (bss->dtim_period == 0)
 		bss->dtim_period = 1;
 
-	/* replace old supported rates if we get new values */
-	srlen = 0;
+	bss->supp_rates_len = 0;
 	if (elems->supp_rates) {
-		clen = IEEE80211_MAX_SUPP_RATES;
+		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
 		if (clen > elems->supp_rates_len)
 			clen = elems->supp_rates_len;
-		memcpy(bss->supp_rates, elems->supp_rates, clen);
-		srlen += clen;
+		memcpy(&bss->supp_rates[bss->supp_rates_len], elems->supp_rates,
+		       clen);
+		bss->supp_rates_len += clen;
 	}
 	if (elems->ext_supp_rates) {
-		clen = IEEE80211_MAX_SUPP_RATES - srlen;
+		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
 		if (clen > elems->ext_supp_rates_len)
 			clen = elems->ext_supp_rates_len;
-		memcpy(bss->supp_rates + srlen, elems->ext_supp_rates, clen);
-		srlen += clen;
+		memcpy(&bss->supp_rates[bss->supp_rates_len],
+		       elems->ext_supp_rates, clen);
+		bss->supp_rates_len += clen;
 	}
-	if (srlen)
-		bss->supp_rates_len = srlen;
 
 	bss->wmm_used = elems->wmm_param || elems->wmm_info;
 

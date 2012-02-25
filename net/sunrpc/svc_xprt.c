@@ -209,7 +209,6 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
 	spin_lock(&svc_xprt_class_lock);
 	list_for_each_entry(xcl, &svc_xprt_class_list, xcl_list) {
 		struct svc_xprt *newxprt;
-		unsigned short newport;
 
 		if (strcmp(xprt_name, xcl->xcl_name))
 			continue;
@@ -228,9 +227,8 @@ int svc_create_xprt(struct svc_serv *serv, const char *xprt_name,
 		spin_lock_bh(&serv->sv_lock);
 		list_add(&newxprt->xpt_list, &serv->sv_permsocks);
 		spin_unlock_bh(&serv->sv_lock);
-		newport = svc_xprt_local_port(newxprt);
 		clear_bit(XPT_BUSY, &newxprt->xpt_flags);
-		return newport;
+		return svc_xprt_local_port(newxprt);
 	}
  err:
 	spin_unlock(&svc_xprt_class_lock);
@@ -432,13 +430,8 @@ void svc_xprt_received(struct svc_xprt *xprt)
 {
 	BUG_ON(!test_bit(XPT_BUSY, &xprt->xpt_flags));
 	xprt->xpt_pool = NULL;
-	/* As soon as we clear busy, the xprt could be closed and
-	 * 'put', so we need a reference to call svc_xprt_enqueue with:
-	 */
-	svc_xprt_get(xprt);
 	clear_bit(XPT_BUSY, &xprt->xpt_flags);
 	svc_xprt_enqueue(xprt);
-	svc_xprt_put(xprt);
 }
 EXPORT_SYMBOL_GPL(svc_xprt_received);
 
@@ -899,13 +892,12 @@ void svc_delete_xprt(struct svc_xprt *xprt)
 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
 		list_del_init(&xprt->xpt_list);
 	/*
-	 * The only time we're called while xpt_ready is still on a list
-	 * is while the list itself is about to be destroyed (in
-	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
-	 * to add new entries to the sp_sockets list, so we can't leave
-	 * a freed xprt on it.
+	 * We used to delete the transport from whichever list
+	 * it's sk_xprt.xpt_ready node was on, but we don't actually
+	 * need to.  This is because the only time we're called
+	 * while still attached to a queue, the queue itself
+	 * is about to be destroyed (in svc_destroy).
 	 */
-	list_del_init(&xprt->xpt_ready);
 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
 		serv->sv_tmpcnt--;
 
@@ -933,7 +925,7 @@ void svc_close_xprt(struct svc_xprt *xprt)
 }
 EXPORT_SYMBOL_GPL(svc_close_xprt);
 
-static void svc_close_list(struct list_head *xprt_list)
+void svc_close_all(struct list_head *xprt_list)
 {
 	struct svc_xprt *xprt;
 	struct svc_xprt *tmp;
@@ -949,15 +941,6 @@ static void svc_close_list(struct list_head *xprt_list)
 		}
 		svc_close_xprt(xprt);
 	}
-}
-
-void svc_close_all(struct svc_serv *serv)
-{
-       svc_close_list(&serv->sv_tempsocks);
-       svc_close_list(&serv->sv_permsocks);
-       BUG_ON(!list_empty(&serv->sv_permsocks));
-       BUG_ON(!list_empty(&serv->sv_tempsocks));
-
 }
 
 /*

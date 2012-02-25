@@ -28,6 +28,7 @@ struct ctl_table_header;
 struct net_generic;
 struct sock;
 
+
 #define NETDEV_HASHBITS    8
 #define NETDEV_HASHENTRIES (1 << NETDEV_HASHBITS)
 
@@ -41,8 +42,8 @@ struct net {
 						 */
 #endif
 	struct list_head	list;		/* list of network namespaces */
-	struct list_head  	cleanup_list;  	/* namespaces on death row */
-	struct list_head  	exit_list;	/* Use only net_mutex */
+	struct list_head	cleanup_list;	/* namespaces on death row */
+	struct list_head	exit_list;	/* Use only net_mutex */
 
 	struct proc_dir_entry 	*proc_net;
 	struct proc_dir_entry 	*proc_net_stat;

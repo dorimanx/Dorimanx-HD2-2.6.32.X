@@ -119,8 +119,8 @@ static int pppolac_recv_core(struct sock *sk_udp, struct sk_buff *skb)
 	/* Check the sequence if it is present. */
 	if (bits & L2TP_SEQUENCE_BIT) {
 		meta->sequence = ptr[4] << 8 | ptr[5];
-	if ((__s16)(meta->sequence - opt->recv_sequence) < 0)
-		goto drop;
+		if ((__s16)(meta->sequence - opt->recv_sequence) < 0)
+			goto drop;
 	}
 
 	/* Skip PPP address and control if they are present. */
@@ -177,7 +177,7 @@ static int pppolac_recv_core(struct sock *sk_udp, struct sk_buff *skb)
 		}
 		return NET_RX_SUCCESS;
 	}
-	
+
 	/* Flush receive queue if sequencing is disabled. */
 	skb_queue_purge(&sk->sk_receive_queue);
 	skb_orphan(skb);

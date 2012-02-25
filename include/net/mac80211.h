@@ -909,8 +909,8 @@ enum ieee80211_tkip_key_type {
  *	Hardware supports dropping of irrelevant beacon frames to
  *	avoid waking up cpu.
  * @IEEE80211_HW_REPORTS_TX_ACK_STATUS:
- *  Hardware can provide ack status reports of Tx frames to
- *  the stack.
+ *	Hardware can provide ack status reports of Tx frames to
+ *	the stack.
  */
 enum ieee80211_hw_flags {
 	IEEE80211_HW_RX_INCLUDES_FCS			= 1<<1,
@@ -927,7 +927,7 @@ enum ieee80211_hw_flags {
 	IEEE80211_HW_SUPPORTS_DYNAMIC_PS		= 1<<12,
 	IEEE80211_HW_MFP_CAPABLE			= 1<<13,
 	IEEE80211_HW_BEACON_FILTER			= 1<<14,
-	IEEE80211_HW_REPORTS_TX_ACK_STATUS    		= 1<<15,
+	IEEE80211_HW_REPORTS_TX_ACK_STATUS		= 1<<15,
 };
 
 /**

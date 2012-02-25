@@ -83,7 +83,7 @@ struct sock *pn_find_sock_by_sa(struct net *net, const struct sockaddr_pn *spn)
 				continue;
 		}
 		if (pn_addr(pn->sobject) &&
-			pn_addr(pn->sobject) != pn_addr(obj))
+		    pn_addr(pn->sobject) != pn_addr(obj))
 			continue;
 
 		rval = sknode;

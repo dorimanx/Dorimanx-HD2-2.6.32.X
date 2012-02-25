@@ -42,7 +42,6 @@ static inline void *net_generic(struct net *net, int id)
 	ptr = ng->ptr[id - 1];
 	rcu_read_unlock();
 
-	BUG_ON(!ptr);
 	return ptr;
 }
 

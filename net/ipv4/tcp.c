@@ -264,8 +264,6 @@
 #include <linux/cache.h>
 #include <linux/err.h>
 #include <linux/crypto.h>
-#include <linux/time.h>
-#include <linux/slab.h>
 
 #ifdef CONFIG_UID_STAT
 #include <linux/uid_stat.h>
@@ -290,6 +288,7 @@ int sysctl_tcp_mem[3] __read_mostly;
 int sysctl_tcp_wmem[3] __read_mostly;
 int sysctl_tcp_rmem[3] __read_mostly;
 
+EXPORT_SYMBOL(sysctl_tcp_mem);
 EXPORT_SYMBOL(sysctl_tcp_rmem);
 EXPORT_SYMBOL(sysctl_tcp_wmem);
 
@@ -1110,7 +1109,7 @@ out:
 
 #ifdef CONFIG_UID_STAT
         if (copied > 0)
-        	update_tcp_snd(current_uid(), copied);
+                update_tcp_snd(current_uid(), copied);
 #endif
 	return copied;
 
@@ -1358,7 +1357,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
 	if (copied > 0) {
 		tcp_cleanup_rbuf(sk, copied);
 #ifdef CONFIG_UID_STAT
-	update_tcp_rcv(current_uid(), copied);
+		update_tcp_rcv(current_uid(), copied);
 #endif
 	}
 	return copied;
@@ -2900,22 +2899,11 @@ static int __init set_thash_entries(char *str)
 }
 __setup("thash_entries=", set_thash_entries);
 
-void tcp_init_mem(struct net *net)
-{
-   /* Set per-socket limits to no more than 1/128 the pressure threshold */
-   unsigned long limit = nr_free_buffer_pages() / 8;
-   limit = max(limit, 128UL);
-   net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-   net->ipv4.sysctl_tcp_mem[1] = limit;
-   net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
-}
-
 void __init tcp_init(void)
 {
 	struct sk_buff *skb = NULL;
 	unsigned long nr_pages, limit;
-	int max_share, cnt;
-	unsigned int i;
+	int i, max_share, cnt;
 
 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
 
@@ -2958,7 +2946,7 @@ void __init tcp_init(void)
 					&tcp_hashinfo.bhash_size,
 					NULL,
 					64 * 1024);
-	tcp_hashinfo.bhash_size = 1U << tcp_hashinfo.bhash_size;
+	tcp_hashinfo.bhash_size = 1 << tcp_hashinfo.bhash_size;
 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
 		spin_lock_init(&tcp_hashinfo.bhash[i].lock);
 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
@@ -2985,9 +2973,8 @@ void __init tcp_init(void)
 	sysctl_tcp_mem[1] = limit;
 	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
 
-	tcp_init_mem(&init_net);
-	limit = nr_free_buffer_pages() / 8;
-	limit = max(limit, 128UL);
+	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
 	max_share = min(4UL*1024*1024, limit);
 
 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;

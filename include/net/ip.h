@@ -188,7 +188,6 @@ extern struct local_ports {
 } sysctl_local_ports;
 extern void inet_get_local_port_range(int *low, int *high);
 
-extern unsigned long *sysctl_local_reserved_ports;
 extern int sysctl_ip_default_ttl;
 extern int sysctl_ip_nonlocal_bind;
 
@@ -342,9 +341,9 @@ enum ip_defrag_users
 	IP_DEFRAG_LOCAL_DELIVER,
 	IP_DEFRAG_CALL_RA_CHAIN,
 	IP_DEFRAG_CONNTRACK_IN,
-	__IP_DEFRAG_CONNTRACK_IN_END  = IP_DEFRAG_CONNTRACK_IN + USHORT_MAX,
+	__IP_DEFRAG_CONNTRACK_IN_END	= IP_DEFRAG_CONNTRACK_IN + USHORT_MAX,
 	IP_DEFRAG_CONNTRACK_OUT,
-	__IP_DEFRAG_CONNTRACK_OUT_END  = IP_DEFRAG_CONNTRACK_OUT + USHORT_MAX,
+	__IP_DEFRAG_CONNTRACK_OUT_END	= IP_DEFRAG_CONNTRACK_OUT + USHORT_MAX,
 	IP_DEFRAG_CONNTRACK_BRIDGE_IN,
 	__IP_DEFRAG_CONNTRACK_BRIDGE_IN = IP_DEFRAG_CONNTRACK_BRIDGE_IN + USHORT_MAX,
 	IP_DEFRAG_VS_IN,
