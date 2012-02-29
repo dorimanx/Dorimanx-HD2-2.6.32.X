@@ -34,6 +34,8 @@
 #include <asm/unaligned.h>
 
 #include <media/v4l2-common.h>
+#include <../include/media/v4l2-dev.h>
+#include <../drivers/media/video/v4l2-dev.c>
 
 #include "uvcvideo.h"
 

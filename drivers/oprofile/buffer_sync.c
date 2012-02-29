@@ -142,9 +142,9 @@ static struct notifier_block module_load_nb = {
 
 static void free_all_tasks(void)
 {
-	/* make sure we don't leak task structs */
-	process_task_mortuary();
-	process_task_mortuary();
+       /* make sure we don't leak task structs */
+       process_task_mortuary();
+       process_task_mortuary();
 }
 
 int sync_start(void)
@@ -176,8 +176,8 @@ out4:
 out3:
 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
 out2:
-	task_handoff_unregister(&task_free_nb);
-	free_all_tasks();
+       task_handoff_unregister(&task_free_nb);
+       free_all_tasks();
 out1:
 	free_cpumask_var(marked_cpus);
 	goto out;
@@ -191,12 +191,12 @@ void sync_stop(void)
 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
 	task_handoff_unregister(&task_free_nb);
-	barrier();			/* do all of the above first */
+	barrier();                      /* do all of the above first */
 
 	flush_scheduled_work();
 
-	free_all_tasks();
-	free_cpumask_var(marked_cpus);
+        free_all_tasks();
+        free_cpumask_var(marked_cpus);
 }
 
 

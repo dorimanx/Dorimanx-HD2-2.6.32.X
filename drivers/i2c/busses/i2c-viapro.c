@@ -329,11 +329,11 @@ static struct i2c_adapter vt596_adapter = {
 static int __devinit vt596_probe(struct pci_dev *pdev,
 				 const struct pci_device_id *id)
 {
-	unsigned char temp;
-	int error;
+       unsigned char temp;
+       int error;
 
-	/* Determine the address of the SMBus areas */
-	if (force_addr) {
+       /* Determine the address of the SMBus areas */
+       if (force_addr) {
 		vt596_smba = force_addr & 0xfff0;
 		force = 0;
 		goto found;
@@ -393,14 +393,13 @@ found:
 			pci_write_config_byte(pdev, SMBHSTCFG, temp | 0x01);
 			dev_info(&pdev->dev, "Enabling SMBus device\n");
 		} else {
-			dev_err(&pdev->dev, "SMBUS: Error: Host SMBus "
-				"controller not enabled! - upgrade BIOS or "
-				"use force=1\n");
-			error = -ENODEV;
-			goto release_region;
-		}
-	}
-
+                       dev_err(&pdev->dev, "SMBUS: Error: Host SMBus "
+                               "controller not enabled! - upgrade BIOS or "
+                               "use force=1\n");
+                       error = -ENODEV;
+                       goto release_region;
+               }
+       }
 	dev_dbg(&pdev->dev, "VT596_smba = 0x%X\n", vt596_smba);
 
 	switch (pdev->device) {

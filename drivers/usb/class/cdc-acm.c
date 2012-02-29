@@ -170,7 +170,6 @@ static void acm_write_done(struct acm *acm, struct acm_wb *wb)
 {
 	wb->use = 0;
 	acm->transmitting--;
-	usb_autopm_put_interface_async(acm->control);
 }
 
 /*
@@ -212,12 +211,9 @@ static int acm_write_start(struct acm *acm, int wbn)
 	}
 
 	dbg("%s susp_count: %d", __func__, acm->susp_count);
-	usb_autopm_get_interface_async(acm->control);
 	if (acm->susp_count) {
-		if (!acm->delayed_wb)
-			acm->delayed_wb = wb;
-		else
-			usb_autopm_put_interface_async(acm->control);
+		acm->delayed_wb = wb;
+		schedule_work(&acm->waker);
 		spin_unlock_irqrestore(&acm->write_lock, flags);
 		return 0;	/* A white lie */
 	}
@@ -539,6 +535,23 @@ static void acm_softint(struct work_struct *work)
 		return;
 	tty_wakeup(tty);
 	tty_kref_put(tty);
+}
+
+static void acm_waker(struct work_struct *waker)
+{
+	struct acm *acm = container_of(waker, struct acm, waker);
+	int rv;
+
+	rv = usb_autopm_get_interface(acm->control);
+	if (rv < 0) {
+		dev_err(&acm->dev->dev, "Autopm failure in %s\n", __func__);
+		return;
+	}
+	if (acm->delayed_wb) {
+		acm_start_wb(acm, acm->delayed_wb);
+		acm->delayed_wb = NULL;
+	}
+	usb_autopm_put_interface(acm->control);
 }
 
 /*
@@ -1171,6 +1184,7 @@ made_compressed_probe:
 	acm->urb_task.func = acm_rx_tasklet;
 	acm->urb_task.data = (unsigned long) acm;
 	INIT_WORK(&acm->work, acm_softint);
+	INIT_WORK(&acm->waker, acm_waker);
 	init_waitqueue_head(&acm->drain_wait);
 	spin_lock_init(&acm->throttle_lock);
 	spin_lock_init(&acm->write_lock);
@@ -1247,39 +1261,38 @@ made_compressed_probe:
 	}
 
 	usb_set_intfdata(intf, acm);
+        i = device_create_file(&intf->dev, &dev_attr_bmCapabilities);
+        if (i < 0)
+                goto alloc_fail8;
 
-	i = device_create_file(&intf->dev, &dev_attr_bmCapabilities);
-	if (i < 0)
-		goto alloc_fail8;
+        if (cfd) { /* export the country data */
+                acm->country_codes = kmalloc(cfd->bLength - 4, GFP_KERNEL);
+                if (!acm->country_codes)
+                        goto skip_countries;
+                acm->country_code_size = cfd->bLength - 4;
+                memcpy(acm->country_codes, (u8 *)&cfd->wCountyCode0,
+                                                        cfd->bLength - 4);
+                acm->country_rel_date = cfd->iCountryCodeRelDate;
 
-	if (cfd) { /* export the country data */
-		acm->country_codes = kmalloc(cfd->bLength - 4, GFP_KERNEL);
-		if (!acm->country_codes)
-			goto skip_countries;
-		acm->country_code_size = cfd->bLength - 4;
-		memcpy(acm->country_codes, (u8 *)&cfd->wCountyCode0,
-							cfd->bLength - 4);
-		acm->country_rel_date = cfd->iCountryCodeRelDate;
+                i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
+                if (i < 0) {
+                        kfree(acm->country_codes);
+                        acm->country_codes = NULL;
+                        acm->country_code_size = 0;
+                        goto skip_countries;
+                }
 
-		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
-		if (i < 0) {
-			kfree(acm->country_codes);
-			acm->country_codes = NULL;
-			acm->country_code_size = 0;
-			goto skip_countries;
-		}
-
-		i = device_create_file(&intf->dev,
-						&dev_attr_iCountryCodeRelDate);
-		if (i < 0) {
-			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
-			kfree(acm->country_codes);
-			acm->country_codes = NULL;
-			acm->country_code_size = 0;
-			goto skip_countries;
-		}
-	}
-
+                i = device_create_file(&intf->dev,
+                                                &dev_attr_iCountryCodeRelDate);
+                if (i < 0) {
+                        device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
+                        kfree(acm->country_codes);
+                        acm->country_codes = NULL;
+                        acm->country_code_size = 0;
+                        goto skip_countries;
+                }
+        }
+ 
 skip_countries:
 	usb_fill_int_urb(acm->ctrlurb, usb_dev,
 			 usb_rcvintpipe(usb_dev, epctrl->bEndpointAddress),
@@ -1341,6 +1354,7 @@ static void stop_data_traffic(struct acm *acm)
 	tasklet_enable(&acm->urb_task);
 
 	cancel_work_sync(&acm->work);
+	cancel_work_sync(&acm->waker);
 }
 
 static void acm_disconnect(struct usb_interface *intf)
@@ -1432,7 +1446,6 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
 static int acm_resume(struct usb_interface *intf)
 {
 	struct acm *acm = usb_get_intfdata(intf);
-	struct acm_wb *wb;
 	int rv = 0;
 	int cnt;
 
@@ -1447,21 +1460,6 @@ static int acm_resume(struct usb_interface *intf)
 	mutex_lock(&acm->mutex);
 	if (acm->port.count) {
 		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
-
-		spin_lock_irq(&acm->write_lock);
-		if (acm->delayed_wb) {
-			wb = acm->delayed_wb;
-			acm->delayed_wb = NULL;
-			spin_unlock_irq(&acm->write_lock);
-			acm_start_wb(acm, wb);
-		} else {
-			spin_unlock_irq(&acm->write_lock);
-		}
-
-		/*
-		 * delayed error checking because we must
-		 * do the write path at all cost
-		 */
 		if (rv < 0)
 			goto err_out;
 
@@ -1530,21 +1528,21 @@ static struct usb_device_id acm_ids[] = {
 	{ USB_DEVICE(0x0572, 0x1328), /* Shiro / Aztech USB MODEM UM-3100 */
 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
 	},
-	{ USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
-	},
-	/* Motorola H24 HSPA module: */
-	{ USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
-	{ USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
-	{ USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
-	{ USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
-	{ USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
-	{ USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
-	{ USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
-	{ USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
+       { USB_DEVICE(0x22b8, 0x6425), /* Motorola MOTOMAGX phones */
+       },
+       /* Motorola H24 HSPA module: */
+       { USB_DEVICE(0x22b8, 0x2d91) }, /* modem                                */
+       { USB_DEVICE(0x22b8, 0x2d92) }, /* modem           + diagnostics        */
+       { USB_DEVICE(0x22b8, 0x2d93) }, /* modem + AT port                      */
+       { USB_DEVICE(0x22b8, 0x2d95) }, /* modem + AT port + diagnostics        */
+       { USB_DEVICE(0x22b8, 0x2d96) }, /* modem                         + NMEA */
+       { USB_DEVICE(0x22b8, 0x2d97) }, /* modem           + diagnostics + NMEA */
+       { USB_DEVICE(0x22b8, 0x2d99) }, /* modem + AT port               + NMEA */
+       { USB_DEVICE(0x22b8, 0x2d9a) }, /* modem + AT port + diagnostics + NMEA */
 
-	{ USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
-	.driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
-					   data interface instead of
+       { USB_DEVICE(0x0572, 0x1329), /* Hummingbird huc56s (Conexant) */
+       .driver_info = NO_UNION_NORMAL, /* union descriptor misplaced on
+                                          data interface instead of
 					   communications interface.
 					   Maybe we should define a new
 					   quirk for this. */

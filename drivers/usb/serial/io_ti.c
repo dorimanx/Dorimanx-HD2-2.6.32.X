@@ -2664,7 +2664,7 @@ cleanup:
 
 static void edge_disconnect(struct usb_serial *serial)
 {
-	dbg("%s", __func__);
+        dbg("%s", __func__);
 }
 
 static void edge_release(struct usb_serial *serial)
@@ -2919,7 +2919,7 @@ static struct usb_serial_driver edgeport_1port_device = {
 	.disconnect		= edge_disconnect,
 	.release		= edge_release,
 	.port_probe		= edge_create_sysfs_attrs,
-	.port_remove		= edge_remove_sysfs_attrs,
+	.port_remove            = edge_remove_sysfs_attrs,
 	.ioctl			= edge_ioctl,
 	.set_termios		= edge_set_termios,
 	.tiocmget		= edge_tiocmget,
@@ -2950,7 +2950,7 @@ static struct usb_serial_driver edgeport_2port_device = {
 	.disconnect		= edge_disconnect,
 	.release		= edge_release,
 	.port_probe		= edge_create_sysfs_attrs,
-	.port_remove		= edge_remove_sysfs_attrs,
+	.port_remove            = edge_remove_sysfs_attrs,
 	.ioctl			= edge_ioctl,
 	.set_termios		= edge_set_termios,
 	.tiocmget		= edge_tiocmget,

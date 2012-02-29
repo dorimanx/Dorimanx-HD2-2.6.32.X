@@ -349,14 +349,7 @@ static void send_data(struct asus_oled_dev *odev)
 
 static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
 {
-	odev->last_val = val;
-
-	if (val == 0) {
-		odev->buf_offs += count;
-		return 0;
-	}
-
-	while (count-- > 0) {
+	while (count-- > 0 && val) {
 		size_t x = odev->buf_offs % odev->width;
 		size_t y = odev->buf_offs / odev->width;
 		size_t i;
@@ -407,6 +400,7 @@ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
 			;
 		}
 
+		odev->last_val = val;
 		odev->buf_offs++;
 	}
 

@@ -51,6 +51,9 @@ Currently, these files are in /proc/sys/vm:
 - panic_on_oom
 - percpu_pagelist_fraction
 - stat_interval
+- swap_prefetch
+- swap_prefetch_delay
+- swap_prefetch_sleep
 - swappiness
 - vfs_cache_pressure
 - zone_reclaim_mode
@@ -612,6 +615,40 @@ memory pages.  Higher values will increase agressiveness, lower values
 decrease the amount of swap.
 
 The default value is 60.
+
+==============================================================
+
+swap_prefetch
+
+This enables or disables the swap prefetching feature. When the virtual
+memory subsystem has been extremely idle for at least swap_prefetch_sleep
+seconds it will start copying back pages from swap into the swapcache and keep
+a copy in swap. Valid values are 0 - 3. A value of 0 disables swap
+prefetching, 1 enables it unless laptop_mode is enabled, 2 enables it in the
+presence of laptop_mode, and 3 enables it unconditionally, ignoring whether
+the system is idle or not. If set to 0, swap prefetch wil not even try to keep
+record of ram swapped out to have the most minimal impact on performance.
+
+The default value is 1.
+
+==============================================================
+
+swap_prefetch_delay
+
+This is the time in seconds that swap prefetching is delayed upon finding
+the system is not idle (ie the vm is busy or non-niced cpu load is present).
+
+The default value is 1.
+
+==============================================================
+
+swap_prefetch_sleep
+
+This is the time in seconds that the swap prefetch kernel thread is put to
+sleep for when the ram is found to be full and it is unable to prefetch
+further.
+
+The default value is 5.
 
 ==============================================================
 

@@ -97,38 +97,38 @@ extern boot_infos_t *boot_infos;
      */
 
 static int offb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
-			  u_int transp, struct fb_info *info)
+                         u_int transp, struct fb_info *info)
 {
-	struct offb_par *par = (struct offb_par *) info->par;
+       struct offb_par *par = (struct offb_par *) info->par;
 
-	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
-		u32 *pal = info->pseudo_palette;
-		u32 cr = red >> (16 - info->var.red.length);
-		u32 cg = green >> (16 - info->var.green.length);
-		u32 cb = blue >> (16 - info->var.blue.length);
-		u32 value;
+       if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
+               u32 *pal = info->pseudo_palette;
+               u32 cr = red >> (16 - info->var.red.length);
+               u32 cg = green >> (16 - info->var.green.length);
+               u32 cb = blue >> (16 - info->var.blue.length);
+               u32 value;
 
-		if (regno >= 16)
-			return -EINVAL;
+               if (regno >= 16)
+                       return -EINVAL;
 
-		value = (cr << info->var.red.offset) |
-			(cg << info->var.green.offset) |
-			(cb << info->var.blue.offset);
-		if (info->var.transp.length > 0) {
-			u32 mask = (1 << info->var.transp.length) - 1;
-			mask <<= info->var.transp.offset;
-			value |= mask;
-		}
-		pal[regno] = value;
-		return 0;
-	}
+               value = (cr << info->var.red.offset) |
+                       (cg << info->var.green.offset) |
+                       (cb << info->var.blue.offset);
+               if (info->var.transp.length > 0) {
+                       u32 mask = (1 << info->var.transp.length) - 1;
+                       mask <<= info->var.transp.offset;
+                       value |= mask;
+               }
+               pal[regno] = value;
+               return 0;
+       }
 
-	if (regno > 255)
-		return -EINVAL;
+       if (regno > 255)
+               return -EINVAL;
 
-	red >>= 8;
-	green >>= 8;
-	blue >>= 8;
+       red >>= 8;
+       green >>= 8;
+       blue >>= 8;
 
 	if (!par->cmap_adr)
 		return 0;
@@ -278,17 +278,8 @@ static int offb_set_par(struct fb_info *info)
 	return 0;
 }
 
-static void offb_destroy(struct fb_info *info)
-{
-	if (info->screen_base)
-		iounmap(info->screen_base);
-	release_mem_region(info->aperture_base, info->aperture_size);
-	framebuffer_release(info);
-}
-
 static struct fb_ops offb_ops = {
 	.owner		= THIS_MODULE,
-	.fb_destroy	= offb_destroy,
 	.fb_setcolreg	= offb_setcolreg,
 	.fb_set_par	= offb_set_par,
 	.fb_blank	= offb_blank,
@@ -487,14 +478,10 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 	var->sync = 0;
 	var->vmode = FB_VMODE_NONINTERLACED;
 
-	/* set offb aperture size for generic probing */
-	info->aperture_base = address;
-	info->aperture_size = fix->smem_len;
-
 	info->fbops = &offb_ops;
 	info->screen_base = ioremap(address, fix->smem_len);
 	info->pseudo_palette = (void *) (info + 1);
-	info->flags = FBINFO_DEFAULT | FBINFO_MISC_FIRMWARE | foreign_endian;
+	info->flags = FBINFO_DEFAULT | foreign_endian;
 
 	fb_alloc_cmap(&info->cmap, 256, 0);
 

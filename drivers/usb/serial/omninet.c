@@ -315,10 +315,9 @@ static int omninet_write_room(struct tty_struct *tty)
 	struct usb_serial_port 	*wport 	= serial->port[1];
 
 	int room = 0; /* Default: no room */
-
-	/* FIXME: no consistent locking for write_urb_busy */
-	if (!wport->write_urb_busy)
-		room = wport->bulk_out_size - OMNINET_HEADERLEN;
+       /* FIXME: no consistent locking for write_urb_busy */
+       if (!wport->write_urb_busy)
+               room = wport->bulk_out_size - OMNINET_HEADERLEN;
 
 	dbg("%s - returns %d", __func__, room);
 

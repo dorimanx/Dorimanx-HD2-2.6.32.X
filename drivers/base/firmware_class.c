@@ -161,25 +161,25 @@ static ssize_t firmware_loading_store(struct device *dev,
 	int loading = simple_strtol(buf, NULL, 10);
 	int i;
 
-	mutex_lock(&fw_lock);
+       mutex_lock(&fw_lock);
 
-	if (!fw_priv->fw)
-		goto out;
+       if (!fw_priv->fw)
+               goto out;
 
-	switch (loading) {
-	case 1:
-		firmware_free_data(fw_priv->fw);
-		memset(fw_priv->fw, 0, sizeof(struct firmware));
-		/* If the pages are not owned by 'struct firmware' */
+       switch (loading) {
+       case 1:
+               firmware_free_data(fw_priv->fw);
+               memset(fw_priv->fw, 0, sizeof(struct firmware));
+               /* If the pages are not owned by 'struct firmware' */
 		for (i = 0; i < fw_priv->nr_pages; i++)
 			__free_page(fw_priv->pages[i]);
 		kfree(fw_priv->pages);
 		fw_priv->pages = NULL;
 		fw_priv->page_array_size = 0;
-		fw_priv->nr_pages = 0;
-		set_bit(FW_STATUS_LOADING, &fw_priv->status);
-		break;
-	case 0:
+               fw_priv->nr_pages = 0;
+               set_bit(FW_STATUS_LOADING, &fw_priv->status);
+               break;
+       case 0:
 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
 			vunmap(fw_priv->fw->data);
 			fw_priv->fw->data = vmap(fw_priv->pages,
@@ -209,8 +209,8 @@ static ssize_t firmware_loading_store(struct device *dev,
 		break;
 	}
 out:
-	mutex_unlock(&fw_lock);
-	return count;
+       mutex_unlock(&fw_lock);
+       return count;
 }
 
 static DEVICE_ATTR(loading, 0644, firmware_loading_show, firmware_loading_store);
