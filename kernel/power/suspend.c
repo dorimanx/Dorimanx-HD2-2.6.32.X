@@ -15,15 +15,10 @@
 #include <linux/console.h>
 #include <linux/cpu.h>
 #include <linux/syscalls.h>
-#include <linux/syscore_ops.h>
-#include <linux/gfp.h>
 
 #include "power.h"
 
 const char *const pm_states[PM_SUSPEND_MAX] = {
-#ifdef CONFIG_EARLYSUSPEND
-	[PM_SUSPEND_ON]		= "on",
-#endif
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
 };
@@ -160,14 +155,9 @@ static int suspend_enter(suspend_state_t state)
 	BUG_ON(!irqs_disabled());
 
 	error = sysdev_suspend(PMSG_SUSPEND);
-	if (!error)
-	  error = syscore_suspend();
 	if (!error) {
-		if (!suspend_test(TEST_CORE) && pm_check_wakeup_events()) {
+		if (!suspend_test(TEST_CORE))
 			error = suspend_ops->enter(state);
-			events_check_enabled = false;
-	}
-		syscore_resume();
 		sysdev_resume();
 	}
 
@@ -251,37 +241,6 @@ static void suspend_finish(void)
 	pm_restore_console();
 }
 
-#ifdef CONFIG_PM_SLEEP
-
-/*
- * The following functions are used by the suspend/hibernate code to temporarily
- * change gfp_allowed_mask in order to avoid using I/O during memory allocations
- * while devices are suspended.  To avoid races with the suspend/hibernate code,
- * they should always be called with pm_mutex held (gfp_allowed_mask also should
- * only be modified with pm_mutex held, unless the suspend/hibernate code is
- * guaranteed not to run in parallel with that modification).
- */
-
-static gfp_t saved_gfp_mask;
-
-void pm_restore_gfp_mask(void)
-{
-        WARN_ON(!mutex_is_locked(&pm_mutex));
-        if (saved_gfp_mask) {
-                gfp_allowed_mask = saved_gfp_mask;
-                saved_gfp_mask = 0;
-        }
-}
-
-void pm_restrict_gfp_mask(void)
-{
-        WARN_ON(!mutex_is_locked(&pm_mutex));
-        WARN_ON(saved_gfp_mask);
-        saved_gfp_mask = gfp_allowed_mask;
-        gfp_allowed_mask &= ~GFP_IOFS;
-}
-#endif /* CONFIG_PM_SLEEP */
-
 /**
  *	enter_state - Do common work of entering low-power state.
  *	@state:		pm_state structure for state we're entering.
@@ -315,9 +274,7 @@ int enter_state(suspend_state_t state)
 		goto Finish;
 
 	pr_debug("PM: Entering %s sleep\n", pm_states[state]);
-	pm_restrict_gfp_mask();
 	error = suspend_devices_and_enter(state);
-	pm_restore_gfp_mask();
 
  Finish:
 	pr_debug("PM: Finishing wakeup.\n");

@@ -103,52 +103,6 @@ static char * ireg_name[] = {"v0", "t0", "t1", "t2", "t3", "t4", "t5", "t6",
 			   "t10", "t11", "ra", "pv", "at", "gp", "sp", "zero"};
 #endif
 
-#ifdef CONFIG_ALPHA_UAC_SYSCTL
-
-#include <linux/sysctl.h>
-
-static int enabled_noprint = 0;
-static int enabled_sigbus = 0;
-static int enabled_nofix = 0;
-
-ctl_table uac_table[] = {
-   	{
-		.ctl_name 	= CTL_UNNUMBERED,
-		.procname 	= "noprint", 
-		.data 		= &enabled_noprint, 
-		.maxlen 	= sizeof (int), 
-		.mode 		= 0644, 
-		.proc_handler = &proc_dointvec,
-	},
-   	{
-		.ctl_name 	= CTL_UNNUMBERED,
-		.procname 	= "sigbus", 
-		.data 		= &enabled_sigbus, 
-		.maxlen 	= sizeof (int), 
-		.mode 		= 0644, 
-		.proc_handler = &proc_dointvec,
-	},
-   	{
-		.ctl_name 	= CTL_UNNUMBERED,
-		.procname 	= "nofix", 
-		.data 		= &enabled_nofix, 
-		.maxlen 	= sizeof (int), 
-		.mode 		= 0644, 
-		.proc_handler = &proc_dointvec,
-	},
-	{ .ctl_name = 0 }
-};
-
-static int __init init_uac_sysctl(void)
-{
-   /* Initialize sysctls with the #defined UAC policy */
-   enabled_noprint = (test_thread_flag (TIF_UAC_NOPRINT)) ? 1 : 0;
-   enabled_sigbus = (test_thread_flag (TIF_UAC_SIGBUS)) ? 1 : 0;
-   enabled_nofix = (test_thread_flag (TIF_UAC_NOFIX)) ? 1 : 0;
-   return 0;
-}
-#endif
-
 static void
 dik_show_code(unsigned int *pc)
 {
@@ -828,11 +782,7 @@ do_entUnaUser(void __user * va, unsigned long opcode,
 	/* Check the UAC bits to decide what the user wants us to do
 	   with the unaliged access.  */
 
-#ifndef CONFIG_ALPHA_UAC_SYSCTL
 	if (!test_thread_flag (TIF_UAC_NOPRINT)) {
-#else  /* CONFIG_ALPHA_UAC_SYSCTL */
-	if (!(enabled_noprint)) {
-#endif /* CONFIG_ALPHA_UAC_SYSCTL */
 		if (cnt >= 5 && time_after(jiffies, last_time + 5 * HZ)) {
 			cnt = 0;
 		}
@@ -843,18 +793,10 @@ do_entUnaUser(void __user * va, unsigned long opcode,
 		}
 		last_time = jiffies;
 	}
-#ifndef CONFIG_ALPHA_UAC_SYSCTL
 	if (test_thread_flag (TIF_UAC_SIGBUS))
-#else  /* CONFIG_ALPHA_UAC_SYSCTL */
-   if (enabled_sigbus)
-#endif /* CONFIG_ALPHA_UAC_SYSCTL */
 		goto give_sigbus;
 	/* Not sure why you'd want to use this, but... */
-#ifndef CONFIG_ALPHA_UAC_SYSCTL
 	if (test_thread_flag (TIF_UAC_NOFIX))
-#else  /* CONFIG_ALPHA_UAC_SYSCTL */
-   if (enabled_nofix)
-#endif /* CONFIG_ALPHA_UAC_SYSCTL */
 		return;
 
 	/* Don't bother reading ds in the access check since we already
@@ -1149,7 +1091,3 @@ trap_init(void)
 	wrent(entSys, 5);
 	wrent(entDbg, 6);
 }
-
-#ifdef CONFIG_ALPHA_UAC_SYSCTL
-	__initcall(init_uac_sysctl);
-#endif

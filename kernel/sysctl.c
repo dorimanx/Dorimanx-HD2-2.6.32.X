@@ -22,7 +22,6 @@
 #include <linux/mm.h>
 #include <linux/swap.h>
 #include <linux/slab.h>
-#include <linux/swap-prefetch.h>
 #include <linux/sysctl.h>
 #include <linux/proc_fs.h>
 #include <linux/security.h>
@@ -80,7 +79,6 @@ extern char core_pattern[];
 extern unsigned int core_pipe_limit;
 extern int pid_max;
 extern int min_free_kbytes;
-extern int min_free_order_shift;
 extern int pid_max_min, pid_max_max;
 extern int sysctl_drop_caches;
 extern int percpu_pagelist_fraction;
@@ -126,9 +124,6 @@ static int ngroups_max = NGROUPS_MAX;
 extern char modprobe_path[];
 extern int modules_disabled;
 #endif
-#ifdef CONFIG_FB_CON_DECOR
-extern char fbcon_decor_path[];
-#endif
 #ifdef CONFIG_CHR_DEV_SG
 extern int sg_big_buff;
 #endif
@@ -172,9 +167,6 @@ static int proc_do_cad_pid(struct ctl_table *table, int write,
 		  void __user *buffer, size_t *lenp, loff_t *ppos);
 static int proc_taint(struct ctl_table *table, int write,
 			       void __user *buffer, size_t *lenp, loff_t *ppos);
-#endif
-#ifdef CONFIG_ALPHA_UAC_SYSCTL
-extern struct ctl_table uac_table[];
 #endif
 
 static struct ctl_table root_table[];
@@ -244,18 +236,6 @@ static struct ctl_table root_table[] = {
 		.mode		= 0555,
 		.child		= dev_table,
 	},
-#ifdef CONFIG_FB_CON_DECOR
-	{
-		.ctl_name	= CTL_UNNUMBERED,
-		.procname	= "fbcondecor",
-		.data		= &fbcon_decor_path,
-		.maxlen		= KMOD_PATH_LEN,
-		.mode		= 0644,
-		.proc_handler	= &proc_dostring,
-		.strategy	= &sysctl_string,
-	},
-#endif
-
 /*
  * NOTE: do not add new entries to this table unless you have read
  * Documentation/sysctl/ctl_unnumbered.txt
@@ -399,18 +379,6 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= &proc_dointvec,
 	},
-#ifdef CONFIG_SCHED_AUTOGROUP
-        {
-                .procname       = "sched_autogroup_enabled",
-                .data           = &sysctl_sched_autogroup_enabled,
-                .maxlen         = sizeof(unsigned int),
-                .mode           = 0644,
-                .proc_handler   = proc_dointvec,
-                .extra1         = &zero,
-                .extra2         = &one,
-        },
-#endif
-
 #ifdef CONFIG_PROVE_LOCKING
 	{
 		.ctl_name	= CTL_UNNUMBERED,
@@ -1068,14 +1036,6 @@ static struct ctl_table kern_table[] = {
  * NOTE: do not add new entries to this table unless you have read
  * Documentation/sysctl/ctl_unnumbered.txt
  */
-#ifdef CONFIG_ALPHA_UAC_SYSCTL
-    {
-        .ctl_name   = CTL_UNNUMBERED,
-        .procname   = "uac",
-        .mode       = 0555,
-        .child      = uac_table,
-    },
-#endif /* CONFIG_ALPHA_UAC_SYSCTL */
 	{ .ctl_name = 0 }
 };
 
@@ -1267,14 +1227,6 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= &min_free_kbytes_sysctl_handler,
 		.strategy	= &sysctl_intvec,
 		.extra1		= &zero,
-	},
-	{
-		.ctl_name	= CTL_UNNUMBERED,
-		.procname	= "min_free_order_shift",
-		.data		= &min_free_order_shift,
-		.maxlen		= sizeof(min_free_order_shift),
-		.mode		= 0644,
-		.proc_handler	= &proc_dointvec
 	},
 	{
 		.ctl_name	= VM_PERCPU_PAGELIST_FRACTION,
@@ -1657,32 +1609,6 @@ static struct ctl_table debug_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
-	},
-#endif
-#ifdef CONFIG_SWAP_PREFETCH
-	{
-		.ctl_name	= CTL_UNNUMBERED,
-		.procname	= "swap_prefetch",
-		.data		= &swap_prefetch,
-		.maxlen		= sizeof(swap_prefetch),
-		.mode		= 0644,
-		.proc_handler	= &proc_dointvec,
-	},
-	{
-		.ctl_name	= CTL_UNNUMBERED,
-		.procname	= "swap_prefetch_delay",
-		.data		= &swap_prefetch_delay,
-		.maxlen		= sizeof(swap_prefetch_delay),
-		.mode		= 0644,
-		.proc_handler	= &proc_dointvec,
-	},
-	{
-		.ctl_name	= CTL_UNNUMBERED,
-		.procname	= "swap_prefetch_sleep",
-		.data		= &swap_prefetch_sleep,
-		.maxlen		= sizeof(swap_prefetch_sleep),
-		.mode		= 0644,
-		.proc_handler	= &proc_dointvec,
 	},
 #endif
 	{ .ctl_name = 0 }

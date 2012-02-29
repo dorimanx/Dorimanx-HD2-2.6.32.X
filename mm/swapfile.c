@@ -579,7 +579,6 @@ static int swap_entry_free(struct swap_info_struct *p,
 	count = p->swap_map[offset];
 	/* free if no reference */
 	if (!count) {
-		struct gendisk *disk = p->bdev->bd_disk;
 		if (offset < p->lowest_bit)
 			p->lowest_bit = offset;
 		if (offset > p->highest_bit)
@@ -587,11 +586,7 @@ static int swap_entry_free(struct swap_info_struct *p,
 		if (p->prio > swap_info[swap_list.next].prio)
 			swap_list.next = p - swap_info;
 		nr_swap_pages++;
-                if (disk->fops->swap_slot_free_notify)
-                        disk->fops->swap_slot_free_notify(p->bdev,
-                                                        offset);
-
-
+		p->inuse_pages--;
 	}
 	if (!swap_count(count))
 		mem_cgroup_uncharge_swap(ent);
@@ -2039,14 +2034,8 @@ bad_swap_2:
 	p->flags = 0;
 	spin_unlock(&swap_lock);
 	vfree(swap_map);
-	if (swap_file) {
-	  if (did_down) {
-	    mutex_unlock(&inode->i_mutex);
-	    did_down = 0;
-
-	   }
-	   filp_close(swap_file, NULL);
-	}
+	if (swap_file)
+		filp_close(swap_file, NULL);
 out:
 	if (page && !IS_ERR(page)) {
 		kunmap(page);

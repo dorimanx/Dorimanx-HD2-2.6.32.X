@@ -712,9 +712,9 @@ wait_for_iobuf:
 			wait_on_buffer(bh);
 			goto wait_for_iobuf;
 		}
-/*		if (cond_resched())
+		if (cond_resched())
 			goto wait_for_iobuf;
-*/		
+
 		if (unlikely(!buffer_uptodate(bh)))
 			err = -EIO;
 
@@ -752,7 +752,7 @@ wait_for_iobuf:
 		 * by journal_file_buffer() take effect before wake_up_bit()
 		 * does the waitqueue check.
 		 */
-		smp_mb();		
+		smp_mb();
 		wake_up_bit(&bh->b_state, BH_Unshadow);
 		JBUFFER_TRACE(jh, "brelse shadowed buffer");
 		__brelse(bh);
@@ -773,9 +773,9 @@ wait_for_iobuf:
 			wait_on_buffer(bh);
 			goto wait_for_ctlbuf;
 		}
-/*		if (cond_resched())
+		if (cond_resched())
 			goto wait_for_ctlbuf;
-*/
+
 		if (unlikely(!buffer_uptodate(bh)))
 			err = -EIO;
 

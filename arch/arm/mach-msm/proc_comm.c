@@ -23,19 +23,11 @@
 
 #include "proc_comm.h"
 
-#if defined(CONFIG_ARCH_MSM7X30)
-#define MSM_TRIG_A2M_INT(n) (writel(1 << n, MSM_GCC_BASE + 0x8))
-#endif
-
 #define MSM_A2M_INT(n) (MSM_CSR_BASE + 0x400 + (n) * 4)
 
 static inline void notify_other_proc_comm(void)
 {
-#if defined(CONFIG_ARCH_MSM7X30)
-	MSM_TRIG_A2M_INT(6);
-#else
 	writel(1, MSM_A2M_INT(6));
-#endif
 }
 
 #define APP_COMMAND 0x00

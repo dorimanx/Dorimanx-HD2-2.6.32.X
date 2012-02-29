@@ -554,4 +554,3 @@ typedef enum {
  * B2..7	Length of message - (not including Byte 0)
  *
  */
-

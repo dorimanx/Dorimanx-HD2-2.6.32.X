@@ -62,20 +62,6 @@
 #include <asm/system.h>
 #include <linux/mroute6.h>
 
-#ifdef CONFIG_ANDROID_PARANOID_NETWORK
-#include <linux/android_aid.h>
-
-static inline int current_has_network(void)
-{
-	return in_egroup_p(AID_INET) || capable(CAP_NET_RAW);
-}
-#else
-static inline int current_has_network(void)
-{
-	return 1;
-}
-#endif
-
 MODULE_AUTHOR("Cast of dozens");
 MODULE_DESCRIPTION("IPv6 protocol stack for Linux");
 MODULE_LICENSE("GPL");
@@ -120,12 +106,6 @@ static int inet6_create(struct net *net, struct socket *sock, int protocol)
 	char answer_no_check;
 	int try_loading_module = 0;
 	int err;
-
-//SU660 hobbes.song socket permission denied workaround
-#if !(defined(STAR_COUNTRY_KR) && defined(STAR_OPERATOR_SKT))
-	if (!current_has_network())
-		return -EACCES;
-#endif
 
 	if (sock->type != SOCK_RAW &&
 	    sock->type != SOCK_DGRAM &&

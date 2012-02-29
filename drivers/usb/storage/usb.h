@@ -72,9 +72,7 @@ struct us_unusual_dev {
 #define US_FLIDX_DISCONNECTING	3	/* disconnect in progress   */
 #define US_FLIDX_RESETTING	4	/* device reset in progress */
 #define US_FLIDX_TIMED_OUT	5	/* SCSI midlayer timed out  */
-#define US_FLIDX_SCAN_PENDING  	6  	/* scanning not yet done    */
-#define US_FLIDX_REDO_READ10  	7  	/* redo READ(10) command    */
-#define US_FLIDX_READ10_WORKED  8  	/* previous READ(10) succeeded */
+#define US_FLIDX_DONT_SCAN	6	/* don't scan (disconnect)  */
 
 #define USB_STOR_STRING_LEN 32
 
@@ -147,8 +145,8 @@ struct us_data {
 	/* mutual exclusion and synchronization structures */
 	struct completion	cmnd_ready;	 /* to sleep thread on	    */
 	struct completion	notify;		 /* thread begin/end	    */
-	wait_queue_head_t  	delay_wait;   	 /* wait during reset       */
-	struct delayed_work  	scan_dwork;   	 /* for async scanning      */
+	wait_queue_head_t	delay_wait;	 /* wait during scan, reset */
+	struct completion	scanning_done;	 /* wait for scan thread    */
 
 	/* subdriver information */
 	void			*extra;		 /* Any extra data          */

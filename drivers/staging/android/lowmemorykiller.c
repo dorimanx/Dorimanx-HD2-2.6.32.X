@@ -34,7 +34,6 @@
 #include <linux/mm.h>
 #include <linux/oom.h>
 #include <linux/sched.h>
-#include <linux/notifier.h>
 
 static uint32_t lowmem_debug_level = 2;
 static int lowmem_adj[6] = {
@@ -52,43 +51,11 @@ static size_t lowmem_minfree[6] = {
 };
 static int lowmem_minfree_size = 4;
 
-static size_t lowmem_minfile[6] = {
-	1536,
-	2048,
-	4096,
-	5120,
-	5632,
-	6144
-};
-static int lowmem_minfile_size = 6;
-
-static struct task_struct *lowmem_deathpending;
-
-static uint32_t lowmem_check_filepages = 0;
-
 #define lowmem_print(level, x...)			\
 	do {						\
 		if (lowmem_debug_level >= (level))	\
 			printk(x);			\
 	} while (0)
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data);
-
-static struct notifier_block task_nb = {
-	.notifier_call	= task_notify_func,
-};
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-{
-	struct task_struct *task = data;
-	if (task == lowmem_deathpending) {
-		lowmem_deathpending = NULL;
-		task_free_unregister(&task_nb);
-	}
-	return NOTIFY_OK;
-}
 
 static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 {
@@ -103,32 +70,16 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free = global_page_state(NR_FREE_PAGES);
 	int other_file = global_page_state(NR_FILE_PAGES);
-	int lru_file = global_page_state(NR_ACTIVE_FILE) +
-			global_page_state(NR_INACTIVE_FILE);
-
-	/*
-	 * If we already have a death outstanding, then
-	 * bail out right away; indicating to vmscan
-	 * that we have nothing further to offer on
-	 * this pass.
-	 *
-	 */
-	if (lowmem_deathpending)
-		return 0;
 
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
 	if (lowmem_minfree_size < array_size)
 		array_size = lowmem_minfree_size;
 	for (i = 0; i < array_size; i++) {
-		if (other_free < lowmem_minfree[i]) {
-			if(other_file < lowmem_minfree[i] ||
-				(lowmem_check_filepages &&
-				(lru_file < lowmem_minfile[i]))) {
-
-				min_adj = lowmem_adj[i];
-				break;
-			}
+		if (other_free < lowmem_minfree[i] &&
+		    other_file < lowmem_minfree[i]) {
+			min_adj = lowmem_adj[i];
+			break;
 		}
 	}
 	if (nr_to_scan > 0)
@@ -149,17 +100,15 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	read_lock(&tasklist_lock);
 	for_each_process(p) {
 		struct mm_struct *mm;
-		struct signal_struct *sig;
 		int oom_adj;
 
 		task_lock(p);
 		mm = p->mm;
-		sig = p->signal;
-		if (!mm || !sig) {
+		if (!mm) {
 			task_unlock(p);
 			continue;
 		}
-		oom_adj = sig->oom_adj;
+		oom_adj = mm->oom_adj;
 		if (oom_adj < min_adj) {
 			task_unlock(p);
 			continue;
@@ -182,17 +131,9 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 			     p->pid, p->comm, oom_adj, tasksize);
 	}
 	if (selected) {
-		if (fatal_signal_pending(selected)) {
-			pr_warning("process %d is suffering a slow death\n",
-				   selected->pid);
-			read_unlock(&tasklist_lock);
-			return rem;
-		}
 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
 			     selected->pid, selected->comm,
 			     selected_oom_adj, selected_tasksize);
-		lowmem_deathpending = selected;
-		task_free_register(&task_nb);
 		force_sig(SIGKILL, selected);
 		rem -= selected_tasksize;
 	}
@@ -224,11 +165,6 @@ module_param_array_named(adj, lowmem_adj, int, &lowmem_adj_size,
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 S_IRUGO | S_IWUSR);
 module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
-
-module_param_named(check_filepages , lowmem_check_filepages, uint,
-		   S_IRUGO | S_IWUSR);
-module_param_array_named(minfile, lowmem_minfile, uint, &lowmem_minfile_size,
-			 S_IRUGO | S_IWUSR);
 
 module_init(lowmem_init);
 module_exit(lowmem_exit);

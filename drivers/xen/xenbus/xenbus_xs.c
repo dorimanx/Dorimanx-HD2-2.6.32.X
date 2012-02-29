@@ -766,11 +766,11 @@ static int process_msg(void)
 		goto out;
 	}
 
-       if (msg->hdr.len > XENSTORE_PAYLOAD_MAX) {
-               kfree(msg);
-               err = -EINVAL;
-               goto out;
-       }
+	if (msg->hdr.len > XENSTORE_PAYLOAD_MAX) {
+		kfree(msg);
+		err = -EINVAL;
+		goto out;
+	}
 
 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
 	if (body == NULL) {

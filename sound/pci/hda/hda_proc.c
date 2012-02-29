@@ -36,14 +36,14 @@ static const char *get_wid_type_name(unsigned int wid_value)
 		[AC_WID_PIN] = "Pin Complex",
 		[AC_WID_POWER] = "Power Widget",
 		[AC_WID_VOL_KNB] = "Volume Knob Widget",
-               [AC_WID_BEEP] = "Beep Generator Widget",
-               [AC_WID_VENDOR] = "Vendor Defined Widget",
-       };
-       if (wid_value == -1)
-               return "UNKNOWN Widget";
-       wid_value &= 0xf;
-       if (names[wid_value])
-               return names[wid_value];
+		[AC_WID_BEEP] = "Beep Generator Widget",
+		[AC_WID_VENDOR] = "Vendor Defined Widget",
+	};
+	if (wid_value == -1)
+		return "UNKNOWN Widget";
+	wid_value &= 0xf;
+	if (names[wid_value])
+		return names[wid_value];
 	else
 		return "UNKNOWN Widget";
 }

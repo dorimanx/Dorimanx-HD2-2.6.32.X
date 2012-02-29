@@ -240,9 +240,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
  * page pinned
  */
 int __attribute__((weak)) __get_user_pages_fast(unsigned long start,
-                                int nr_pages, int write, struct page **pages)
+				 int nr_pages, int write, struct page **pages)
 {
-       return 0;
+	return 0;
 }
 EXPORT_SYMBOL_GPL(__get_user_pages_fast);
 

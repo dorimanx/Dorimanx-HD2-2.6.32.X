@@ -25,7 +25,6 @@
 #include <linux/blkdev.h>
 #include <linux/backing-dev.h>
 #include <linux/buffer_head.h>
-#include <linux/delay.h>
 #include "internal.h"
 
 #define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
@@ -151,12 +150,8 @@ static void wb_clear_pending(struct bdi_writeback *wb, struct bdi_work *work)
 	}
 }
 
-#define MAX_WAKEUP_RETRIES		3
 static void bdi_queue_work(struct backing_dev_info *bdi, struct bdi_work *work)
 {
-	int success = 0;
-	int retries = 0;
-
 	work->seen = bdi->wb_mask;
 	BUG_ON(!work->seen);
 	atomic_set(&work->pending, bdi->wb_cnt);
@@ -180,33 +175,8 @@ static void bdi_queue_work(struct backing_dev_info *bdi, struct bdi_work *work)
 	else {
 		struct bdi_writeback *wb = &bdi->wb;
 
-#if 0
 		if (wb->task)
 			wake_up_process(wb->task);
-#else
-		if (wb->task) {
-			success = wake_up_process(wb->task);
-			while (!success && ++retries <= MAX_WAKEUP_RETRIES) {
-				mdelay(10);
-				if (!wb->task) {
-					pr_err("(%s) %s: wake up %s FAIL, retries %d, wb_task %p\n",
-						current->comm, __func__, wb->task->comm,
-						retries, wb->task);
-					break;
-				}
-				success = wake_up_process(wb->task);
-				/*
-				pr_info("(%s) %s: wake_up %s %s, retries %d\n",
-					current->comm, __func__, wb->task->comm,
-					success ? "success" : "fail", retries);
-				*/
-			}
-			if (!success && retries > MAX_WAKEUP_RETRIES)
-				pr_err("(%s) %s: wake up %s FAIL, retries %d\n",
-					current->comm, __func__, wb->task->comm,
-					retries);
-		}
-#endif
 	}
 }
 
@@ -790,7 +760,6 @@ static long wb_writeback(struct bdi_writeback *wb,
 	};
 	unsigned long oldest_jif;
 	long wrote = 0;
-	long write_chunk;
 	struct inode *inode;
 
 	if (wbc.for_kupdate) {
@@ -802,15 +771,6 @@ static long wb_writeback(struct bdi_writeback *wb,
 		wbc.range_start = 0;
 		wbc.range_end = LLONG_MAX;
 	}
-	/*
-	 * In WB_SYNC_ALL mode, we just want to ignore nr_to_write as
-	 * we need to write everything and livelock avoidance is implemented
-	 * differently.
-	 */
-	if (wbc.sync_mode == WB_SYNC_NONE)
-		write_chunk = MAX_WRITEBACK_PAGES;
-	else
-		write_chunk = LONG_MAX;
 
 	for (;;) {
 		/*
@@ -828,7 +788,7 @@ static long wb_writeback(struct bdi_writeback *wb,
 
 		wbc.more_io = 0;
 		wbc.encountered_congestion = 0;
-		wbc.nr_to_write = write_chunk;
+		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
 		wbc.pages_skipped = 0;
 		writeback_inodes_wb(wb, &wbc);
 		args->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
@@ -847,7 +807,7 @@ static long wb_writeback(struct bdi_writeback *wb,
 		/*
 		 * Did we write something? Try for more
 		 */
-		if (wbc.nr_to_write < write_chunk)
+		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
 			continue;
 		/*
 		 * Nothing written. Wait for some inode to
@@ -1111,11 +1071,17 @@ void __mark_inode_dirty(struct inode *inode, int flags)
 			sb->s_op->dirty_inode(inode);
 	}
 
+	/*
+	 * make sure that changes are seen by all cpus before we test i_state
+	 * -- mikulas
+	 */
+	smp_mb();
+
 	/* avoid the locking if we can */
 	if ((inode->i_state & flags) == flags)
 		return;
 
-	if (unlikely(block_dump > 1))
+	if (unlikely(block_dump))
 		block_dump___mark_inode_dirty(inode);
 
 	spin_lock(&inode_lock);

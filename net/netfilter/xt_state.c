@@ -21,25 +21,23 @@ MODULE_ALIAS("ipt_state");
 MODULE_ALIAS("ip6t_state");
 
 static bool
-state_mt(const struct sk_buff *skb, const struct xt_action_param *par)
+state_mt(const struct sk_buff *skb, const struct xt_match_param *par)
 {
 	const struct xt_state_info *sinfo = par->matchinfo;
 	enum ip_conntrack_info ctinfo;
 	unsigned int statebit;
-	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
 
-	if (!ct)
+	if (nf_ct_is_untracked(skb))
+		statebit = XT_STATE_UNTRACKED;
+	else if (!nf_ct_get(skb, &ctinfo))
 		statebit = XT_STATE_INVALID;
-	else {
-		if (nf_ct_is_untracked(ct))
-			statebit = XT_STATE_UNTRACKED;
-		else
-			statebit = XT_STATE_BIT(ctinfo);
-	}
+	else
+		statebit = XT_STATE_BIT(ctinfo);
+
 	return (sinfo->statemask & statebit);
 }
 
-static int state_mt_check(const struct xt_mtchk_param *par)
+static bool state_mt_check(const struct xt_mtchk_param *par)
 {
 	if (nf_ct_l3proto_try_module_get(par->match->family) < 0) {
 		printk(KERN_WARNING "can't load conntrack support for "

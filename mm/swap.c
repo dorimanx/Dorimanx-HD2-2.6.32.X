@@ -17,7 +17,6 @@
 #include <linux/sched.h>
 #include <linux/kernel_stat.h>
 #include <linux/swap.h>
-#include <linux/swap-prefetch.h>
 #include <linux/mman.h>
 #include <linux/pagemap.h>
 #include <linux/pagevec.h>
@@ -512,6 +511,4 @@ void __init swap_setup(void)
 	 * Right now other parts of the system means that we
 	 * _really_ don't want to cluster much more
 	 */
-
-	prepare_swap_prefetch();
 }

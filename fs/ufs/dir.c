@@ -31,7 +31,7 @@
  * len <= UFS_MAXNAMLEN and de != NULL are guaranteed by caller.
  */
 static inline int ufs_match(struct super_block *sb, int len,
-		const unsigned char *name, struct ufs_dir_entry *de)
+		const char * const name, struct ufs_dir_entry * de)
 {
 	if (len != ufs_get_de_namlen(sb, de))
 		return 0;
@@ -70,13 +70,13 @@ static inline unsigned long ufs_dir_pages(struct inode *inode)
 	return (inode->i_size+PAGE_CACHE_SIZE-1)>>PAGE_CACHE_SHIFT;
 }
 
-ino_t ufs_inode_by_name(struct inode *dir, const struct qstr *qstr)
+ino_t ufs_inode_by_name(struct inode *dir, struct dentry *dentry)
 {
 	ino_t res = 0;
 	struct ufs_dir_entry *de;
 	struct page *page;
 	
-	de = ufs_find_entry(dir, qstr, &page);
+	de = ufs_find_entry(dir, dentry, &page);
 	if (de) {
 		res = fs32_to_cpu(dir->i_sb, de->d_ino);
 		ufs_put_page(page);
@@ -249,12 +249,12 @@ struct ufs_dir_entry *ufs_dotdot(struct inode *dir, struct page **p)
  * (as a parameter - res_dir). Page is returned mapped and unlocked.
  * Entry is guaranteed to be valid.
  */
-struct ufs_dir_entry *ufs_find_entry(struct inode *dir, const struct qstr *qstr,
+struct ufs_dir_entry *ufs_find_entry(struct inode *dir, struct dentry *dentry,
 				     struct page **res_page)
 {
 	struct super_block *sb = dir->i_sb;
-	const unsigned char *name = qstr->name;
-	int namelen = qstr->len;
+	const char *name = dentry->d_name.name;
+	int namelen = dentry->d_name.len;
 	unsigned reclen = UFS_DIR_REC_LEN(namelen);
 	unsigned long start, n;
 	unsigned long npages = ufs_dir_pages(dir);
@@ -313,7 +313,7 @@ found:
 int ufs_add_link(struct dentry *dentry, struct inode *inode)
 {
 	struct inode *dir = dentry->d_parent->d_inode;
-	const unsigned char *name = dentry->d_name.name;
+	const char *name = dentry->d_name.name;
 	int namelen = dentry->d_name.len;
 	struct super_block *sb = dir->i_sb;
 	unsigned reclen = UFS_DIR_REC_LEN(namelen);
@@ -666,6 +666,6 @@ not_empty:
 const struct file_operations ufs_dir_operations = {
 	.read		= generic_read_dir,
 	.readdir	= ufs_readdir,
-	.fsync		= generic_file_fsync,
+	.fsync		= simple_fsync,
 	.llseek		= generic_file_llseek,
 };

@@ -929,7 +929,8 @@ static int fill_powernow_table_pstate(struct powernow_k8_data *data,
 		powernow_table[i].index = index;
 
 		/* Frequency may be rounded for these */
-		if (boot_cpu_data.x86 == 0x10 || boot_cpu_data.x86 == 0x11) {
+		if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
+				 || boot_cpu_data.x86 == 0x11) {
 			powernow_table[i].frequency =
 				freq_from_fid_did(lo & 0x3f, (lo >> 6) & 7);
 		} else
@@ -1394,15 +1395,14 @@ static struct freq_attr *powernow_k8_attr[] = {
 };
 
 static struct cpufreq_driver cpufreq_amd64_driver = {
-	.verify		= powernowk8_verify,
-	.target		= powernowk8_target,
-	.bios_limit	= acpi_processor_get_bios_limit,
-	.init		= powernowk8_cpu_init,
-	.exit		= __devexit_p(powernowk8_cpu_exit),
-	.get		= powernowk8_get,
-	.name		= "powernow-k8",
-	.owner		= THIS_MODULE,
-	.attr		= powernow_k8_attr,
+	.verify = powernowk8_verify,
+	.target = powernowk8_target,
+	.init = powernowk8_cpu_init,
+	.exit = __devexit_p(powernowk8_cpu_exit),
+	.get = powernowk8_get,
+	.name = "powernow-k8",
+	.owner = THIS_MODULE,
+	.attr = powernow_k8_attr,
 };
 
 /* driver entry point for init */

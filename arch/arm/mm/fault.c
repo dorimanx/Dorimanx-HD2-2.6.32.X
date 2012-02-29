@@ -22,10 +22,6 @@
 #include <asm/system.h>
 #include <asm/pgtable.h>
 #include <asm/tlbflush.h>
-#ifdef CONFIG_ARCH_MSM_SCORPION
-#include <asm/io.h>
-#include <mach/msm_iomap.h>
-#endif
 
 #include "fault.h"
 
@@ -449,92 +445,6 @@ do_bad(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	return 1;
 }
 
-#ifdef CONFIG_ARCH_MSM_SCORPION
-#define __str(x) #x
-#define MRC(x, v1, v2, v4, v5, v6) do {					\
-	unsigned int __##x;						\
-	asm("mrc " __str(v1) ", " __str(v2) ", %0, " __str(v4) ", "	\
-		__str(v5) ", " __str(v6) "\n" \
-		: "=r" (__##x));					\
-	pr_info("%s: %s = 0x%.8x\n", __func__, #x, __##x);		\
-} while(0)
-
-#define MSM_TCSR_SPARE2 (MSM_TCSR_BASE + 0x60)
-
-#endif
-
-static int
-do_imprecise_ext(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
-{
-#ifdef CONFIG_ARCH_MSM_SCORPION
-	unsigned int regval;
-	static unsigned char flush_toggle;
-
-	asm("mrc p15, 0, %0, c5, c1, 0\n" /* read adfsr for fault status */
-		: "=r" (regval));
-
-	pr_err("%s: ADFSR = 0x%.8x\n", __func__, regval);
-
-#ifdef CONFIG_ARCH_QSD8X50
-	pr_err("PLL_CTL (0xA8800004)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x04));
-	pr_err("PLL_CAL (0xA8800008)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x08));
-	pr_err("PLL_FSM_CTL_INT (0xA880000C)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x0C));
-	pr_err("PLL_FSM_CTL_EXT (0xA8800010)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x10));
-	pr_err("PLL_FSM_CFG (0xA8800014)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x14));
-	pr_err("PLL_STATUS (0xA8800018)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x18));
-	pr_err("PLL_INTERNAL (0xA8800020)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x20));
-	pr_err("PLL_CAL_VAL (0xA8800080)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x80));
-	pr_err("PLL_LUT_A_10_13 (0xA8800084)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x84));
-	pr_err("PLL_LUT_A_14_17 (0xA8800088)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x88));
-	pr_err("PLL_LUT_A_18_21 (0xA880008C)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x8C));
-	pr_err("PLL_LUT_A_22_25 (0xA8800090)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x90));
-	pr_err("PLL_LUT_A_26_29 (0xA8800094)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x94));
-	pr_err("PLL_LUT_A_30_33 (0xA8800098)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0x98));
-	pr_err("PLL_LUT_B_10_13 (0xA88000C4)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xC4));
-	pr_err("PLL_LUT_B_14_17 (0xA88000C8)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xC8));
-	pr_err("PLL_LUT_B_18_21 (0xA88000CC)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xCC));
-	pr_err("PLL_LUT_B_22_25 (0xA88000D0)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xD0));
-	pr_err("PLL_LUT_B_26_29 (0xA88000D4)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xD4));
-	pr_err("PLL_LUT_B_30_33 (0xA88000D8)= 0x%.8x\n", readl(MSM_SCPLL_BASE + 0xD8));
-#endif
-
-	if (regval == 0x2) {
-		/* Fault was caused by icache parity error. Alternate
-		 * simply retrying the access and flushing the icache. */
-		flush_toggle ^= 1;
-		if (flush_toggle)
-			asm("mcr p15, 0, %0, c7, c5, 0\n"
-			    :
-			    : "r" (regval)); /* input value is ignored */
-		/* Clear fault in EFSR. */
-		asm("mcr p15, 7, %0, c15, c0, 1\n"
-		    :
-		    : "r" (regval));
-		/* Clear fault in ADFSR. */
-		regval = 0;
-		asm("mcr p15, 0, %0, c5, c1, 0\n"
-		    :
-		    : "r" (regval));
-		return 0;
-	} else {
-		MRC(DFSR,     p15, 0,  c5, c0, 0);
-		MRC(ACTLR,    p15, 0,  c1, c0, 1);
-		MRC(EFSR,     p15, 7, c15, c0, 1);
-		MRC(L2SR,     p15, 3, c15, c1, 0);
-		MRC(L2CR0,    p15, 3, c15, c0, 1);
-		MRC(L2CPUESR, p15, 3, c15, c1, 1);
-		MRC(L2CPUCR,  p15, 3, c15, c0, 2);
-		MRC(SPESR,    p15, 1,  c9, c7, 0);
-		MRC(SPCR,     p15, 0,  c9, c7, 0);
-		MRC(DMACHSR,  p15, 1, c11, c0, 0);
-		MRC(DMACHESR, p15, 1, c11, c0, 1);
-		MRC(DMACHCR,  p15, 0, c11, c0, 2);
-		pr_err("%s: TCSR_SPARE2 = 0x%.8x\n", __func__, readl(MSM_TCSR_SPARE2));
-	}
-#endif
-	return 1;
-}
-
 static struct fsr_info {
 	int	(*fn)(unsigned long addr, unsigned int fsr, struct pt_regs *regs);
 	int	sig;
@@ -572,7 +482,7 @@ static struct fsr_info {
 	{ do_bad,		SIGBUS,  0,		"unknown 19"			   },
 	{ do_bad,		SIGBUS,  0,		"lock abort"			   }, /* xscale */
 	{ do_bad,		SIGBUS,  0,		"unknown 21"			   },
-	{ do_imprecise_ext,	SIGBUS,  BUS_OBJERR,	"imprecise external abort"	   }, /* xscale */
+	{ do_bad,		SIGBUS,  BUS_OBJERR,	"imprecise external abort"	   }, /* xscale */
 	{ do_bad,		SIGBUS,  0,		"unknown 23"			   },
 	{ do_bad,		SIGBUS,  0,		"dcache parity error"		   }, /* xscale */
 	{ do_bad,		SIGBUS,  0,		"unknown 25"			   },

@@ -1284,7 +1284,7 @@ static inline struct sk_buff *tcp_write_queue_prev(struct sock *sk, struct sk_bu
 	skb_queue_walk_from_safe(&(sk)->sk_write_queue, skb, tmp)
 
 /* This function calculates a "timeout" which is equivalent to the timeout of a
- * TCP connection after "boundary" unsuccessful, exponentially backed-off
+ * TCP connection after "boundary" unsucessful, exponentially backed-off
  * retransmissions with an initial RTO of TCP_RTO_MIN.
  */
 static inline bool retransmits_timed_out(struct sock *sk,
@@ -1472,8 +1472,6 @@ extern struct sk_buff **tcp4_gro_receive(struct sk_buff **head,
 					 struct sk_buff *skb);
 extern int tcp_gro_complete(struct sk_buff *skb);
 extern int tcp4_gro_complete(struct sk_buff *skb);
-
-extern void tcp_v4_nuke_addr(__u32 saddr);
 
 #ifdef CONFIG_PROC_FS
 extern int  tcp4_proc_init(void);

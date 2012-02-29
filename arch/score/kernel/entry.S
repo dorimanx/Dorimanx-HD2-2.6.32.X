@@ -425,7 +425,7 @@ ENTRY(handle_sys)
 
 	brl	r10			# Do The Real system call
 
-       cmpi.c  r4, 0
+	cmpi.c	r4, 0
 	blt	1f
 	ldi	r8, 0
 	sw	r8, [r0, PT_R7]

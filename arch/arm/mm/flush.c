@@ -120,8 +120,6 @@ void flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
 
 void __flush_dcache_page(struct address_space *mapping, struct page *page)
 {
-	void *addr;
-
 	/*
 	 * Writeback any data associated with the kernel mapping of this
 	 * page.  This ensures that data in the physical page is mutually
@@ -130,23 +128,11 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
 #ifdef CONFIG_HIGHMEM
 	/*
 	 * kmap_atomic() doesn't set the page virtual address, and
-	 * kunmap_atomic() takes care of cache flushing already; however,
-	 * the kmap must be pinned locally to ensure that no other context
-	 * unmaps it during the cache maintenance
+	 * kunmap_atomic() takes care of cache flushing already.
 	 */
-	if (PageHighMem(page))
-		addr = kmap_high_get(page);
-	else
+	if (page_address(page))
 #endif
-		addr = page_address(page);
-
-	if (addr) {
-		__cpuc_flush_dcache_page(addr);
-#ifdef CONFIG_HIGHMEM
-		if (PageHighMem(page))
-			kunmap_high(page);
-#endif
-	}
+		__cpuc_flush_dcache_page(page_address(page));
 
 	/*
 	 * If this is a page cache page, and we have an aliasing VIPT cache,

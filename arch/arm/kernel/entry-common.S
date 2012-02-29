@@ -29,9 +29,6 @@ ret_fast_syscall:
 	ldr	r1, [tsk, #TI_FLAGS]
 	tst	r1, #_TIF_WORK_MASK
 	bne	fast_work_pending
-#if defined(CONFIG_IRQSOFF_TRACER)
-        asm_trace_hardirqs_on
-#endif
 
 	/* perform architecture specific actions before user return */
 	arch_ret_to_user r1, lr
@@ -66,9 +63,6 @@ ret_slow_syscall:
 	tst	r1, #_TIF_WORK_MASK
 	bne	work_pending
 no_work_pending:
-#if defined(CONFIG_IRQSOFF_TRACER)
- 	asm_trace_hardirqs_on
-#endif
 	/* perform architecture specific actions before user return */
 	arch_ret_to_user r1, lr
 
@@ -83,7 +77,7 @@ ENTRY(ret_from_fork)
 	get_thread_info tsk
 	ldr	r1, [tsk, #TI_FLAGS]		@ check for syscall tracing
 	mov	why, #1
-	tst	r1, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
+	tst	r1, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
 	beq	ret_slow_syscall
 	mov	r1, sp
 	mov	r0, #1				@ trace exit [IP = 1]
@@ -281,7 +275,7 @@ ENTRY(vector_swi)
 #endif
 
 	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
-	tst	ip, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
+	tst	ip, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
 	bne	__sys_trace
 
 	cmp	scno, #NR_syscalls		@ check upper syscall limit

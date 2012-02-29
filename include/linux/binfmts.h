@@ -18,7 +18,7 @@ struct pt_regs;
 #define BINPRM_BUF_SIZE 128
 
 #ifdef __KERNEL__
-#include <linux/sched.h>
+#include <linux/list.h>
 
 #define CORENAME_MAX_SIZE 128
 
@@ -58,7 +58,6 @@ struct linux_binprm{
 	unsigned interp_flags;
 	unsigned interp_data;
 	unsigned long loader, exec;
-	char tcomm[TASK_COMM_LEN];
 };
 
 extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);

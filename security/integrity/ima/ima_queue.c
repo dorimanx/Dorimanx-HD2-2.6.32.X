@@ -110,13 +110,13 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
 
 	mutex_lock(&ima_extend_list_mutex);
 	if (!violation) {
-               memcpy(digest, entry->digest, sizeof digest);
-               if (ima_lookup_digest_entry(digest)) {
-                       audit_cause = "hash_exists";
-                       result = -EEXIST;
-                       goto out;
-               }
-       }
+		memcpy(digest, entry->digest, sizeof digest);
+		if (ima_lookup_digest_entry(digest)) {
+			audit_cause = "hash_exists";
+			result = -EEXIST;
+			goto out;
+		}
+	}
 
 	result = ima_add_digest_entry(entry);
 	if (result < 0) {

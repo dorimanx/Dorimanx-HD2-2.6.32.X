@@ -1726,9 +1726,9 @@ static int ub_bd_release(struct gendisk *disk, fmode_t mode)
 static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
     unsigned int cmd, unsigned long arg)
 {
-       void __user *usermem = (void __user *) arg;
+	void __user *usermem = (void __user *) arg;
 
-       return scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
+	return scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
 }
 
 /*

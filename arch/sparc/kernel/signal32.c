@@ -112,18 +112,14 @@ struct rt_signal_frame32 {
 	compat_siginfo_t	info;
 	struct pt_regs32	regs;
 	compat_sigset_t		mask;
-	/* __siginfo_fpu32_t * */ u32 fpu_save;
+	/* __siginfo_fpu_t * */ u32 fpu_save;
 	unsigned int		insns[2];
 	stack_t32		stack;
 	unsigned int		extra_size; /* Should be sizeof(siginfo_extra_v8plus_t) */
 	/* Only valid if (regs.psr & (PSR_VERS|PSR_IMPL)) == PSR_V8PLUS */
 	siginfo_extra_v8plus_t	v8plus;
-	__siginfo_fpu_t		fpu_state;
-};
-
-/* Align macros */
-#define SF_ALIGNEDSZ  (((sizeof(struct signal_frame32) + 7) & (~7)))
-#define RT_ALIGNEDSZ  (((sizeof(struct rt_signal_frame32) + 7) & (~7)))
+	/* __siginfo_rwin_t * */u32 rwin_save;
+} __attribute__((aligned(8)));
 
 int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
 {
@@ -418,15 +414,17 @@ static void __user *get_sigframe(struct sigaction *sa, struct pt_regs *regs, uns
 			sp = current->sas_ss_sp + current->sas_ss_size;
 	}
 
+	sp -= framesize;
+
 	/* Always align the stack frame.  This handles two cases.  First,
 	 * sigaltstack need not be mindful of platform specific stack
 	 * alignment.  Second, if we took this signal because the stack
 	 * is not aligned properly, we'd like to take the signal cleanly
 	 * and report that.
 	 */
-	sp &= ~7UL;
+	sp &= ~15UL;
 
-	return (void __user *)(sp - framesize);
+	return (void __user *) sp;
 }
 
 /* The I-cache flush instruction only works in the primary ASI, which

@@ -16,15 +16,11 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
-#include <linux/kthread.h>
 
 #include "core.h"
 #include "bus.h"
 #include "mmc_ops.h"
 #include "sd_ops.h"
-
-extern void mmc_power_up(struct mmc_host *host);
-extern void mmc_power_off(struct mmc_host *host);
 
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
@@ -340,9 +336,7 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 	int err;
 	u32 cid[4];
 	unsigned int max_dtr;
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	int retries;
-#endif
+
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
 
@@ -445,29 +439,11 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 		err = mmc_decode_scr(card);
 		if (err < 0)
 			goto free_card;
+
 		/*
 		 * Fetch switch information from card.
 		 */
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-		for (retries = 1; retries <= 3; retries++) {
-			err = mmc_read_switch(card);
-			if (!err) {
-				if (retries > 1) {
-					printk(KERN_WARNING
-					       "%s: recovered\n", 
-					       mmc_hostname(host));
-				}
-				break;
-			} else {
-				printk(KERN_WARNING
-				       "%s: read switch failed (attempt %d)\n",
-				       mmc_hostname(host), retries);
-			}
-		}
-#else
 		err = mmc_read_switch(card);
-#endif
-
 		if (err)
 			goto free_card;
 	}
@@ -558,44 +534,11 @@ static void mmc_sd_remove(struct mmc_host *host)
 }
 
 /*
- * When "deferred resume" fails, run another thread to stop mmcqd.
- */
-static int mmc_sd_removal_thread(void *d)
-{
-	struct mmc_host *host = d;
-
-	mmc_sd_remove(host);
-
-	mmc_claim_host(host);
-	mmc_detach_bus(host);
-	mmc_release_host(host);
-
-	return 0;
-}
-
-static void mmc_sd_err_with_deferred_resume(struct mmc_host *host)
-{
-	if (mmc_bus_needs_resume(host)) {
-		host->bus_resume_flags |= MMC_BUSRESUME_FAILS_RESUME;
-		kthread_run(mmc_sd_removal_thread, host, "mmcrd");
-	} else {
-		mmc_sd_remove(host);
-
-		mmc_claim_host(host);
-		mmc_detach_bus(host);
-		mmc_release_host(host);
-	}
-}
-
-/*
  * Card detection callback from host.
  */
 static void mmc_sd_detect(struct mmc_host *host)
 {
-	int err = 0;
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-        int retries = 5;
-#endif
+	int err;
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
@@ -605,23 +548,8 @@ static void mmc_sd_detect(struct mmc_host *host)
 	/*
 	 * Just check if our card has been removed.
 	 */
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	while(retries) {
-		err = mmc_send_status(host->card, NULL);
-		if (err) {
-			retries--;
-			udelay(5);
-			continue;
-		}
-		break;
-	}
-	if (!retries) {
-		printk(KERN_ERR "%s(%s): Unable to re-detect card (%d)\n",
-		       __func__, mmc_hostname(host), err);
-	}
-#else
 	err = mmc_send_status(host->card, NULL);
-#endif
+
 	mmc_release_host(host);
 
 	if (err) {
@@ -659,47 +587,13 @@ static int mmc_sd_suspend(struct mmc_host *host)
 static int mmc_sd_resume(struct mmc_host *host)
 {
 	int err;
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	int retries;
-#endif
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
 	mmc_claim_host(host);
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	retries = 5;
-	while (retries) {
-		err = mmc_sd_init_card(host, host->ocr, host->card);
-
-		if (err) {
-			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
-			       mmc_hostname(host), err, retries);
-			mmc_power_off(host);
-			mdelay(5);
-			mmc_power_up(host);
-			retries--;
-			continue;
-		}
-		break;
-	}
-#else
 	err = mmc_sd_init_card(host, host->ocr, host->card);
-#endif
 	mmc_release_host(host);
-
-#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
-	if (err)
-		mmc_sd_err_with_deferred_resume(host);
-#else
-	if (err) {
-		mmc_sd_remove(host);
-
-		mmc_claim_host(host);
-		mmc_detach_bus(host);
-		mmc_release_host(host);
-	}
-#endif
 
 	return err;
 }
@@ -764,9 +658,6 @@ static void mmc_sd_attach_bus_ops(struct mmc_host *host)
 int mmc_attach_sd(struct mmc_host *host, u32 ocr)
 {
 	int err;
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	int retries;
-#endif
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
@@ -815,27 +706,9 @@ int mmc_attach_sd(struct mmc_host *host, u32 ocr)
 	/*
 	 * Detect and init the card.
 	 */
-#ifdef CONFIG_MMC_PARANOID_SD_INIT
-	retries = 5;
-	while (retries) {
-		err = mmc_sd_init_card(host, host->ocr, NULL);
-		if (err) {
-			retries--;
-			continue;
-		}
-		break;
-	}
-
-	if (!retries) {
-		printk(KERN_ERR "%s: mmc_sd_init_card() failure (err = %d)\n",
-		       mmc_hostname(host), err);
-		goto err;
-	}
-#else
 	err = mmc_sd_init_card(host, host->ocr, NULL);
 	if (err)
 		goto err;
-#endif
 
 	mmc_release_host(host);
 

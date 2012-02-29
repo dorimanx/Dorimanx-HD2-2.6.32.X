@@ -16,7 +16,6 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 #include <linux/swap.h>
-#include <linux/swap-prefetch.h>
 #include <linux/pagemap.h>
 #include <linux/init.h>
 #include <linux/highmem.h>
@@ -1535,34 +1534,34 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
  * memory, while percent[1] determines pressure on the file LRUs.
  */
 static void get_scan_ratio(struct zone *zone, struct scan_control *sc,
-                                        unsigned long *percent)
+					unsigned long *percent)
 {
-        unsigned long anon, file, free;
-        unsigned long anon_prio, file_prio;
-        unsigned long ap, fp;
-        struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+	unsigned long anon, file, free;
+	unsigned long anon_prio, file_prio;
+	unsigned long ap, fp;
+	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
 
-        anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-                zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
-        file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
-                zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
 
-        if (scanning_global_lru(sc)) {
-                free  = zone_page_state(zone, NR_FREE_PAGES);
-                /* If we have very few page cache pages,
-                   force-scan anon pages. */
-                if (unlikely(file + free <= high_wmark_pages(zone))) {
-                        percent[0] = 100;
-                        percent[1] = 0;
-                        return;
-                }
-        }
+	if (scanning_global_lru(sc)) {
+		free  = zone_page_state(zone, NR_FREE_PAGES);
+		/* If we have very few page cache pages,
+		   force-scan anon pages. */
+		if (unlikely(file + free <= high_wmark_pages(zone))) {
+			percent[0] = 100;
+			percent[1] = 0;
+			return;
+		}
+	}
 
-        /*
-         * OK, so we have swap space and a fair amount of page cache
-         * pages.  We use the recently rotated / recently scanned
-         * ratios to determine how valuable each cache is.
-         *
+	/*
+	 * OK, so we have swap space and a fair amount of page cache
+	 * pages.  We use the recently rotated / recently scanned
+	 * ratios to determine how valuable each cache is.
+	 *
 	 * Because workloads change over time (and to avoid overflow)
 	 * we keep these statistics as a floating average, which ends
 	 * up weighing recent references more than old ones.
@@ -1641,7 +1640,6 @@ static void shrink_zone(int priority, struct zone *zone,
 	unsigned long swap_cluster_max = sc->swap_cluster_max;
 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
 	int noswap = 0;
-//	int tmp_priority;
 
 	/* If we have no swap space, do not bother scanning anon pages. */
 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
@@ -1658,11 +1656,6 @@ static void shrink_zone(int priority, struct zone *zone,
 		scan = zone_nr_lru_pages(zone, sc, l);
 		if (priority || noswap) {
 			scan >>= priority;
-//                        tmp_priority = priority;
-
-//                if (file && priority > 0)
-//                        tmp_priority = DEF_PRIORITY;
-//                        scan >>= tmp_priority;
 			scan = (scan * percent[file]) / 100;
 		}
 		nr[l] = nr_scan_try_batch(scan,
@@ -1790,8 +1783,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
 
 	delayacct_freepages_start();
-
-	delay_swap_prefetch();
 
 	if (scanning_global_lru(sc))
 		count_vm_event(ALLOCSTALL);
@@ -2893,8 +2884,6 @@ static void scan_zone_unevictable_pages(struct zone *zone)
 static void scan_all_zones_unevictable_pages(void)
 {
 	struct zone *zone;
-
-	delay_swap_prefetch();
 
 	for_each_zone(zone) {
 		scan_zone_unevictable_pages(zone);

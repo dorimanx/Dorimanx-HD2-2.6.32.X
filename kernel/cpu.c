@@ -457,9 +457,9 @@ core_initcall(alloc_frozen_cpus);
  */
 void cpu_hotplug_disable_before_freeze(void)
 {
-       cpu_maps_update_begin();
-       cpu_hotplug_disabled = 1;
-       cpu_maps_update_done();
+	cpu_maps_update_begin();
+	cpu_hotplug_disabled = 1;
+	cpu_maps_update_done();
 }
 
 
@@ -469,9 +469,9 @@ void cpu_hotplug_disable_before_freeze(void)
  */
 void cpu_hotplug_enable_after_thaw(void)
 {
-       cpu_maps_update_begin();
-       cpu_hotplug_disabled = 0;
-       cpu_maps_update_done();
+	cpu_maps_update_begin();
+	cpu_hotplug_disabled = 0;
+	cpu_maps_update_done();
 }
 
 /*
@@ -487,32 +487,32 @@ void cpu_hotplug_enable_after_thaw(void)
  */
 static int
 cpu_hotplug_pm_callback(struct notifier_block *nb,
-                       unsigned long action, void *ptr)
+			unsigned long action, void *ptr)
 {
-       switch (action) {
+	switch (action) {
 
-       case PM_SUSPEND_PREPARE:
-       case PM_HIBERNATION_PREPARE:
-               cpu_hotplug_disable_before_freeze();
-               break;
+	case PM_SUSPEND_PREPARE:
+	case PM_HIBERNATION_PREPARE:
+		cpu_hotplug_disable_before_freeze();
+		break;
 
-       case PM_POST_SUSPEND:
-       case PM_POST_HIBERNATION:
-               cpu_hotplug_enable_after_thaw();
-               break;
+	case PM_POST_SUSPEND:
+	case PM_POST_HIBERNATION:
+		cpu_hotplug_enable_after_thaw();
+		break;
 
-       default:
-               return NOTIFY_DONE;
-       }
+	default:
+		return NOTIFY_DONE;
+	}
 
-       return NOTIFY_OK;
+	return NOTIFY_OK;
 }
 
 
 int cpu_hotplug_pm_sync_init(void)
 {
-       pm_notifier(cpu_hotplug_pm_callback, 0);
-       return 0;
+	pm_notifier(cpu_hotplug_pm_callback, 0);
+	return 0;
 }
 core_initcall(cpu_hotplug_pm_sync_init);
 
@@ -634,23 +634,3 @@ void init_cpu_online(const struct cpumask *src)
 {
 	cpumask_copy(to_cpumask(cpu_online_bits), src);
 }
-
-static ATOMIC_NOTIFIER_HEAD(idle_notifier);
-
-void idle_notifier_register(struct notifier_block *n)
-{
-   atomic_notifier_chain_register(&idle_notifier, n);
-}
-EXPORT_SYMBOL_GPL(idle_notifier_register);
-
-void idle_notifier_unregister(struct notifier_block *n)
-{
-   atomic_notifier_chain_unregister(&idle_notifier, n);
-}
-EXPORT_SYMBOL_GPL(idle_notifier_unregister);
-
-void idle_notifier_call_chain(unsigned long val)
-{
-   atomic_notifier_call_chain(&idle_notifier, val, NULL);
-}
-EXPORT_SYMBOL_GPL(idle_notifier_call_chain);

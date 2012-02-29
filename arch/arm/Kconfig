@@ -18,9 +18,6 @@ config ARM
 	select HAVE_KRETPROBES if (HAVE_KPROBES)
 	select HAVE_FUNCTION_TRACER if (!XIP_KERNEL)
 	select HAVE_GENERIC_DMA_COHERENT
-	select HAVE_KERNEL_GZIP
-	select HAVE_KERNEL_LZO
-	select HAVE_KERNEL_LZMA
 	help
 	  The ARM series is a line of low-power-consumption RISC chip designs
 	  licensed by ARM Ltd and targeted at embedded applications and
@@ -118,9 +115,10 @@ config GENERIC_LOCKBREAK
 
 config RWSEM_GENERIC_SPINLOCK
 	bool
+	default y
 
 config RWSEM_XCHGADD_ALGORITHM
-	def_bool y
+	bool
 
 config ARCH_HAS_ILOG2_U32
 	bool
@@ -563,18 +561,15 @@ config ARCH_PXA
 	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
 
 config ARCH_MSM
-	bool "Qualcomm MSM/QSD"
-	select ARCH_HAS_CPUFREQ
-	select GENERIC_GPIO
-	select ARCH_REQUIRE_GPIOLIB
+	bool "Qualcomm MSM"
+	select CPU_V6
 	select GENERIC_TIME
 	select GENERIC_CLOCKEVENTS
 	help
-	  Support for Qualcomm MSM/QSD based systems.  This runs on the
-	  ARM11/Scorpion apps processor of the MSM/QSD and depends on a
-	  shared memory interface to the ARM9 modem processor which
-	  runs the baseband stack and controls some vital subsystems
-	  (clock and power control, etc).
+	  Support for Qualcomm MSM7K based systems.  This runs on the ARM11
+	  apps processor of the MSM7K and depends on a shared memory
+	  interface to the ARM9 modem processor which runs the baseband stack
+	  and controls some vital subsystems (clock and power control, etc).
 
 config ARCH_RPC
 	bool "RiscPC"
@@ -1061,7 +1056,7 @@ config HZ
 	default 200 if ARCH_EBSA110 || ARCH_S3C2410
 	default OMAP_32K_TIMER_HZ if ARCH_OMAP && OMAP_32K_TIMER
 	default AT91_TIMER_HZ if ARCH_AT91
-	default 500
+	default 100
 
 config THUMB2_KERNEL
 	bool "Compile the kernel in Thumb-2 mode"
@@ -1154,13 +1149,6 @@ config HIGHPTE
 	depends on HIGHMEM
 	depends on !OUTER_CACHE
 
-config VMALLOC_RESERVE
-	hex "Reserved vmalloc space"
-	default 0x08000000
-	depends on MMU
-	help
-	  Reserved vmalloc space if not specified on the kernel commandline.
-
 source "mm/Kconfig"
 
 config LEDS
@@ -1228,16 +1216,6 @@ config ALIGNMENT_TRAP
 	  here, which has a severe performance impact. This is necessary for
 	  correct operation of some network protocols. With an IP-only
 	  configuration it is safe to say N, otherwise say Y.
-
-config ALLOW_CPU_ALIGNMENT
-   bool "Allow CPU-based alignment handling"
-   default y if ARCH_MSM_SCORPION || ARCH_MSM_SCORPIONMP
-   help
-     Advanced ARM processors, such as the Cortex series and ARMv7-based
-     CPUS are capable of performing unaligned accesses for many types of
-     memory accesses.  Typically, using a cpu-based alignment fixup is
-     faster than doing such a fixup in software.  For best performance
-     on advanced CPUs, say Y here.
 
 config UACCESS_WITH_MEMCPY
 	bool "Use kernel mem{cpy,set}() for {copy_to,clear}_user() (EXPERIMENTAL)"

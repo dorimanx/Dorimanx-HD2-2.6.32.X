@@ -337,32 +337,11 @@ segv:
 }
 
 /* Checks if the fp is valid */
-static int invalid_frame_pointer(void __user *fp, int fplen)
+static int invalid_frame_pointer(void __user *fp)
 {
-	if (((unsigned long) fp) & 7)
+	if (((unsigned long) fp) & 15)
 		return 1;
 	return 0;
-}
-
-static inline int
-save_fpu_state(struct pt_regs *regs, __siginfo_fpu_t __user *fpu)
-{
-	unsigned long *fpregs = current_thread_info()->fpregs;
-	unsigned long fprs;
-	int err = 0;
-	
-	fprs = current_thread_info()->fpsaved[0];
-	if (fprs & FPRS_DL)
-		err |= copy_to_user(&fpu->si_float_regs[0], fpregs,
-				    (sizeof(unsigned int) * 32));
-	if (fprs & FPRS_DU)
-		err |= copy_to_user(&fpu->si_float_regs[32], fpregs+16,
-				    (sizeof(unsigned int) * 32));
-	err |= __put_user(current_thread_info()->xfsr[0], &fpu->si_fsr);
-	err |= __put_user(current_thread_info()->gsr[0], &fpu->si_gsr);
-	err |= __put_user(fprs, &fpu->si_fprs);
-
-	return err;
 }
 
 static inline void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, unsigned long framesize)
@@ -382,15 +361,17 @@ static inline void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *
 			sp = current->sas_ss_sp + current->sas_ss_size;
 	}
 
+	sp -= framesize;
+
 	/* Always align the stack frame.  This handles two cases.  First,
 	 * sigaltstack need not be mindful of platform specific stack
 	 * alignment.  Second, if we took this signal because the stack
 	 * is not aligned properly, we'd like to take the signal cleanly
 	 * and report that.
 	 */
-	sp &= ~7UL;
+	sp &= ~15UL;
 
-	return (void __user *)(sp - framesize);
+	return (void __user *) sp;
 }
 
 static inline int

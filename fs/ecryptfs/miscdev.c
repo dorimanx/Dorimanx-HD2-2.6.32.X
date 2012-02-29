@@ -543,4 +543,3 @@ void ecryptfs_destroy_ecryptfs_miscdev(void)
 	BUG_ON(atomic_read(&ecryptfs_num_miscdev_opens) != 0);
 	misc_deregister(&ecryptfs_miscdev);
 }
-

@@ -25,7 +25,6 @@
 #include <linux/resume-trace.h>
 #include <linux/rwsem.h>
 #include <linux/interrupt.h>
-#include <linux/timer.h>
 
 #include "../base.h"
 #include "power.h"
@@ -44,17 +43,11 @@ LIST_HEAD(dpm_list);
 
 static DEFINE_MUTEX(dpm_list_mtx);
 
-static void dpm_drv_timeout(unsigned long data);
-static DEFINE_TIMER(dpm_drv_wd, dpm_drv_timeout, 0, 0);
-
 /*
  * Set once the preparation of devices for a PM transition has started, reset
  * before starting to resume devices.  Protected by dpm_list_mtx.
  */
 static bool transition_started;
-
-static void
-pm_dev_trace(int type, struct device *dev, pm_message_t state, char *info);
 
 /**
  * device_pm_init - Initialize the PM-related part of a device object.
@@ -63,7 +56,6 @@ pm_dev_trace(int type, struct device *dev, pm_message_t state, char *info);
 void device_pm_init(struct device *dev)
 {
 	dev->power.status = DPM_ON;
-	dev->power.wakeup_count = 0;
 	pm_runtime_init(dev);
 }
 
@@ -185,14 +177,12 @@ static int pm_op(struct device *dev,
 #ifdef CONFIG_SUSPEND
 	case PM_EVENT_SUSPEND:
 		if (ops->suspend) {
-			pm_dev_trace(TRACE_DPM_SUSPEND, dev, state, "");
 			error = ops->suspend(dev);
 			suspend_report_result(ops->suspend, error);
 		}
 		break;
 	case PM_EVENT_RESUME:
 		if (ops->resume) {
-			pm_dev_trace(TRACE_DPM_RESUME, dev, state, "");
 			error = ops->resume(dev);
 			suspend_report_result(ops->resume, error);
 		}
@@ -251,16 +241,12 @@ static int pm_noirq_op(struct device *dev,
 #ifdef CONFIG_SUSPEND
 	case PM_EVENT_SUSPEND:
 		if (ops->suspend_noirq) {
-			pm_dev_trace(TRACE_DPM_SUSPEND_NOIRQ,
-				dev, state, "LATE ");
 			error = ops->suspend_noirq(dev);
 			suspend_report_result(ops->suspend_noirq, error);
 		}
 		break;
 	case PM_EVENT_RESUME:
 		if (ops->resume_noirq) {
-			pm_dev_trace(TRACE_DPM_RESUME_NOIRQ,
-				dev, state, "EARLY ");
 			error = ops->resume_noirq(dev);
 			suspend_report_result(ops->resume_noirq, error);
 		}
@@ -322,15 +308,6 @@ static char *pm_verb(int event)
 	default:
 		return "(unknown PM event)";
 	}
-}
-
-static void
-pm_dev_trace(int type, struct device *dev, pm_message_t state, char *info)
-{
-	TRACE_MASK(type, "%s %s: dpm %s%s%s\n", dev_driver_string(dev),
-		dev_name(dev), info, pm_verb(state.event),
-		((state.event & PM_EVENT_SLEEP) && device_may_wakeup(dev)) ?
-		", may wakeup" : "");
 }
 
 static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
@@ -423,7 +400,6 @@ static int device_resume(struct device *dev, pm_message_t state)
 			error = pm_op(dev, dev->bus->pm, state);
 		} else if (dev->bus->resume) {
 			pm_dev_dbg(dev, state, "legacy ");
-			pm_dev_trace(TRACE_DPM_RESUME, dev, state, "legacy ");
 			error = dev->bus->resume(dev);
 		}
 		if (error)
@@ -445,8 +421,6 @@ static int device_resume(struct device *dev, pm_message_t state)
 			error = pm_op(dev, dev->class->pm, state);
 		} else if (dev->class->resume) {
 			pm_dev_dbg(dev, state, "legacy class ");
-			pm_dev_trace(TRACE_DPM_RESUME,
-				dev, state, "legacy class ");
 			error = dev->class->resume(dev);
 		}
 	}
@@ -455,45 +429,6 @@ static int device_resume(struct device *dev, pm_message_t state)
 
 	TRACE_RESUME(error);
 	return error;
-}
-
-/**
- *	dpm_drv_timeout - Driver suspend / resume watchdog handler
- *	@data: struct device which timed out
- *
- * 	Called when a driver has timed out suspending or resuming.
- * 	There's not much we can do here to recover so
- * 	BUG() out for a crash-dump
- *
- */
-static void dpm_drv_timeout(unsigned long data)
-{
-	struct device *dev = (struct device *) data;
-
-	printk(KERN_EMERG "**** DPM device timeout: %s (%s)\n", dev_name(dev),
-	       (dev->driver ? dev->driver->name : "no driver"));
-	BUG();
-}
-
-/**
- *	dpm_drv_wdset - Sets up driver suspend/resume watchdog timer.
- *	@dev: struct device which we're guarding.
- *
- */
-static void dpm_drv_wdset(struct device *dev)
-{
-	dpm_drv_wd.data = (unsigned long) dev;
-	mod_timer(&dpm_drv_wd, jiffies + (HZ * 3));
-}
-
-/**
- *	dpm_drv_wdclr - clears driver suspend/resume watchdog timer.
- *	@dev: struct device which we're no longer guarding.
- *
- */
-static void dpm_drv_wdclr(struct device *dev)
-{
-	del_timer_sync(&dpm_drv_wd);
 }
 
 /**
@@ -547,21 +482,16 @@ static void device_complete(struct device *dev, pm_message_t state)
 
 	if (dev->class && dev->class->pm && dev->class->pm->complete) {
 		pm_dev_dbg(dev, state, "completing class ");
-		pm_dev_trace(TRACE_DPM_COMPLETE,
-			dev, state, "completing class ");
 		dev->class->pm->complete(dev);
 	}
 
 	if (dev->type && dev->type->pm && dev->type->pm->complete) {
 		pm_dev_dbg(dev, state, "completing type ");
-		pm_dev_trace(TRACE_DPM_COMPLETE,
-			dev, state, "completing type ");
 		dev->type->pm->complete(dev);
 	}
 
 	if (dev->bus && dev->bus->pm && dev->bus->pm->complete) {
 		pm_dev_dbg(dev, state, "completing ");
-		pm_dev_trace(TRACE_DPM_COMPLETE, dev, state, "completing ");
 		dev->bus->pm->complete(dev);
 	}
 
@@ -710,8 +640,6 @@ static int device_suspend(struct device *dev, pm_message_t state)
 			error = pm_op(dev, dev->class->pm, state);
 		} else if (dev->class->suspend) {
 			pm_dev_dbg(dev, state, "legacy class ");
-			pm_dev_trace(TRACE_DPM_SUSPEND,
-				dev, state, "legacy class ");
 			error = dev->class->suspend(dev, state);
 			suspend_report_result(dev->class->suspend, error);
 		}
@@ -734,7 +662,6 @@ static int device_suspend(struct device *dev, pm_message_t state)
 			error = pm_op(dev, dev->bus->pm, state);
 		} else if (dev->bus->suspend) {
 			pm_dev_dbg(dev, state, "legacy ");
-			pm_dev_trace(TRACE_DPM_SUSPEND, dev, state, "legacy ");
 			error = dev->bus->suspend(dev, state);
 			suspend_report_result(dev->bus->suspend, error);
 		}
@@ -762,9 +689,7 @@ static int dpm_suspend(pm_message_t state)
 		get_device(dev);
 		mutex_unlock(&dpm_list_mtx);
 
-		dpm_drv_wdset(dev);
 		error = device_suspend(dev, state);
-		dpm_drv_wdclr(dev);
 
 		mutex_lock(&dpm_list_mtx);
 		if (error) {
@@ -798,7 +723,6 @@ static int device_prepare(struct device *dev, pm_message_t state)
 
 	if (dev->bus && dev->bus->pm && dev->bus->pm->prepare) {
 		pm_dev_dbg(dev, state, "preparing ");
-		pm_dev_trace(TRACE_DPM_PREPARE, dev, state, "preparing ");
 		error = dev->bus->pm->prepare(dev);
 		suspend_report_result(dev->bus->pm->prepare, error);
 		if (error)
@@ -807,7 +731,6 @@ static int device_prepare(struct device *dev, pm_message_t state)
 
 	if (dev->type && dev->type->pm && dev->type->pm->prepare) {
 		pm_dev_dbg(dev, state, "preparing type ");
-		pm_dev_trace(TRACE_DPM_PREPARE, dev, state, "preparing type ");
 		error = dev->type->pm->prepare(dev);
 		suspend_report_result(dev->type->pm->prepare, error);
 		if (error)
@@ -816,7 +739,6 @@ static int device_prepare(struct device *dev, pm_message_t state)
 
 	if (dev->class && dev->class->pm && dev->class->pm->prepare) {
 		pm_dev_dbg(dev, state, "preparing class ");
-		pm_dev_trace(TRACE_DPM_PREPARE, dev, state, "preparing class ");
 		error = dev->class->pm->prepare(dev);
 		suspend_report_result(dev->class->pm->prepare, error);
 	}

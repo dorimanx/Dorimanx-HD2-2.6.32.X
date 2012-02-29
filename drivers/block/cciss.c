@@ -1583,8 +1583,8 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
 			return status;
 		}
 
-       /* scsi_cmd_blk_ioctl handles these, below, though some are not */
-       /* very meaningful for cciss.  SG_IO is the main one people want. */
+	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
+	/* very meaningful for cciss.  SG_IO is the main one people want. */
 
 	case SG_GET_VERSION_NUM:
 	case SG_SET_TIMEOUT:
@@ -1593,13 +1593,13 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
 	case SG_SET_RESERVED_SIZE:
 	case SG_EMULATED_HOST:
 	case SG_IO:
-       case SCSI_IOCTL_SEND_COMMAND:
-               return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+	case SCSI_IOCTL_SEND_COMMAND:
+		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
 
-       /* scsi_cmd_blk_ioctl would normally handle these, below, but */
-       /* they aren't a good fit for cciss, as CD-ROMs are */
-       /* not supported, and we don't have any bus/target/lun */
-       /* which we present to the kernel. */
+	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
+	/* they aren't a good fit for cciss, as CD-ROMs are */
+	/* not supported, and we don't have any bus/target/lun */
+	/* which we present to the kernel. */
 
 	case CDROM_SEND_PACKET:
 	case CDROMCLOSETRAY:

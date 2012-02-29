@@ -390,31 +390,30 @@ static int hpet_next_event(unsigned long delta,
 	hpet_writel(cnt, HPET_Tn_CMP(timer));
 
 	/*
-         * HPETs are a complete disaster. The compare register is
-         * based on a equal comparison and neither provides a less
-         * than or equal functionality (which would require to take
-         * the wraparound into account) nor a simple count down event
-         * mode. Further the write to the comparator register is
-         * delayed internally up to two HPET clock cycles in certain
-         * chipsets (ATI, ICH9,10). Some newer AMD chipsets have even
-         * longer delays. We worked around that by reading back the
-         * compare register, but that required another workaround for
-         * ICH9,10 chips where the first readout after write can
-         * return the old stale value. We already had a minimum
-         * programming delta of 5us enforced, but a NMI or SMI hitting
-         * between the counter readout and the comparator write can
-         * move us behind that point easily. Now instead of reading
-         * the compare register back several times, we make the ETIME
-         * decision based on the following: Return ETIME if the
-         * counter value after the write is less than HPET_MIN_CYCLES
-         * away from the event or if the counter is already ahead of
-         * the event. The minimum programming delta for the generic
-         * clockevents code is set to 1.5 * HPET_MIN_CYCLES.
-         */
+	 * HPETs are a complete disaster. The compare register is
+	 * based on a equal comparison and neither provides a less
+	 * than or equal functionality (which would require to take
+	 * the wraparound into account) nor a simple count down event
+	 * mode. Further the write to the comparator register is
+	 * delayed internally up to two HPET clock cycles in certain
+	 * chipsets (ATI, ICH9,10). Some newer AMD chipsets have even
+	 * longer delays. We worked around that by reading back the
+	 * compare register, but that required another workaround for
+	 * ICH9,10 chips where the first readout after write can
+	 * return the old stale value. We already had a minimum
+	 * programming delta of 5us enforced, but a NMI or SMI hitting
+	 * between the counter readout and the comparator write can
+	 * move us behind that point easily. Now instead of reading
+	 * the compare register back several times, we make the ETIME
+	 * decision based on the following: Return ETIME if the
+	 * counter value after the write is less than HPET_MIN_CYCLES
+	 * away from the event or if the counter is already ahead of
+	 * the event. The minimum programming delta for the generic
+	 * clockevents code is set to 1.5 * HPET_MIN_CYCLES.
+	 */
+	res = (s32)(cnt - (u32)hpet_readl(HPET_COUNTER));
 
-        res = (s32)(cnt - (u32)hpet_readl(HPET_COUNTER));
-
-        return res < HPET_MIN_CYCLES ? -ETIME : 0;
+	return res < HPET_MIN_CYCLES ? -ETIME : 0;
 }
 
 static void hpet_legacy_set_mode(enum clock_event_mode mode,

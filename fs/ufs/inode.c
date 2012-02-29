@@ -36,7 +36,6 @@
 #include <linux/mm.h>
 #include <linux/smp_lock.h>
 #include <linux/buffer_head.h>
-#include <linux/writeback.h>
 
 #include "ufs_fs.h"
 #include "ufs.h"
@@ -602,7 +601,7 @@ static void ufs_set_inode_ops(struct inode *inode)
 		if (!inode->i_blocks)
 			inode->i_op = &ufs_fast_symlink_inode_operations;
 		else {
-			inode->i_op = &ufs_symlink_inode_operations;
+			inode->i_op = &page_symlink_inode_operations;
 			inode->i_mapping->a_ops = &ufs_aops;
 		}
 	} else
@@ -891,11 +890,11 @@ static int ufs_update_inode(struct inode * inode, int do_sync)
 	return 0;
 }
 
-int ufs_write_inode(struct inode *inode, struct writeback_control *wbc)
+int ufs_write_inode (struct inode * inode, int wait)
 {
 	int ret;
 	lock_kernel();
-	ret = ufs_update_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+	ret = ufs_update_inode (inode, wait);
 	unlock_kernel();
 	return ret;
 }

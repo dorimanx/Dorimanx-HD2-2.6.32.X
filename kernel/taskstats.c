@@ -589,10 +589,10 @@ err:
 }
 
 static struct genl_ops taskstats_ops = {
-       .cmd            = TASKSTATS_CMD_GET,
-       .doit           = taskstats_user_cmd,
-       .policy         = taskstats_cmd_get_policy,
-       .flags          = GENL_ADMIN_PERM,
+	.cmd		= TASKSTATS_CMD_GET,
+	.doit		= taskstats_user_cmd,
+	.policy		= taskstats_cmd_get_policy,
+	.flags		= GENL_ADMIN_PERM,
 };
 
 static struct genl_ops cgroupstats_ops = {

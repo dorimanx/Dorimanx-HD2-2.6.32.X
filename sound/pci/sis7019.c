@@ -145,9 +145,9 @@ struct sis7019 {
 /* These values are also used by the module param 'codecs' to indicate
  * which codecs should be present.
  */
-#define SIS_PRIMARY_CODEC_PRESENT      0x0001
-#define SIS_SECONDARY_CODEC_PRESENT    0x0002
-#define SIS_TERTIARY_CODEC_PRESENT     0x0004
+#define SIS_PRIMARY_CODEC_PRESENT	0x0001
+#define SIS_SECONDARY_CODEC_PRESENT	0x0002
+#define SIS_TERTIARY_CODEC_PRESENT	0x0004
 
 /* The HW offset parameters (Loop End, Stop Sample, End Sample) have a
  * documented range of 8-0xfff8 samples. Given that they are 0-based,
@@ -1081,6 +1081,7 @@ static int sis_chip_init(struct sis7019 *sis)
 {
 	unsigned long io = sis->ioport;
 	void __iomem *ioaddr = sis->ioaddr;
+	unsigned long timeout;
 	u16 status;
 	int count;
 	int i;
@@ -1104,62 +1105,48 @@ static int sis_chip_init(struct sis7019 *sis)
 	udelay(10);
 
 	count = 0xffff;
-       while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
-               udelay(1);
+	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
+		udelay(1);
 
-       /* Command complete, we can let go of the semaphore now.
-        */
-       outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
-       if (!count)
-               return -EIO;
-
-       /* Now that we've finished the reset, find out what's attached.
-        * There are some codec/board combinations that take an extremely
-        * long time to come up. 350+ ms has been observed in the field,
-        * so we'll give them up to 500ms.
-        */
-       sis->codecs_present = 0;
-       timeout = msecs_to_jiffies(500) + jiffies;
-       while (time_before_eq(jiffies, timeout)) {
-               status = inl(io + SIS_AC97_STATUS);
-               if (status & SIS_AC97_STATUS_CODEC_READY)
-                       sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
-               if (status & SIS_AC97_STATUS_CODEC2_READY)
-                       sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
-               if (status & SIS_AC97_STATUS_CODEC3_READY)
-                       sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
-
-               if (sis->codecs_present == codecs)
-                       break;
-
-               msleep(1);
-       }
-
-       /* All done, check for errors.
-        */
-       if (!sis->codecs_present) {
-               printk(KERN_ERR "sis7019: could not find any codecs\n");
-               return -EIO;
-       }
-
-       if (sis->codecs_present != codecs) {
-               printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
-                      sis->codecs_present, codecs);
-       }
-
-	status = inl(io + SIS_AC97_STATUS);
-	if (status & SIS_AC97_STATUS_CODEC_READY)
-		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
-	if (status & SIS_AC97_STATUS_CODEC2_READY)
-		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
-	if (status & SIS_AC97_STATUS_CODEC3_READY)
-		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
-
-	/* All done, let go of the semaphore, and check for errors
+	/* Command complete, we can let go of the semaphore now.
 	 */
 	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
-	if (!sis->codecs_present || !count)
+	if (!count)
 		return -EIO;
+
+	/* Now that we've finished the reset, find out what's attached.
+	 * There are some codec/board combinations that take an extremely
+	 * long time to come up. 350+ ms has been observed in the field,
+	 * so we'll give them up to 500ms.
+	 */
+	sis->codecs_present = 0;
+	timeout = msecs_to_jiffies(500) + jiffies;
+	while (time_before_eq(jiffies, timeout)) {
+		status = inl(io + SIS_AC97_STATUS);
+		if (status & SIS_AC97_STATUS_CODEC_READY)
+			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
+		if (status & SIS_AC97_STATUS_CODEC2_READY)
+			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
+		if (status & SIS_AC97_STATUS_CODEC3_READY)
+			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
+
+		if (sis->codecs_present == codecs)
+			break;
+
+		msleep(1);
+	}
+
+	/* All done, check for errors.
+	 */
+	if (!sis->codecs_present) {
+		printk(KERN_ERR "sis7019: could not find any codecs\n");
+		return -EIO;
+	}
+
+	if (sis->codecs_present != codecs) {
+		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
+		       sis->codecs_present, codecs);
+	}
 
 	/* Let the hardware know that the audio driver is alive,
 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
@@ -1431,20 +1418,20 @@ static int __devinit snd_sis7019_probe(struct pci_dev *pci,
 	if (!enable)
 		goto error_out;
 
-       /* The user can specify which codecs should be present so that we
-        * can wait for them to show up if they are slow to recover from
-        * the AC97 cold reset. We default to a single codec, the primary.
-        *
-        * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
-        */
-       codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
-                 SIS_TERTIARY_CODEC_PRESENT;
-       if (!codecs)
-               codecs = SIS_PRIMARY_CODEC_PRESENT;
+	/* The user can specify which codecs should be present so that we
+	 * can wait for them to show up if they are slow to recover from
+	 * the AC97 cold reset. We default to a single codec, the primary.
+	 *
+	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
+	 */
+	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
+		  SIS_TERTIARY_CODEC_PRESENT;
+	if (!codecs)
+		codecs = SIS_PRIMARY_CODEC_PRESENT;
 
-       rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
-       if (rc < 0)
-               goto error_out;
+	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
+	if (rc < 0)
+		goto error_out;
 
 	strcpy(card->driver, "SiS7019");
 	strcpy(card->shortname, "SiS7019");

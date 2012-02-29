@@ -1079,8 +1079,8 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 			inode = igrab(inode);
 		else
 			inode = NULL;
-		swap_duplicate(swap);
 		spin_unlock(&info->lock);
+		swap_duplicate(swap);
 		BUG_ON(page_mapped(page));
 		page_cache_release(page);	/* pagecache ref */
 		swap_writepage(page, wbc);
@@ -2674,14 +2674,6 @@ put_memory:
 }
 EXPORT_SYMBOL_GPL(shmem_file_setup);
 
-void shmem_set_file(struct vm_area_struct *vma, struct file *file)
-{
-	if (vma->vm_file)
-		fput(vma->vm_file);
-	vma->vm_file = file;
-	vma->vm_ops = &shmem_vm_ops;
-}
-
 /**
  * shmem_zero_setup - setup a shared anonymous mapping
  * @vma: the vma to be mmapped is prepared by do_mmap_pgoff
@@ -2696,7 +2688,7 @@ int shmem_zero_setup(struct vm_area_struct *vma)
 		return PTR_ERR(file);
 
 	if (vma->vm_file)
-	  fput(vma->vm_file);
+		fput(vma->vm_file);
 	vma->vm_file = file;
 	vma->vm_ops = &shmem_vm_ops;
 	vma->vm_flags |= VM_CAN_NONLINEAR;

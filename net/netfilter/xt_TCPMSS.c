@@ -174,7 +174,7 @@ static u_int32_t tcpmss_reverse_mtu(const struct sk_buff *skb,
 }
 
 static unsigned int
-tcpmss_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+tcpmss_tg4(struct sk_buff *skb, const struct xt_target_param *par)
 {
 	struct iphdr *iph = ip_hdr(skb);
 	__be16 newlen;
@@ -197,7 +197,7 @@ tcpmss_tg4(struct sk_buff *skb, const struct xt_action_param *par)
 
 #if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
 static unsigned int
-tcpmss_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+tcpmss_tg6(struct sk_buff *skb, const struct xt_target_param *par)
 {
 	struct ipv6hdr *ipv6h = ipv6_hdr(skb);
 	u8 nexthdr;
@@ -241,7 +241,6 @@ static bool tcpmss_tg4_check(const struct xt_tgchk_param *par)
 {
 	const struct xt_tcpmss_info *info = par->targinfo;
 	const struct ipt_entry *e = par->entryinfo;
-	const struct xt_entry_match *ematch;
 
 	if (info->mss == XT_TCPMSS_CLAMP_PMTU &&
 	    (par->hook_mask & ~((1 << NF_INET_FORWARD) |
@@ -251,9 +250,8 @@ static bool tcpmss_tg4_check(const struct xt_tgchk_param *par)
 		       "FORWARD, OUTPUT and POSTROUTING hooks\n");
 		return false;
 	}
-	xt_ematch_foreach(ematch, e)
-		if (find_syn_match(ematch))
-			return true;
+	if (IPT_MATCH_ITERATE(e, find_syn_match))
+		return true;
 	printk("xt_TCPMSS: Only works on TCP SYN packets\n");
 	return false;
 }
@@ -263,7 +261,6 @@ static bool tcpmss_tg6_check(const struct xt_tgchk_param *par)
 {
 	const struct xt_tcpmss_info *info = par->targinfo;
 	const struct ip6t_entry *e = par->entryinfo;
-	const struct xt_entry_match *ematch;
 
 	if (info->mss == XT_TCPMSS_CLAMP_PMTU &&
 	    (par->hook_mask & ~((1 << NF_INET_FORWARD) |
@@ -273,9 +270,8 @@ static bool tcpmss_tg6_check(const struct xt_tgchk_param *par)
 		       "FORWARD, OUTPUT and POSTROUTING hooks\n");
 		return false;
 	}
-	xt_ematch_foreach(ematch, e)
-		if (find_syn_match(ematch))
-			return true;
+	if (IP6T_MATCH_ITERATE(e, find_syn_match))
+		return true;
 	printk("xt_TCPMSS: Only works on TCP SYN packets\n");
 	return false;
 }
