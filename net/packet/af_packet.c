@@ -515,7 +515,7 @@ static inline unsigned int run_filter(struct sk_buff *skb, struct sock *sk,
 	struct sk_filter *filter;
 
 	rcu_read_lock_bh();
-	filter = rcu_dereference(sk->sk_filter);
+	filter = rcu_dereference_bh(sk->sk_filter);
 	if (filter != NULL)
 		res = sk_run_filter(skb, filter->insns, filter->len);
 	rcu_read_unlock_bh();
@@ -1045,9 +1045,10 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
 		}
 		packet_increment_head(&po->tx_ring);
 		len_sum += tp_len;
-	} while (likely((ph != NULL) || ((!(msg->msg_flags & MSG_DONTWAIT))
-					&& (atomic_read(&po->tx_ring.pending))))
-	      );
+	} while (likely((ph != NULL) ||
+			((!(msg->msg_flags & MSG_DONTWAIT)) &&
+			 (atomic_read(&po->tx_ring.pending))))
+		);
 
 	err = len_sum;
 	goto out_put;
