@@ -767,9 +767,9 @@ wait_for_iobuf:
 			wait_on_buffer(bh);
 			goto wait_for_iobuf;
 		}
-		if (cond_resched())
+/*		if (cond_resched())
 			goto wait_for_iobuf;
-
+*/
 		if (unlikely(!buffer_uptodate(bh)))
 			err = -EIO;
 
@@ -823,9 +823,9 @@ wait_for_iobuf:
 			wait_on_buffer(bh);
 			goto wait_for_ctlbuf;
 		}
-		if (cond_resched())
+/*		if (cond_resched())
 			goto wait_for_ctlbuf;
-
+*/
 		if (unlikely(!buffer_uptodate(bh)))
 			err = -EIO;
 
