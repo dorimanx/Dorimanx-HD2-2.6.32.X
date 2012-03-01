@@ -31,11 +31,12 @@ struct as_io_context {
 	sector_t seek_mean;
 };
 
+struct cfq_queue;
 struct cfq_io_context {
 	void *key;
 	unsigned long dead_key;
 
-	void *cfqq[2];
+	struct cfq_queue *cfqq[2];
  
 	struct io_context *ioc;
 
@@ -60,7 +61,6 @@ struct cfq_io_context {
  */
 enum {
 	IOC_CFQ_IOPRIO_CHANGED,
-	IOC_BFQ_IOPRIO_CHANGED,
 	IOC_IOPRIO_CHANGED_BITS
 };
 
@@ -87,8 +87,6 @@ struct io_context {
 	struct as_io_context *aic;
 	struct radix_tree_root radix_root;
 	struct hlist_head cic_list;
-	struct radix_tree_root bfq_radix_root;
-	struct hlist_head bfq_cic_list;
 	void *ioc_data;
 };
 
