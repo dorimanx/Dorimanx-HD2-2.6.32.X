@@ -65,7 +65,6 @@
 
 static const char	hcd_name [] = "ehci_hcd";
 
-static struct dentry *ehci_debug_root;
 
 #undef VERBOSE_DEBUG
 #undef EHCI_URB_TRACE
@@ -554,16 +553,17 @@ static int ehci_init(struct usb_hcd *hcd)
 	 */
 	ehci->periodic_size = DEFAULT_I_TDPS;
 	INIT_LIST_HEAD(&ehci->cached_itd_list);
+	INIT_LIST_HEAD(&ehci->cached_sitd_list);
 
-        if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
-                /* periodic schedule size can be smaller than default */
-                switch (EHCI_TUNE_FLS) {
-                case 0: ehci->periodic_size = 1024; break;
-                case 1: ehci->periodic_size = 512; break;
-                case 2: ehci->periodic_size = 256; break;
-                default:        BUG();
-                }
-        }
+	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
+		/* periodic schedule size can be smaller than default */
+		switch (EHCI_TUNE_FLS) {
+		case 0: ehci->periodic_size = 1024; break;
+		case 1: ehci->periodic_size = 512; break;
+		case 2: ehci->periodic_size = 256; break;
+		default:	BUG();
+		}
+	}
 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
 		return retval;
 
@@ -1007,7 +1007,7 @@ rescan:
 	/* endpoints can be iso streams.  for now, we don't
 	 * accelerate iso completions ... so spin a while.
 	 */
-	if (qh->hw->hw_info1 == 0) {
+	if (qh->hw == NULL) {
 		ehci_vdbg (ehci, "iso delay\n");
 		goto idle_timeout;
 	}
@@ -1143,11 +1143,6 @@ MODULE_LICENSE ("GPL");
 #ifdef CONFIG_ARCH_IXP4XX
 #include "ehci-ixp4xx.c"
 #define	PLATFORM_DRIVER		ixp4xx_ehci_driver
-#endif
-
-#ifdef CONFIG_USB_EHCI_MSM7201
-#include "ehci-msm7201.c"
-#define PLATFORM_DRIVER         ehci_msm7201_driver
 #endif
 
 #ifdef CONFIG_USB_W90X900_EHCI

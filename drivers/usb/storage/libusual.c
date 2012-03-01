@@ -136,7 +136,7 @@ static struct usb_driver usu_driver = {
 	.name =		"libusual",
 	.probe =	usu_probe,
 	.disconnect =	usu_disconnect,
-/*	.id_table =	usb_storage_usb_ids, */
+	.id_table =	usb_storage_usb_ids,
 };
 
 /*
