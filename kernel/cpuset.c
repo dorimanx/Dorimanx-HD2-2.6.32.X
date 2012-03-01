@@ -2117,7 +2117,7 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
 		 * needn't update top_cpuset.mems_allowed explicitly because
 		 * scan_for_empty_cpusets() will update it.
 		 */
-			scan_for_empty_cpusets(&top_cpuset);
+		scan_for_empty_cpusets(&top_cpuset);
 		break;
 	default:
 		break;
