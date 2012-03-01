@@ -1162,7 +1162,6 @@ config FB_MATROX
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
-	select FB_TILEBLITTING
 	select FB_MACMODES if PPC_PMAC
 	---help---
 	  Say Y here if you have a Matrox Millennium, Matrox Millennium II,
@@ -2126,14 +2125,6 @@ config FB_PRE_INIT_FB
 	  Select this option if display contents should be inherited as set by
 	  the bootloader.
 
-config FB_MSM
-	tristate
-	depends on FB && ARCH_MSM
-	select FB_CFB_FILLRECT
-	select FB_CFB_COPYAREA
-	select FB_CFB_IMAGEBLIT
-	default y
-
 config FB_MX3
 	tristate "MX3 Framebuffer support"
 	depends on FB && MX3_IPU
@@ -2161,6 +2152,7 @@ config FB_BROADSHEET
 	  a bridge adapter.
 
 source "drivers/video/msm/Kconfig"
+
 source "drivers/video/omap/Kconfig"
 
 source "drivers/video/backlight/Kconfig"
