@@ -278,8 +278,17 @@ static int offb_set_par(struct fb_info *info)
 	return 0;
 }
 
+static void offb_destroy(struct fb_info *info)
+{
+   if (info->screen_base)
+     iounmap(info->screen_base);
+   release_mem_region(info->aperture_base, info->aperture_size);
+   framebuffer_release(info);
+}
+
 static struct fb_ops offb_ops = {
 	.owner		= THIS_MODULE,
+	.fb_destroy  	= offb_destroy,
 	.fb_setcolreg	= offb_setcolreg,
 	.fb_set_par	= offb_set_par,
 	.fb_blank	= offb_blank,
