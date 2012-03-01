@@ -4605,19 +4605,20 @@ SYSCALL_DEFINE5(perf_event_open,
 	list_add_tail(&event->owner_entry, &current->perf_event_list);
 	mutex_unlock(&current->perf_event_mutex);
 
-	fput_light(group_file, fput_needed);
-	fd_install(event_fd, event_file);
-	return event_fd;
+        fput_light(group_file, fput_needed);
+        fd_install(event_fd, event_file);
+        return event_fd;
 
 err_fput_free_put_context:
-	fput(event_file);
+        fput(event_file);
+
 err_free_put_context:
-	free_event(event);
+        free_event(event);
 err_put_context:
 	fput_light(group_file, fput_needed);
-	put_ctx(ctx);
+        put_ctx(ctx);
 err_fd:
-	put_unused_fd(event_fd);
+        put_unused_fd(event_fd);
 	return err;
 }
 
@@ -4751,18 +4752,21 @@ __perf_event_exit_task(struct perf_event *child_event,
 			 struct perf_event_context *child_ctx,
 			 struct task_struct *child)
 {
-	struct perf_event *parent_event;
+	if (child_event->parent) {
+	  raw_spin_lock_irq(&child_ctx->lock);
+	  perf_group_detach(child_event);
+	  raw_spin_unlock_irq(&child_ctx->lock);
+	}
 
 	update_event_times(child_event);
 	perf_event_remove_from_context(child_event);
 
-	parent_event = child_event->parent;
 	/*
-	 * It can happen that parent exits first, and has events
+	 * It can happen that the parent exits first, and has events
 	 * that are still around due to the child reference. These
-	 * events need to be zapped - but otherwise linger.
+	 * events need to be zapped.
 	 */
-	if (parent_event) {
+	if (child_event->parent) {
 		sync_child_event(child_event, child);
 		free_event(child_event);
 	}
@@ -4982,22 +4986,12 @@ int perf_event_init_task(struct task_struct *child)
 	return ret;
 }
 
-static void __init perf_event_init_all_cpus(void)
-{
-	int cpu;
-	struct perf_cpu_context *cpuctx;
-
-	for_each_possible_cpu(cpu) {
-		cpuctx = &per_cpu(perf_cpu_context, cpu);
-		__perf_event_init_context(&cpuctx->ctx, NULL);
-	}
-}
-
 static void __cpuinit perf_event_init_cpu(int cpu)
 {
 	struct perf_cpu_context *cpuctx;
 
 	cpuctx = &per_cpu(perf_cpu_context, cpu);
+	__perf_event_init_context(&cpuctx->ctx, NULL);
 
 	spin_lock(&perf_resource_lock);
 	cpuctx->max_pertask = perf_max_events - perf_reserved_percpu;
@@ -5068,7 +5062,6 @@ static struct notifier_block __cpuinitdata perf_cpu_nb = {
 
 void __init perf_event_init(void)
 {
-	perf_event_init_all_cpus();
 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_UP_PREPARE,
 			(void *)(long)smp_processor_id());
 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_ONLINE,

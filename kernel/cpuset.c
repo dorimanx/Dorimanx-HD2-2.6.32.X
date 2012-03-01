@@ -921,6 +921,9 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
  *    call to guarantee_online_mems(), as we know no one is changing
  *    our task's cpuset.
  *
+ *    Hold callback_mutex around the two modifications of our tasks
+ *    mems_allowed to synchronize with cpuset_mems_allowed().
+ *
  *    While the mm_struct we are migrating is typically from some
  *    other task, the task_struct mems_allowed that we are hacking
  *    is for our current task, which must allocate new pages for that
@@ -1327,6 +1330,13 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
 	int ret;
 	struct cpuset *cs = cgroup_cs(cont);
 
+	if ((current != task) && (!capable(CAP_SYS_ADMIN))) {
+		const struct cred *cred = current_cred(), *tcred;
+
+		if (cred->euid != tcred->uid && cred->euid != tcred->suid)
+			return -EPERM;
+	}
+ 
 	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
 		return -ENOSPC;
 
@@ -1389,6 +1399,7 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
 
 	if (cs == &top_cpuset) {
 		cpumask_copy(cpus_attach, cpu_possible_mask);
+		to = node_possible_map;
 	} else {
 		guarantee_online_cpus(cs, cpus_attach);
 	}
@@ -2106,7 +2117,7 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
 		 * needn't update top_cpuset.mems_allowed explicitly because
 		 * scan_for_empty_cpusets() will update it.
 		 */
-		scan_for_empty_cpusets(&top_cpuset);
+			scan_for_empty_cpusets(&top_cpuset);
 		break;
 	default:
 		break;

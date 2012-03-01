@@ -496,6 +496,7 @@ struct rq {
 	unsigned long last_tick_seen;
 	unsigned char in_nohz_recently;
 #endif
+
 	/* capture load from *all* tasks on this cpu: */
 	struct load_weight load;
 	unsigned long nr_load_updates;
@@ -3100,10 +3101,10 @@ unsigned long nr_iowait(void)
 	return sum;
 }
 
-unsigned long nr_iowait_cpu(void)
+unsigned long nr_iowait_cpu(int cpu)
 {
-	struct rq *this = this_rq();
-	return atomic_read(&this->nr_iowait);
+        struct rq *this = cpu_rq(cpu);
+        return atomic_read(&this->nr_iowait);
 }
 
 unsigned long this_cpu_load(void)
@@ -6053,7 +6054,7 @@ do_wait_for_common(struct completion *x, long timeout, int state)
 			}
 			__set_current_state(state);
 			spin_unlock_irq(&x->wait.lock);
-			timeout = schedule_timeout(timeout);
+				timeout = schedule_timeout(timeout);
 			spin_lock_irq(&x->wait.lock);
 		} while (!x->done && timeout);
 		__remove_wait_queue(&x->wait, &wait);
@@ -6090,6 +6091,19 @@ void __sched wait_for_completion(struct completion *x)
 	wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
 }
 EXPORT_SYMBOL(wait_for_completion);
+
+/**
+ * wait_for_completion_io: - waits for completion of a task
+ * @x:  holds the state of this particular completion
+ *
+ * This waits for completion of a specific task to be signaled. Treats any
+ * sleeping as waiting for IO for the purposes of process accounting.
+ */
+void __sched wait_for_completion_io(struct completion *x)
+{
+	wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
+}
+EXPORT_SYMBOL(wait_for_completion_io);
 
 /**
  * wait_for_completion_timeout: - waits for completion of a task (w/timeout)
@@ -7311,17 +7325,19 @@ cpumask_var_t nohz_cpu_mask;
  *
  * This idea comes from the SD scheduler of Con Kolivas:
  */
+
 static void update_sysctl(void)
 {
-	unsigned int cpus = min(num_online_cpus(), 8U);
-	unsigned int factor = 1 + ilog2(cpus);
+
+        unsigned int cpus = min((unsigned int)num_online_cpus(), 8U);
+        unsigned int factor = 1 + ilog2(cpus);
 
 #define SET_SYSCTL(name) \
-	(sysctl_##name = (factor) * normalized_sysctl_##name)
-	SET_SYSCTL(sched_min_granularity);
-	SET_SYSCTL(sched_latency);
-	SET_SYSCTL(sched_wakeup_granularity);
-	SET_SYSCTL(sched_shares_ratelimit);
+        (sysctl_##name = (factor) * normalized_sysctl_##name)
+        SET_SYSCTL(sched_min_granularity);
+        SET_SYSCTL(sched_latency);
+        SET_SYSCTL(sched_wakeup_granularity);
+        SET_SYSCTL(sched_shares_ratelimit);
 #undef SET_SYSCTL
 }
 
@@ -10256,11 +10272,11 @@ void sched_move_task(struct task_struct *tsk)
 		tsk->sched_class->put_prev_task(rq, tsk);
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
-	if (tsk->sched_class->task_move_group)
-		tsk->sched_class->task_move_group(tsk, on_rq);
-	else
+        if (tsk->sched_class->task_move_group)
+                tsk->sched_class->task_move_group(tsk, on_rq);
+        else
 #endif
-		set_task_rq(tsk, task_cpu(tsk));
+                set_task_rq(tsk, task_cpu(tsk));
 
 	if (unlikely(running))
 		tsk->sched_class->set_curr_task(rq);
@@ -11186,3 +11202,6 @@ void synchronize_sched_expedited(void)
 EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
 
 #endif /* #else #ifndef CONFIG_SMP */
+
+EXPORT_SYMBOL_GPL(nr_running);
+

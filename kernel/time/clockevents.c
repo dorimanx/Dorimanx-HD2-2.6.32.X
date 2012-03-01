@@ -219,11 +219,11 @@ void clockevents_exchange_device(struct clock_event_device *old,
 	/*
 	 * Caller releases a clock event device. We queue it into the
 	 * released list and do a notify add later.
-	 */
-	if (old) {
-		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
-		list_del(&old->list);
-		list_add(&old->list, &clockevents_released);
+         */
+       if (old) {
+               clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
+               list_del(&old->list);
+               list_add(&old->list, &clockevents_released);
 	}
 
 	if (new) {

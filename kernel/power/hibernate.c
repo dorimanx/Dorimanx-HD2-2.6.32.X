@@ -22,6 +22,7 @@
 #include <linux/console.h>
 #include <linux/cpu.h>
 #include <linux/freezer.h>
+#include <linux/syscore_ops.h>
 #include <scsi/scsi_scan.h>
 #include <asm/suspend.h>
 
@@ -240,13 +241,15 @@ static int create_image(int platform_mode)
 	local_irq_disable();
 
 	error = sysdev_suspend(PMSG_FREEZE);
+	if (!error)
+	  error = syscore_suspend();
 	if (error) {
 		printk(KERN_ERR "PM: Some system devices failed to power down, "
 			"aborting hibernation\n");
 		goto Enable_irqs;
 	}
 
-	if (hibernation_test(TEST_CORE))
+	if (hibernation_test(TEST_CORE) || !pm_check_wakeup_events())
 		goto Power_up;
 
 	in_suspend = 1;
@@ -257,10 +260,13 @@ static int create_image(int platform_mode)
 			error);
 	/* Restore control flow magically appears here */
 	restore_processor_state();
-	if (!in_suspend)
+	if (!in_suspend) {
+		events_check_enabled = false;
 		platform_leave(platform_mode);
+	}
 
  Power_up:
+	syscore_resume();
 	sysdev_resume();
 	/* NOTE:  dpm_resume_noirq() is just a resume() for devices
 	 * that suspended with irqs off ... no overall powerup.
@@ -361,6 +367,8 @@ static int resume_target_kernel(bool platform_mode)
 	local_irq_disable();
 
 	error = sysdev_suspend(PMSG_QUIESCE);
+	if (!error)
+	  error = syscore_suspend();
 	if (error)
 		goto Enable_irqs;
 
@@ -387,6 +395,7 @@ static int resume_target_kernel(bool platform_mode)
 	restore_processor_state();
 	touch_softlockup_watchdog();
 
+	syscore_resume();
 	sysdev_resume();
 
  Enable_irqs:
@@ -472,15 +481,22 @@ int hibernation_platform_enter(void)
 
 	local_irq_disable();
 	sysdev_suspend(PMSG_HIBERNATE);
+	syscore_suspend();
+	if (!pm_check_wakeup_events()) {
+	  error = -EAGAIN;
+	  goto Power_up;
+	}
+
 	hibernation_ops->enter();
 	/* We should never get here */
 	while (1);
 
-	/*
-	 * We don't need to reenable the nonboot CPUs or resume consoles, since
-	 * the system is going to be halted anyway.
-	 */
- Platform_finish:
+Power_up:
+	sysdev_resume();
+	local_irq_enable();
+	enable_nonboot_cpus();
+ 
+Platform_finish:
 	hibernation_ops->finish();
 
 	dpm_suspend_noirq(PMSG_RESTORE);
