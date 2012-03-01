@@ -745,9 +745,9 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
 static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
 				 int page_start, int page_end)
 {
-	flush_cache_vunmap(
-		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+       flush_cache_vunmap(
+               pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
+               pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
 }
 
 static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
@@ -808,9 +808,9 @@ static void pcpu_unmap_pages(struct pcpu_chunk *chunk,
 static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
 				      int page_start, int page_end)
 {
-	flush_tlb_kernel_range(
-		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+       flush_tlb_kernel_range(
+               pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
+               pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
 }
 
 static int __pcpu_map_pages(unsigned long addr, struct page **pages,
@@ -886,9 +886,9 @@ err:
 static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
 				int page_start, int page_end)
 {
-	flush_cache_vmap(
-		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
-		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+       flush_cache_vmap(
+               pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
+               pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
 }
 
 /**
@@ -1678,14 +1678,14 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
 	unit_map = alloc_bootmem(nr_cpu_ids * sizeof(unit_map[0]));
 	unit_off = alloc_bootmem(nr_cpu_ids * sizeof(unit_off[0]));
 
-	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
-		unit_map[cpu] = UINT_MAX;
+       for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+               unit_map[cpu] = UINT_MAX;
 
-	pcpu_low_unit_cpu = NR_CPUS;
-	pcpu_high_unit_cpu = NR_CPUS;
+       pcpu_low_unit_cpu = NR_CPUS;
+       pcpu_high_unit_cpu = NR_CPUS;
 
-	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
-		const struct pcpu_group_info *gi = &ai->groups[group];
+       for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
+               const struct pcpu_group_info *gi = &ai->groups[group];
 
 		group_offsets[group] = gi->base_offset;
 		group_sizes[group] = gi->nr_units * ai->unit_size;
@@ -1702,16 +1702,16 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
 			unit_map[cpu] = unit + i;
 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
 
-			/* determine low/high unit_cpu */
-			if (pcpu_low_unit_cpu == NR_CPUS ||
-			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
-				pcpu_low_unit_cpu = cpu;
-			if (pcpu_high_unit_cpu == NR_CPUS ||
-			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
-				pcpu_high_unit_cpu = cpu;
-		}
-	}
-	pcpu_nr_units = unit;
+                       /* determine low/high unit_cpu */
+                       if (pcpu_low_unit_cpu == NR_CPUS ||
+                           unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
+                               pcpu_low_unit_cpu = cpu;
+                       if (pcpu_high_unit_cpu == NR_CPUS ||
+                           unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
+                               pcpu_high_unit_cpu = cpu;
+               }
+       }
+       pcpu_nr_units = unit;
 
 	for_each_possible_cpu(cpu)
 		PCPU_SETUP_BUG_ON(unit_map[cpu] == UINT_MAX);

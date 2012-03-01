@@ -182,9 +182,9 @@ void ima_store_measurement(struct ima_iint_cache *iint, struct file *file,
 	memcpy(entry->template.digest, iint->digest, IMA_DIGEST_SIZE);
 	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
 
-	result = ima_store_template(entry, violation, inode);
-	if (!result || result == -EEXIST)
-		iint->flags |= IMA_MEASURED;
-	if (result < 0)
-		kfree(entry);
+       result = ima_store_template(entry, violation, inode);
+       if (!result || result == -EEXIST)
+               iint->flags |= IMA_MEASURED;
+       if (result < 0)
+               kfree(entry);
 }

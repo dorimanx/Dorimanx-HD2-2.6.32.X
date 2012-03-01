@@ -10,6 +10,7 @@
 #include <linux/mm.h>
 #include <linux/kernel_stat.h>
 #include <linux/swap.h>
+#include <linux/swap-prefetch.h>
 #include <linux/swapops.h>
 #include <linux/init.h>
 #include <linux/pagemap.h>
@@ -142,12 +143,15 @@ void __delete_from_swap_cache(struct page *page)
  * @page: page we want to move to swap
  *
  * Allocate swap space for the page and add the page to the
- * swap cache.  Caller needs to hold the page lock. 
+ * swap cache.  Caller needs to hold the page lock.
  */
 int add_to_swap(struct page *page)
 {
 	swp_entry_t entry;
 	int err;
+
+	/* Swap prefetching is delayed if we're swapping pages */
+	delay_swap_prefetch();
 
 	VM_BUG_ON(!PageLocked(page));
 	VM_BUG_ON(!PageUptodate(page));
@@ -280,6 +284,9 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
 {
 	struct page *found_page, *new_page = NULL;
 	int err;
+
+	/* Swap prefetching is delayed if we're already reading from swap */
+	delay_swap_prefetch();
 
 	do {
 		/*

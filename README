@@ -1,3 +1,59 @@
+All the Cool Stuff!
+Kernel 2.6.32.56
+
+Default CPU governor: HYPER
+CFS CPU SCHEDULER!
+Default CPU frequency: 245-998 MHz (for OC to 1.61, 998Ghz = Normal non OC 1Ghz speed!)
+Min CPU frequency can be 96Mhz! default 245Mhz
+Support overclocking to 1612 MHz. (via SetCPU or shell script) (Credits: Dorimanx)
+Support undervolt/overvolting via sysfs interface. (850-1375mV) (Credits: snq-,Dorimanx)
+Default I/O Scheduling: DEADLINE
+More I/O Scheduling present in kernel: AS,SIO, VR,
+Patched with G-Sensor freeze fix (Credits: mdebeljuh and jdivic)
+Patched with Bluetooth 60mA battery drain fix (i.e. support Low-power mode Bluetooth) (Credits: trilu and charansingh)
+Patched with wakeup lag fix for AUO panels (Credits: mdebeljuh and jdivic)
+Full cLK bootloader support (Credits: cedesmith)
+Two-way call recording (Credits: avs333 and snq-) (Removed from main kernel for fixing "no sound" bug. Credit to drizztje.)
+Two-way call recording added in separated kernel, for people that need it and not use BT voice call.
+Mic Gain Fix is included! + script to adjust the gain to best (credits:memin1857, dorimanx)
+T-Mobile Wi-Fi Calling (Credits: tytung)
+Wi-Fi IEEE 802.1x/EAP authentication (Credits: tytung)
+Native USB Tethering + my fix in configs (Credits: tytung , dorimanx)
+Native Wi-Fi Tethering + my fix in configs (Credits: tytung, dorimanx)
+Real Wi-Fi MAC address (only for SD build on WinMo 6.5) (Credits: savan and tytung)
+Unique Wi-Fi MAC address (for MAGLDR and cLK) (Credits: markinus)
+Unique Bluetooth MAC address (Credits: markinus and tytung)
+Official HTC extended battery support (HTC EB 2300mAh) (Credits: arne)
+File systems support: Yaffs2, Ext2/3/4, ReiserFS, (NLS_UTF8 is compiled into the kernel) (Credits: tytung, dorimanx)
+ALSA sound driver as kernel modules (alsa-pcm-htc-leo.ko and alsa-mix-htc-leo.ko) (Credits: Cotulla,Tytung!)
+Fix to Video Drivers, PFS to max (Credits: 3DAK)
+Fix to PPP drivers for full VPN Support (Credits: 3DAK, Dorimanx, Arne182)
+Fixed Proximity sensor wakeup (Credits: 3DAK)
+Added Latest SQLB memory scheduler (Credits: 3DAK,Dorimanx)
+Added Tiny RCU Preempt CPU scheduler
+Added tweaks to increase I/O Speed. (Credits: Dorimanx)
+Added tweaks to increase CPU speed (Credits: Dorimanx)
+Full support for Decoder M4V and H264 Camera recording (3gp + mp4)
+Removed all the debuggers to free the kernel from unneeded jobs (Credits: Dorimanx)
+Removed lots of unneeded configurations and partitions. (Credits: Dorimanx)
+Fixed the color banding issue. (Credit to marc1706)
+Added 2 new governors to play with, smoothass and interactiveX (Credits: HierOS)
+Updated USB Drivers from Hieros and ACA kernels.
+Updated EXT2,3,4 RiserFS
+Enable cleancache pseudo-RAM driver to cache clean pages
+Run-time PM core functionality
+ZRAM XVMALLOCATOR
+Compressed in-memory swap device (zram) + activation scripts for CM7
+Added extension to 14MB RAM page table! was 2MB!
+New Nand Driver that will allow EXT4 on NAND after full testing. (credits to Munjeni)
+Added Vdd AVS ( Adaptive Voltage Scaling ) code files! (by Marc1706) (this obsolete undervolt/overvolting via sysfs interface now it's all AUTO! but we still can configure dynamic voltage settings via script, added to init.d with kernel)
+Use PM_FAST (fast sleep) in standby for WIFI + lower voltage to wifi (by Marc1706)
+Tweak camera (better picks in dark, less greenly) (by Marc1706)
+Added Keyboard back light !ON! in DARK, and !OFF! in LIGHT (Mod is DISABLED by default can be ON by activation in script, see change log for 3.2) (By Munjeni)
+Added ICS HeadSet FIX (Credits: tytung , dorimanx)
+Stochastic Fair Blue Net Scheduler (SFB) (all credits to fhasovic)
+Added new hyper governor (very strong and fast!) (credits to fhasovic and Dorimanx)
+
 	Linux kernel release 2.6.xx <http://kernel.org/>
 
 These are the release notes for Linux version 2.6.  Read them carefully,
