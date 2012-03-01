@@ -343,7 +343,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	mmc_go_idle(host);
 
 	/* The extra bit indicates that we support high capacity */
-	err =  mmc_send_op_cond(host, ocr | (1 <<  30), &rocr);
+	err = mmc_send_op_cond(host, ocr | (1 <<  30), &rocr);
 	if (err)
 		goto err;
 

@@ -147,7 +147,7 @@ static int sis5595_setup(struct pci_dev *SIS5595_dev)
 	u16 a;
 	u8 val;
 	int *i;
-       int retval;
+	int retval;
 
 	/* Look for imposters */
 	for (i = blacklist; *i != 0; i++) {
@@ -222,8 +222,8 @@ static int sis5595_setup(struct pci_dev *SIS5595_dev)
 	return 0;
 
 error:
-       release_region(sis5595_base + SMB_INDEX, 2);
-       return -ENODEV;
+	release_region(sis5595_base + SMB_INDEX, 2);
+	return -ENODEV;
 }
 
 static int sis5595_transaction(struct i2c_adapter *adap)

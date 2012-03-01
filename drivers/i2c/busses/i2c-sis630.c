@@ -448,6 +448,7 @@ static int sis630_setup(struct pci_dev *sis630_dev)
 			    sis630_driver.name)) {
 		dev_err(&sis630_dev->dev, "SMBus registers 0x%04x-0x%04x already "
 			"in use!\n", acpi_base + SMB_STS, acpi_base + SMB_SAA);
+		retval = -EBUSY;
 		goto exit;
 	}
 
@@ -458,6 +459,7 @@ exit:
 		acpi_base = 0;
 	return retval;
 }
+
 
 static const struct i2c_algorithm smbus_algorithm = {
 	.smbus_xfer	= sis630_access,
