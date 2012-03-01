@@ -165,6 +165,8 @@ header-y += utime.h
 header-y += veth.h
 header-y += videotext.h
 header-y += x25.h
+header-y += if_pppolac.h
+header-y += if_pppopns.h
 
 unifdef-y += acct.h
 unifdef-y += adb.h
@@ -380,6 +382,8 @@ unifdef-y += watchdog.h
 unifdef-y += wireless.h
 unifdef-y += xattr.h
 unifdef-y += xfrm.h
+
+header-y += genlock.h
 
 objhdr-y += version.h
 header-y += wimax.h
