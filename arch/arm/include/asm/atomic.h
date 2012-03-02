@@ -40,9 +40,9 @@ static inline void atomic_add(int i, atomic_t *v)
 	int result;
 
 	__asm__ __volatile__("@ atomic_add\n"
-"1:  	ldrex  	%0, [%2]\n"
-"  	add  	%0, %0, %3\n"
-"  	strex  	%1, %0, [%2]\n"
+"1:	ldrex	%0, [%2]\n"
+"	add	%0, %0, %3\n"
+"	strex	%1, %0, [%2]\n"
 "	teq	%1, #0\n"
 "	bne	1b"
         : "=&r" (result), "=&r" (tmp)
@@ -58,9 +58,9 @@ static inline int atomic_add_return(int i, atomic_t *v)
 	smp_mb();
 
 	__asm__ __volatile__("@ atomic_add_return\n"
-"1:  	ldrex  	%0, [%2]\n"
-"  	add  	%0, %0, %3\n"
-"  	strex  	%1, %0, [%2]\n"
+"1:	ldrex	%0, [%2]\n"
+"	add	%0, %0, %3\n"
+"	strex	%1, %0, [%2]\n"
 "	teq	%1, #0\n"
 "	bne	1b"
 	: "=&r" (result), "=&r" (tmp)
@@ -78,9 +78,9 @@ static inline void atomic_sub(int i, atomic_t *v)
 	int result;
 
 	__asm__ __volatile__("@ atomic_sub\n"
-"1:  	ldrex  	%0, [%2]\n"
-"  	sub  	%0, %0, %3\n"
-"  	strex  	%1, %0, [%2]\n"
+"1:	ldrex	%0, [%2]\n"
+"	sub	%0, %0, %3\n"
+"	strex	%1, %0, [%2]\n"
 "	teq	%1, #0\n"
 "	bne	1b"
 	: "=&r" (result), "=&r" (tmp)
@@ -96,9 +96,9 @@ static inline int atomic_sub_return(int i, atomic_t *v)
 	smp_mb();
 
 	__asm__ __volatile__("@ atomic_sub_return\n"
-"1:  	ldrex  	%0, [%2]\n"
-"  	sub  	%0, %0, %3\n"
-"  	strex  	%1, %0, [%2]\n"
+"1:	ldrex	%0, [%2]\n"
+"	sub	%0, %0, %3\n"
+"	strex	%1, %0, [%2]\n"
 "	teq	%1, #0\n"
 "	bne	1b"
 	: "=&r" (result), "=&r" (tmp)
@@ -118,9 +118,9 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
 
 	do {
 		__asm__ __volatile__("@ atomic_cmpxchg\n"
-		"ldrex  %1, [%2]\n"
+		"ldrex	%1, [%2]\n"
 		"mov	%0, #0\n"
-		"teq  	%1, %3\n"
+		"teq	%1, %3\n"
 		"strexeq %0, %4, [%2]\n"
 		    : "=&r" (res), "=&r" (oldval)
 		    : "r" (&ptr->counter), "Ir" (old), "r" (new)
@@ -137,9 +137,9 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
 	unsigned long tmp, tmp2;
 
 	__asm__ __volatile__("@ atomic_clear_mask\n"
-"1:  	ldrex  	%0, [%2]\n"
-"  	bic  	%0, %0, %3\n"
-"  	strex  	%1, %0, [%2]\n"
+"1:	ldrex	%0, [%2]\n"
+"	bic	%0, %0, %3\n"
+"	strex	%1, %0, [%2]\n"
 "	teq	%1, #0\n"
 "	bne	1b"
 	: "=&r" (tmp), "=&r" (tmp2)
@@ -466,3 +466,4 @@ static inline int atomic64_add_unless(atomic64_t *v, u64 a, u64 u)
 #include <asm-generic/atomic-long.h>
 #endif
 #endif
+

@@ -472,6 +472,12 @@ static void __init acpuclk_init(void)
 	printk(KERN_INFO "ACPU running at %d KHz\n", speed->a11clk_khz);
 }
 
+unsigned long acpuclk_get_max_axi_rate(void)
+{
+	return max_axi_rate;
+}
+EXPORT_SYMBOL(acpuclk_get_max_axi_rate);
+
 unsigned long acpuclk_get_rate(void)
 {
 	WARN_ONCE(drv_state.current_speed == NULL,
