@@ -450,12 +450,12 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
 
 
 #ifndef HAS_ARCH_IO_REMAP_PFN_RANGE
-#define io_remap_pfn_range(vma,from,pfn,size,prot) \
-	remap_pfn_range(vma,from,pfn,size,prot)
+#define io_remap_pfn_range(vma, from, pfn, size, prot) \
+	remap_pfn_range(vma, from, pfn, size, prot)
 #else
 extern int arch_io_remap_pfn_range(struct vm_area_struct *vma, unsigned long addr, unsigned long pfn, unsigned long size, pgprot_t prot);
-#define io_remap_pfn_range(vma,from,pfn,size,prot) \
-	arch_io_remap_pfn_range(vma,from,pfn,size,prot)
+#define io_remap_pfn_range(vma, from, pfn, size, prot) \
+	arch_io_remap_pfn_range(vma, from, pfn, size, prot)
 #endif
 
 
