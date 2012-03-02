@@ -40,6 +40,10 @@ extern void error(char *);
 #include "../../../../lib/decompress_unlzo.c"
 #endif
 
+#ifdef CONFIG_KERNEL_BZIP2
+#include "../../../../lib/decompress_bunzip2.c"
+#endif
+
 #ifdef CONFIG_KERNEL_LZMA
 #include "../../../../lib/decompress_unlzma.c"
 #endif
@@ -48,4 +52,3 @@ void do_decompress(u8 *input, int len, u8 *output, void (*error)(char *x))
 {
     decompress(input, len, NULL, NULL, output, NULL, error);
 }
-
