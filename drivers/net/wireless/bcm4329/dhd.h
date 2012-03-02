@@ -463,36 +463,4 @@ void dhd_arp_offload_add_ip(dhd_pub_t *dhd, u32 ipaddr);
 extern int net_os_set_packet_filter(struct net_device *dev, int val);
 extern int net_os_rxfilter_add_remove(struct net_device *dev, int val, int num);
 
-#ifdef WLAN_PFN
-#define MAX_PFN_NUMBER  2
-#define PFN_SCAN_FREQ  60 /* in secs */
-#define PFN_WAKE_TIME  20000  /* in mini secs */
-int dhd_set_pfn_ssid(char * ssid, int ssid_len);
-int dhd_del_pfn_ssid(char * ssid, int ssid_len);
-#endif
-
-
-/* Packet Filter */
-enum pkt_filter_id {
-   ALLOW_UNICAST = 100,
-   ALLOW_ARP,
-   ALLOW_DHCP,
-   ALLOW_IPV4_MULTICAST,
-   ALLOW_IPV6_MULTICAST,
-};
-int dhd_set_pktfilter(int add, int id, int offset, char *mask, char *pattern);
-
-/* power control */
-enum dhdhtc_pwr_ctrl{
-   DHDHTC_POWER_CTRL_ANDROID_NORMAL = 0,
-   DHDHTC_POWER_CTRL_BROWSER_LOAD_PAGE,
-   DHDHTC_POWER_CTRL_USER_CONFIG,
-   DHDHTC_POWER_CTRL_WIFI_PHONE,
-   DHDHTC_POWER_CTRL_MAX_NUM,
-};
-extern int dhdhtc_update_wifi_power_mode(int is_screen_off);
-extern int dhdhtc_set_power_control(int power_mode, unsigned int reason);
-extern unsigned int dhdhtc_get_cur_pwr_ctrl(void);
-extern int dhdhtc_update_dtim_listen_interval(int is_screen_off);
-
 #endif /* _dhd_h_ */
