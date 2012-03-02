@@ -516,12 +516,13 @@ int kgsl_mmu_map(struct kgsl_pagetable *pagetable,
 
 	superpte = ptefirst & (GSL_PT_SUPER_PTE - 1);
 	for (pte = superpte; pte < ptefirst; pte++) {
-	/* tlb needs to be flushed only when a dirty superPTE gets backed */
-	if (kgsl_pt_map_isdirty(pagetable, pte)) {
-	  flushtlb = 1;
-	  break;
+		/* tlb needs to be flushed only when a dirty superPTE
+		   gets backed */
+		if (kgsl_pt_map_isdirty(pagetable, pte)) {
+			flushtlb = 1;
+			break;
+		}
 	}
-     }
 
 	for (pte = ptefirst; pte < ptelast; pte++) {
 #ifdef VERBOSE_DEBUG
@@ -530,7 +531,7 @@ int kgsl_mmu_map(struct kgsl_pagetable *pagetable,
 		BUG_ON(val != 0 && val != GSL_PT_PAGE_DIRTY);
 #endif
 		if (kgsl_pt_map_isdirty(pagetable, pte))
-		  flushtlb = 1;
+			flushtlb = 1;
 		/* mark pte as in use */
 		if (phys_contiguous)
 			physaddr = address;
@@ -551,18 +552,17 @@ int kgsl_mmu_map(struct kgsl_pagetable *pagetable,
 		address += KGSL_PAGESIZE;
 	}
 
-		/* set superpte to end of next superpte */
-		superpte = (ptelast + (GSL_PT_SUPER_PTE - 1))
+	/* set superpte to end of next superpte */
+	superpte = (ptelast + (GSL_PT_SUPER_PTE - 1))
 			& (GSL_PT_SUPER_PTE - 1);
-		for (pte = ptelast; pte < superpte; pte++) {
-			/* tlb needs to be flushed only when a dirty superPTE
-				gets backed */
+	for (pte = ptelast; pte < superpte; pte++) {
+		/* tlb needs to be flushed only when a dirty superPTE
+		   gets backed */
 		if (kgsl_pt_map_isdirty(pagetable, pte)) {
 			flushtlb = 1;
 			break;
 		}
 	}
-
 	KGSL_MEM_INFO("pt %p p %08x g %08x pte f %d l %d n %d f %d\n",
 		      pagetable, address, *gpuaddr, ptefirst, ptelast,
 		      numpages, flushtlb);
@@ -573,7 +573,8 @@ int kgsl_mmu_map(struct kgsl_pagetable *pagetable,
 	 * pagetable that we used to allocate */
 	if (pagetable == mmu->hwpagetable)
 		kgsl_yamato_setstate(mmu->device, KGSL_MMUFLAGS_TLBFLUSH);
-	
+
+
 	KGSL_MEM_VDBG("return %d\n", 0);
 
 	return 0;
@@ -614,8 +615,8 @@ kgsl_mmu_unmap(struct kgsl_pagetable *pagetable, unsigned int gpuaddr,
 	/* Invalidate tlb only if current page table used by GPU is the
 	 * pagetable that we used to allocate */
 	if (pagetable == pagetable->mmu->hwpagetable)
-	  kgsl_yamato_setstate(pagetable->mmu->device,
-		KGSL_MMUFLAGS_TLBFLUSH);
+		kgsl_yamato_setstate(pagetable->mmu->device,
+					KGSL_MMUFLAGS_TLBFLUSH);
 
 	gen_pool_free(pagetable->pool, gpuaddr, range);
 

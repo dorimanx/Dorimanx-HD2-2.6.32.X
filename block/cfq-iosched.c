@@ -1768,6 +1768,7 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
 static void cfq_ioc_set_ioprio(struct io_context *ioc)
 {
 	call_for_each_cic(ioc, changed_ioprio);
+	ioc->ioprio_changed = 0;
 }
 
 static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
@@ -1994,9 +1995,9 @@ static int cfq_cic_link(struct cfq_data *cfqd, struct io_context *ioc,
 static struct cfq_io_context *
 cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
 {
-       struct io_context *ioc = NULL;
-       struct cfq_io_context *cic;
-       int ret;
+	struct io_context *ioc = NULL;
+	struct cfq_io_context *cic;
+	int ret;
 
 	might_sleep_if(gfp_mask & __GFP_WAIT);
 
@@ -2013,13 +2014,13 @@ retry:
 	if (cic == NULL)
 		goto err;
 
-       ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-       if (ret == -EEXIST) {
-               /* someone has linked cic to ioc already */
-               cfq_cic_free(cic);
-               goto retry;
-       } else if (ret)
-               goto err_free;
+	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
+	if (ret == -EEXIST) {
+		/* someone has linked cic to ioc already */
+		cfq_cic_free(cic);
+		goto retry;
+	} else if (ret)
+		goto err_free;
 
 out:
 	smp_read_barrier_depends();

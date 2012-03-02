@@ -45,7 +45,6 @@
 
 #include <linux/freezer.h>
 #include <linux/kthread.h>
-#include <linux/slab.h>
 #include "ubifs.h"
 
 /**

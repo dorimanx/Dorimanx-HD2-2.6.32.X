@@ -322,14 +322,6 @@ config TOUCHSCREEN_CONCATENATE_REPORT
 	  This enables support for concatenate report style in touchscreen driver
 	  This support could reduce the number of reports in touchscreen driver
 
-config TOUCHSCREEN_DUPLICATED_FILTER
-	bool "Touchscreen duplicated report filter"
-	depends on TOUCHSCREEN_SYNAPTICS_I2C_RMI
-	default n
-	help
-	  This enables filter for duplicated report in touchscreen driver
-	  This support will discard small movement report in touchscreen driver
-
 config TOUCHSCREEN_SYNAPTICS_T1021
         tristate "Synaptics T1021 i2c touchscreen"
         depends on I2C

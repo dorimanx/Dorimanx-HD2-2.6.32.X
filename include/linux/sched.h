@@ -2424,10 +2424,10 @@ static inline int need_resched(void)
  */
 extern int _cond_resched(void);
 
-#define cond_resched() {			\
+#define cond_resched() ({			\
 	__might_sleep(__FILE__, __LINE__, 0);	\
 	_cond_resched();			\
-}
+})
 
 extern int __cond_resched_lock(spinlock_t *lock);
 
