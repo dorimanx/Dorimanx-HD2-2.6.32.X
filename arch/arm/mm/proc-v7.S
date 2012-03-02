@@ -175,17 +175,13 @@ cpu_v7_name:
  *	Initialise TLB, Caches, and MMU state ready to switch the MMU
  *	on.  Return in r0 the new CP15 C1 control register setting.
  *
- *	We automatically detect if we have a Harvard cache, and use the
- *	Harvard cache control instructions insead of the unified cache
- *	control instructions.
- *
  *	This should be able to cover all ARMv7 cores.
  *
  *	It is assumed that:
  *	- cache type register is implemented
  */
 __v7_setup:
-#ifdef CONFIG_SMP
+#if defined(CONFIG_SMP) && !defined(CONFIG_ARCH_MSM_SCORPIONMP)
 	mrc	p15, 0, r0, c1, c0, 1
 	tst	r0, #(1 << 6)			@ SMP/nAMP mode enabled?
 	orreq	r0, r0, #(1 << 6) | (1 << 0)	@ Enable SMP/nAMP mode and
@@ -226,17 +222,28 @@ __v7_setup:
 #endif
 
 2:	mov	r10, #0
-#ifdef HARVARD_CACHE
 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
-#endif
 	dsb
 #ifdef CONFIG_MMU
 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
 	orr	r4, r4, #TTB_FLAGS
 	mcr	p15, 0, r4, c2, c0, 1		@ load TTB1
-	mov	r10, #0x1f			@ domains 0, 1 = manager
-	mcr	p15, 0, r10, c3, c0, 0		@ load domain access register
+#ifdef CONFIG_ARCH_MSM_SCORPION
+#ifdef CONFIG_ARCH_QSD8X50
+	mov     r0, #0x77
+#else
+	mov     r0, #0x33
+#endif
+	mcr     p15, 3, r0, c15, c0, 3          @ set L2CR1
+	mrc     p15, 0, r0, c1, c0, 1           @ read ACTLR
+#ifdef CONFIG_CPU_CACHE_ERR_REPORT
+	orr     r0, r0, #0x37                   @ turn on L1/L2 error reporting
+#else
+	bic     r0, r0, #0x37
+#endif
+	mcr     p15, 0, r0, c1, c0, 1           @ write ACTLR
+#endif
 	/*
 	 * Memory region attributes with SCTLR.TRE=1
 	 *
@@ -346,3 +353,5 @@ __v7_proc_info:
 	.long	v6_user_fns
 	.long	v7_cache_fns
 	.size	__v7_proc_info, . - __v7_proc_info
+
+
