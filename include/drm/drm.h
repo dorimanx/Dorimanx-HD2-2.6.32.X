@@ -63,6 +63,7 @@ typedef unsigned int drm_handle_t;
 typedef unsigned int drm_context_t;
 typedef unsigned int drm_drawable_t;
 typedef unsigned int drm_magic_t;
+typedef uint64_t __u64;
 
 /**
  * Cliprect.
