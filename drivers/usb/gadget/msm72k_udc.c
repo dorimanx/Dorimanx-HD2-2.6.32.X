@@ -211,7 +211,7 @@ struct usb_info {
         void (*serial_debug_gpios)(int);
         void (*usb_hub_enable)(bool);
         int (*china_ac_detect)(void);
-        void (*disable_usb_charger)(void);
+//      void (*disable_usb_charger)(void);
 
         /* for notification when USB is connected or disconnected */
         void (*usb_connected)(int);
@@ -1886,7 +1886,7 @@ static void accessory_detect_by_adc(struct usb_info *ui)
                 if (adc_value >= 0x2112 && adc_value <= 0x3D53) {
                         printk(KERN_INFO "usb: headset inserted\n");
                         ui->accessory_type = 2;
-                        headset_ext_detect(USB_AUDIO_OUT);
+                        headset_ext_detect(USB_HEADSET);
                 } else if (adc_value >= 0x88A && adc_value <= 0x1E38) {
                         printk(KERN_INFO "usb: carkit inserted\n");
                         ui->accessory_type = 1;
@@ -1900,7 +1900,7 @@ static void accessory_detect_by_adc(struct usb_info *ui)
         } else {
                 if (ui->accessory_type == 2) {
                         printk(KERN_INFO "usb: headset removed\n");
-                        headset_ext_detect(USB_NO_HEADSET);
+                        headset_ext_detect(NO_DEVICE);
                 } else if (ui->accessory_type == 1) {
                         printk(KERN_INFO "usb: carkit removed\n");
                         switch_set_state(&dock_switch, DOCK_STATE_UNDOCKED);
@@ -1987,86 +1987,33 @@ err:
 
 #define DELAY_FOR_CHECK_CHG msecs_to_jiffies(300)
 
-static void charger_detect_by_uart(struct usb_info *ui)
-{
-        int is_china_ac;
-
-        if (!vbus)
-                return;
-
-        /*UART*/
-        if (ui->usb_uart_switch)
-                ui->usb_uart_switch(1);
-
-        is_china_ac = ui->china_ac_detect();
-
-        if (is_china_ac) {
-                ui->connect_type = CONNECT_TYPE_AC;
-                queue_work(ui->usb_wq, &ui->notifier_work);
-                usb_lpm_enter(ui);
-                printk(KERN_INFO "usb: AC charger\n");
-        } else {
-                ui->connect_type = CONNECT_TYPE_UNKNOWN;
-                queue_delayed_work(ui->usb_wq, &ui->chg_work,
-                        DELAY_FOR_CHECK_CHG);
-                printk(KERN_INFO "usb: not AC charger\n");
-
-                /*set uart to gpo*/
-                if (ui->serial_debug_gpios)
-                        ui->serial_debug_gpios(0);
-                /*turn on USB HUB*/
-                if (ui->usb_hub_enable)
-                        ui->usb_hub_enable(1);
-
-                /*USB*/
-                if (ui->usb_uart_switch)
-                        ui->usb_uart_switch(0);
-
-                usb_lpm_exit(ui);
-                usb_reset(ui);
-        }
-}
-
 static void charger_detect(struct usb_info *ui)
 {
-        if (!vbus)
-                return;
-        msleep(10);
-        /* detect shorted D+/D-, indicating AC power */
-        if ((readl(USB_PORTSC) & PORTSC_LS) != PORTSC_LS) {
-                printk(KERN_INFO "usb: not AC charger\n");
-                ui->connect_type = CONNECT_TYPE_UNKNOWN;
-                queue_delayed_work(ui->usb_wq, &ui->chg_work,
-                        DELAY_FOR_CHECK_CHG);
-                mod_timer(&ui->ac_detect_timer, jiffies + (3 * HZ));
-        } else {
-                if (gpio_get_value(ui->usb_id_pin_gpio) == 0) {
-                        printk(KERN_INFO "usb: 9V AC charger\n");
-                        ui->connect_type = CONNECT_TYPE_9V_AC;
-                } else {
-                        printk(KERN_INFO "usb: AC charger\n");
-                        ui->connect_type = CONNECT_TYPE_AC;
-                }
-                queue_work(ui->usb_wq, &ui->notifier_work);
-                writel(0x00080000, USB_USBCMD);
-                msleep(10);
-                usb_lpm_enter(ui);
-        }
+	if (!vbus)
+		return;
+	msleep(10);
+	/* detect shorted D+/D-, indicating AC power */
+	if ((readl(USB_PORTSC) & PORTSC_LS) != PORTSC_LS) {
+		printk(KERN_INFO "usb: not AC charger\n");
+		ui->connect_type = CONNECT_TYPE_UNKNOWN;
+		queue_delayed_work(ui->usb_wq, &ui->chg_work,
+			DELAY_FOR_CHECK_CHG);
+	} else {
+		printk(KERN_INFO "usb: AC charger\n");
+		ui->connect_type = CONNECT_TYPE_AC;
+		queue_work(ui->usb_wq, &ui->notifier_work);
+		writel(0x00080000, USB_USBCMD);
+		msleep(10);
+		usb_lpm_enter(ui);
+	}
 }
 
 static void check_charger(struct work_struct *w)
 {
-        struct usb_info *ui = container_of(w, struct usb_info, chg_work.work);
-        if (disable_charger) {
-                printk(KERN_INFO "usb: disable charger\n");
-                if (ui->disable_usb_charger)
-                        ui->disable_usb_charger();
-                disable_charger = 0;
-                return;
-        }
-        /* unknown charger */
-        if (vbus && ui->connect_type == CONNECT_TYPE_UNKNOWN)
-                queue_work(ui->usb_wq, &ui->notifier_work);
+	struct usb_info *ui = container_of(w, struct usb_info, chg_work.work);
+	/* unknown charger */
+	if (vbus && ui->connect_type == CONNECT_TYPE_UNKNOWN)
+		queue_work(ui->usb_wq, &ui->notifier_work);
 }
 
 static void usb_do_work(struct work_struct *w)
@@ -2093,10 +2040,7 @@ static void usb_do_work(struct work_struct *w)
 
                                 usb_lpm_exit(ui);
                                 usb_reset(ui);
-                                if (ui->china_ac_detect)
-                                        charger_detect_by_uart(ui);
-                                else
-                                        charger_detect(ui);
+                                charger_detect(ui);
 
                                 ui->state = USB_STATE_ONLINE;
 #ifdef CONFIG_USB_ACCESSORY_DETECT
@@ -2174,9 +2118,6 @@ static void usb_do_work(struct work_struct *w)
                         if ((flags & USB_FLAG_VBUS_ONLINE) && _vbus) {
                                 pr_info("hsusb: OFFLINE -> ONLINE\n");
                 
-                                if (ui->china_ac_detect)
-                                        charger_detect_by_uart(ui);
-                                else {
                                         usb_lpm_exit(ui);
                                         usb_reset(ui);
                                         charger_detect(ui);
@@ -2190,7 +2131,6 @@ static void usb_do_work(struct work_struct *w)
                         }
                         break;
                 }
-        }
 }
 
 /* FIXME - the callers of this function should use a gadget API instead.
@@ -2695,7 +2635,7 @@ static int msm72k_probe(struct platform_device *pdev)
                 ui->serial_debug_gpios = pdata->serial_debug_gpios;
                 ui->usb_hub_enable = pdata->usb_hub_enable;
                 ui->china_ac_detect = pdata->china_ac_detect;
-                ui->disable_usb_charger = pdata->disable_usb_charger;
+//              ui->disable_usb_charger = pdata->disable_usb_charger;
 
                 ui->accessory_detect = pdata->accessory_detect;
                 printk(KERN_INFO "usb: accessory detect %d\n",
