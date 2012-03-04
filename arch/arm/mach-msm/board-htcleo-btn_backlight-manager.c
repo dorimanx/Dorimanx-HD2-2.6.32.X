@@ -26,7 +26,7 @@
 #include <mach/msm_iomap.h>
 
 static int BUTTON_BACKLIGHT_GPIO = 48;
-static int OFF_SEC = 3;
+static int OFF_SEC = 5;
 static int auto_off_enabled = 1;
 static int button_auto_enabled = 1;
 

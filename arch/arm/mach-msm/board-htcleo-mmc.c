@@ -214,11 +214,11 @@ static unsigned int htcleo_wifi_status(struct device *dev)
 
 static struct mmc_platform_data htcleo_wifi_data = {
 	/* 
-	 * lowered wifi vdd to 2650 for now, might test lower vdds later
+	 * wifi vdd to 2750 for now, might test lower vdds later, lets see if more power = more signal power!
 	 * incredible uses 2050 and seems to work without issues
-	 * by marc1706
+	 * by dorimanx
 	 */
-	.ocr_mask		= MMC_VDD_26_27,
+	.ocr_mask		= MMC_VDD_27_28,
 	.status			= htcleo_wifi_status,
 	.register_status_notify	= htcleo_wifi_status_register,
 	.embedded_sdio		= &htcleo_wifi_emb_data,
@@ -252,7 +252,7 @@ int htcleo_wifi_power(int on)
 	
 	mdelay(100);
 	gpio_set_value(HTCLEO_GPIO_WIFI_SHUTDOWN_N, on); /* WIFI_SHUTDOWN */
-	mdelay(200);
+	mdelay(300);
 
 	htcleo_wifi_power_state = on;
 	return 0;

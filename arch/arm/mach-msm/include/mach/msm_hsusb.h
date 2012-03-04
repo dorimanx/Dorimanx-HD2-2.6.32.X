@@ -49,8 +49,6 @@ struct msm_hsusb_platform_data {
 	void (*config_usb_id_gpios)(bool enable);
         void (*usb_hub_enable)(bool);
         void (*serial_debug_gpios)(int);
-        int (*china_ac_detect)(void);
-        void (*disable_usb_charger)(void);
         /* val, reg pairs terminated by -1 */
         int *phy_init_seq;
         void (*change_phy_voltage)(int);

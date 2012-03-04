@@ -524,6 +524,13 @@ config ICS
 
   	  Say N if unsure.
 
+config I_LOVE_BUGS_IN_MY_KERNEL
+   	bool "Revert config in smd_rpcrouter.c"
+   	---help---
+     	  This will revert config in mach-msm/smd_rpcrouter.c to old way
+
+     	  Say N if unsure.
+
 menuconfig CGROUPS
         boolean "Control Group support"
         depends on EVENTFD
