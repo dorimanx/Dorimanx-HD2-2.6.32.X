@@ -1722,6 +1722,7 @@ static void usb_lpm_enter(struct usb_info *ui)
         clk_set_rate(ui->ebi1clk, 0);
         ui->in_lpm = 1;
         spin_unlock_irqrestore(&ui->lock, iflags);
+
         if (board_mfg_mode() == 1) {/*for MFG adb unstable in FROYO ROM*/
                 printk(KERN_INFO "usb: idle_wake_unlock and perf unlock\n");
                 wake_unlock(&vbus_idle_wake_lock);
@@ -1750,6 +1751,7 @@ static void usb_lpm_exit(struct usb_info *ui)
         usb_wakeup_phy(ui);
         ui->in_lpm = 0;
         spin_unlock_irqrestore(&ui->lock, iflags);
+
         if (board_mfg_mode() == 1) {/*for MFG adb unstable in FROYO ROM*/
                 printk(KERN_INFO "usb: idle_wake_lock and perf lock\n");
                 wake_lock(&vbus_idle_wake_lock);
@@ -2005,13 +2007,15 @@ static void charger_detect(struct usb_info *ui)
                 ui->connect_type = CONNECT_TYPE_UNKNOWN;
                 queue_delayed_work(ui->usb_wq, &ui->chg_work,
                         DELAY_FOR_CHECK_CHG);
+		mod_timer(&ui->ac_detect_timer, jiffies + (3 * HZ));
 	} else {
-		printk(KERN_INFO "usb: AC charger\n");
-		ui->connect_type = CONNECT_TYPE_AC;
-		queue_work(ui->usb_wq, &ui->notifier_work);
-		writel(0x00080000, USB_USBCMD);
-		msleep(10);
-		usb_lpm_enter(ui);
+                printk(KERN_INFO "usb: AC charger\n");
+                        ui->connect_type = CONNECT_TYPE_AC;
+                
+                queue_work(ui->usb_wq, &ui->notifier_work);
+                writel(0x00080000, USB_USBCMD);
+                msleep(10);
+                usb_lpm_enter(ui);
 	}
 }
 
@@ -2044,6 +2048,7 @@ static void usb_do_work(struct work_struct *w)
                 case USB_STATE_IDLE:
                         if (flags & USB_FLAG_START) {
                                 pr_info("hsusb: IDLE -> ONLINE\n");
+
                                 usb_lpm_exit(ui);
                                 usb_reset(ui);
                                 charger_detect(ui);
@@ -2070,8 +2075,8 @@ static void usb_do_work(struct work_struct *w)
                                 writel(0x00080000, USB_USBCMD);
                                 spin_unlock_irqrestore(&ui->lock, iflags);
 
-                if (ui->usb_connected)
-                                   ui->usb_connected(0);
+                	if (ui->usb_connected)
+                                   	ui->usb_connected(0);
 
                                 if (ui->connect_type != CONNECT_TYPE_NONE) {
                                         ui->connect_type = CONNECT_TYPE_NONE;
@@ -2123,15 +2128,22 @@ static void usb_do_work(struct work_struct *w)
                          */
                         if ((flags & USB_FLAG_VBUS_ONLINE) && _vbus) {
                                 pr_info("hsusb: OFFLINE -> ONLINE\n");
+
                                 usb_lpm_exit(ui);
                                 usb_reset(ui);
                                 charger_detect(ui);
+			
+			if (ui->usb_connected)
+				ui->usb_connected(2);
+
                                 ui->state = USB_STATE_ONLINE;
                                 usb_do_work_check_vbus(ui);
                         }
                         break;
-                }
+		}
+
 	}
+
 }
 
 /* FIXME - the callers of this function should use a gadget API instead.
@@ -2593,18 +2605,9 @@ static void ac_detect_expired(unsigned long _data)
 
                 mod_timer(&ui->ac_detect_timer, jiffies + delay);
         } else {
-                if (ui->usb_id_pin_gpio) {
-                        if (gpio_get_value(ui->usb_id_pin_gpio) == 0) {
-                                printk(KERN_INFO "usb: 9V AC charger\n");
-                                ui->connect_type = CONNECT_TYPE_9V_AC;
-                        } else {
-                                printk(KERN_INFO "usb: AC charger\n");
-                                ui->connect_type = CONNECT_TYPE_AC;
-                        }
-                } else {
-                        printk(KERN_INFO "usb: AC charger\n");
+                printk(KERN_INFO "usb: AC charger\n");
                         ui->connect_type = CONNECT_TYPE_AC;
-                }
+                
                 queue_work(ui->usb_wq, &ui->notifier_work);
                 writel(0x00080000, USB_USBCMD);
                 mdelay(10);
