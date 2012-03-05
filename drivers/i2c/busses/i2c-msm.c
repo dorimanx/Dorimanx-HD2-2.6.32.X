@@ -270,7 +270,7 @@ msm_i2c_poll_notbusy(struct msm_i2c_dev *dev, int warn, struct i2c_msg msgs[])
 			return 0;
 		}
 		if (retries++ > 100)
-			usleep_range(100, 200);
+			msleep(10);
 	}
 	dev_err(dev->dev, "Error waiting for notbusy (addr=%02x, msgs=%02x)\n", msgs->addr, msgs->buf[0]);
 	return is_gsensor_msg(msgs) ? -GSENSOR_TIMEDOUT : -ETIMEDOUT;
@@ -315,7 +315,7 @@ msm_i2c_recover_bus_busy(struct msm_i2c_dev *dev)
 		gpio_direction_input(gpio_clk);
 		udelay(5);
 		if (!gpio_get_value(gpio_clk))
-			usleep_range(20, 30);
+			udelay(20);
 		if (!gpio_get_value(gpio_clk))
 			msleep(10);
 		gpio_clk_status = gpio_get_value(gpio_clk);

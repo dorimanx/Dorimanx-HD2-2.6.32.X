@@ -26,9 +26,9 @@ SYNC,
 };
 
 /* Tunables */
-static const int sync_expire = HZ / 2; /* max time before a sync is submitted. */
-static const int async_expire = 5 * HZ; /* ditto for async, these limits are SOFT! */
-static const int fifo_batch = 16; /* # of sequential requests treated as one
+static const int sync_expire = HZ / 1; /* max time before a sync is submitted. */
+static const int async_expire = 10 * HZ; /* ditto for async, these limits are SOFT! */
+static const int fifo_batch = 4; /* # of sequential requests treated as one
 by the above parameters. For throughput. */
 
 /* Elevator data */

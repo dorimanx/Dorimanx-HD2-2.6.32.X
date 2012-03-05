@@ -72,7 +72,6 @@ struct mtd_info_user {
 	 * (TODO: remove at some point) */
 	__u32 ecctype;
 	__u32 eccsize;
-	__u64 padding;  /* Old obsolete field; do not use */
 };
 
 struct region_info_user {
@@ -135,7 +134,7 @@ struct nand_oobfree {
  */
 struct nand_ecclayout {
 	__u32 eccbytes;
-	__u32 eccpos[64];
+	__u32 eccpos[128];
 	__u32 oobavail;
 	struct nand_oobfree oobfree[MTD_MAX_OOBFREE_ENTRIES];
 };

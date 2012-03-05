@@ -53,8 +53,6 @@ static void *htcleo_wifi_mem_prealloc(int section, unsigned long size)
 	return wifi_mem_array[section].mem_ptr;
 }
 
-int __init htcleo_init_wifi_mem(void);
-
 int __init htcleo_init_wifi_mem(void)
 {
 	int i;
@@ -103,7 +101,6 @@ static struct platform_device htcleo_wifi_device = {
 extern unsigned char *get_wifi_nvs_ram(void);
 extern int wifi_calibration_size_set(void);
 
-#ifdef CONFIG_WIFI_NVS_PROC_CREATE
 static unsigned htcleo_wifi_update_nvs(char *str, int add_flag)
 {
 #define NVS_LEN_OFFSET		0x0C
@@ -130,7 +127,7 @@ static unsigned htcleo_wifi_update_nvs(char *str, int add_flag)
 	wifi_calibration_size_set();
 	return 0;
 }
-#endif
+
 
 static int __init htcleo_wifi_init(void)
 {

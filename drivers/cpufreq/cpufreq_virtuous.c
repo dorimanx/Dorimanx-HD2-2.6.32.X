@@ -78,7 +78,7 @@ static unsigned int up_min_freq;
  * to minimize wakeup issues.
  * Set sleep_max_freq=0 to disable this behavior.
  */
-#define DEFAULT_SLEEP_MAX_FREQ 128000
+#define DEFAULT_SLEEP_MAX_FREQ 245000
 static unsigned int sleep_max_freq;
 
 /*
@@ -103,7 +103,7 @@ static unsigned int max_ramp_down;
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 40
+#define DEFAULT_MAX_CPU_LOAD 50
 static unsigned long max_cpu_load;
 
 /*
@@ -493,7 +493,7 @@ static int cpufreq_governor_virtuous(struct cpufreq_policy *new_policy,
 
 		this_virtuous->cur_policy = new_policy;
 		this_virtuous->cur_policy->max = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
-		this_virtuous->cur_policy->min = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
+		this_virtuous->cur_policy->min = CONFIG_MSM_CPU_FREQ_ONDEMAND_MIN;
 		this_virtuous->cur_policy->cur = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
 		this_virtuous->enable = 1;
 

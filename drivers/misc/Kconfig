@@ -308,10 +308,6 @@ config PMIC8058_NFC
 	  Qualcomm PM8058 chip has a module to support NFC (Near Field
 	  Communication). This option enables the driver to support it.
 
-config IFACE_STAT
-   bool "Persistent interface statistics tracking exported to /proc/iface_stat"
-   default y
-
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

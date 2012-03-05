@@ -266,8 +266,6 @@ int init_dex_comm()
 	unsigned long flags;
 	printk(KERN_INFO "%s: WinCE DEX init.\n", __func__);
 
-	printk(KERN_INFO "%s: WinCE DEX init.\n", __func__);
-
 	if(machine_is_htcleo())
 		base = (unsigned)(MSM_SHARED_RAM_BASE + 0xefe00);
 	else

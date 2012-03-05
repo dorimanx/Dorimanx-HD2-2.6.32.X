@@ -105,40 +105,39 @@ struct clkctl_acpu_speed {
 #endif // !ndef MAX
 
 struct clkctl_acpu_speed acpu_vdd_tbl[] = {
-	{  19200, 925, 975},
-	{  96000, 950, 975},
-	{ 128000, 925, 975 },
-	{ 245000, 925, 975 },
-	{ 384000, 950, 975 },
- 	{ 422400, 950, 975 },
-	{ 460800, 950, 1000 },
-	{ 499200, 950, 1000 },
-	{ 537600, 975, 1025 },
-	{ 576000, 1000, 1050 },
-	{ 614400, 1025, 1075 },
-	{ 652800, 1050, 1100 },
-	{ 691200, 1075, 1125 },
-	{ 729600, 1125, 1150 },
-	{ 768000, 1150, 1175 },
-	{ 806400, 1200, 1225 },
+	{  19200, VOLTAGE_MIN_START, 950},
+	{ 128000, VOLTAGE_MIN_START, 950 },
+	{ 245000, VOLTAGE_MIN_START, 950 },
+	{ 384000, VOLTAGE_MIN_START, 950 },
+ 	{ 422400, VOLTAGE_MIN_START, 975 },
+	{ 460800, VOLTAGE_MIN_START, 1000 },
+	{ 499200, MAX(VOLTAGE_MIN_START,1000), 1075 },
+	{ 537600, MAX(VOLTAGE_MIN_START,1000), 1100 },
+	{ 576000, MAX(VOLTAGE_MIN_START,1000), 1100 },
+	{ 614400, MAX(VOLTAGE_MIN_START,1000), 1125 },
+	{ 652800, MAX(VOLTAGE_MIN_START,1000), 1150 },
+	{ 691200, MAX(VOLTAGE_MIN_START,1000), 1175 },
+	{ 729600, MAX(VOLTAGE_MIN_START,1000), 1200 },
+	{ 768000, MAX(VOLTAGE_MIN_START,1000), 1200 },
+	{ 806400, 1220, 1225 },
 	{ 844800, 1225, 1250 },
 	{ 883200, 1250, 1275 },
 	{ 921600, 1250, 1275 },
 	{ 960000, 1250, 1275 },
-	{ 998400, 1275, 1275 },
+	{ 998400, 1250, 1275 },
 #ifdef	CONFIG_HTCLEO_OVERCLOCK
-	{ 1036800, 1275, 1300 },
-	{ 1075200, 1275, 1300 },
-	{ 1113600, 1275, 1325 },
-	{ 1152000, 1275, 1325 },
-	{ 1190400, 1275, 1325 },
+	{ 1036800, 1250, 1275 },
+	{ 1075200, 1250, 1275 },
+	{ 1113600, 1250, 1300 },
+	{ 1152000, 1250, 1300 },
+	{ 1190400, 1250, 1300 },
 #endif
 #ifdef CONFIG_HTCLEO_EXOVERCLOCK
-        { 1036800, 1275, 1300 },
+        { 1036800, 1275, 1275 },
         { 1075200, 1275, 1300 },
-        { 1113600, 1275, 1325 },
-        { 1152000, 1275, 1325 },
-        { 1190400, 1275, 1325 },
+        { 1113600, 1300, 1325 },
+        { 1152000, 1325, 1350 },
+        { 1190400, 1325, 1325 },
         { 1228800, 1325, 1325 },
         { 1267200, 1325, 1325 },
         { 1305600, 1325, 1325 },
@@ -147,10 +146,11 @@ struct clkctl_acpu_speed acpu_vdd_tbl[] = {
         { 1420800, 1325, 1350 },
         { 1459200, 1325, 1350 },
         { 1497600, 1325, 1350 },
-        { 1536000, 1350, 1350 },
-	{ 1574400, 1350, 1350 },
+        { 1536000, 1350, 1375 },
+	{ 1574400, 1350, 1375 },
         { 1612800, 1350, 1375 },
 #endif
+
 	{ 0 },
 };
 
@@ -382,6 +382,7 @@ aaf_out:
 	return rc;
 }
 
+
 static struct task_struct  *kavs_task;
 #define AVS_DELAY ((CONFIG_HZ * 50 + 999) / 1000)
 
@@ -449,7 +450,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	avs_state.avs_v = kmalloc(TEMPRS * avs_state.freq_cnt *
 		sizeof(avs_state.avs_v[0]), GFP_KERNEL);
 
-	if (avs_state.avs_v == NULL)
+	if (avs_state.avs_v == 0)
 		return -ENOMEM;
 
 	for (i = 0; i < TEMPRS*avs_state.freq_cnt; i++)
@@ -469,7 +470,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	return 0;
 }
 
-void __exit avs_exit(void)
+void __exit avs_exit()
 {
 	avs_work_exit();
 

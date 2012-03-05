@@ -555,8 +555,7 @@ static int microp_i2c_probe(struct i2c_client *client,
 	if (!cdata) {
 		ret = -ENOMEM;
 		dev_err(&client->dev, "failed on allocat cdata\n");
-//		goto err_cdata;
-		goto err_exit; //If there is no cdata, then there is no pdata
+		goto err_cdata;
 	}
 	i2c_set_clientdata(client, cdata);
 
@@ -645,7 +644,7 @@ err_intr:
 	kfree(cdata);
 	i2c_set_clientdata(client, NULL);
 
-//err_cdata:
+err_cdata:
 err_gpio_reset:
 	gpio_free(pdata->gpio_reset);
 err_exit:
@@ -757,7 +756,7 @@ static int __init micropklt_dbg_init(void)
 {
 	struct dentry *dent;
 
-	dent = debugfs_create_dir("micropklt", NULL);
+	dent = debugfs_create_dir("micropklt", 0);
 	if (IS_ERR(dent))
 		return PTR_ERR(dent);
 

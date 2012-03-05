@@ -192,16 +192,16 @@ static int lcdc_hw_init(struct mdp_lcdc_info *lcdc)
 	dma_cfg = mdp_readl(lcdc->mdp, MDP_DMA_P_CONFIG);
 #if defined(CONFIG_MACH_HTCLEO)
 	dma_cfg |= (DMA_PACK_ALIGN_MSB |
-		   DMA_PACK_PATTERN_RGB |
-		   DMA_DITHER_EN);
+	DMA_PACK_PATTERN_RGB |
+	DMA_DITHER_EN);
 	dma_cfg |= DMA_OUT_SEL_LCDC;
 	dma_cfg |= DMA_IBUF_FORMAT_RGB565;
 	//dma_cfg &= ~DMA_DITHER_EN; // solve color banding issue - marc1706
 	dma_cfg &= ~DMA_DST_BITS_MASK;
 #else
 	dma_cfg |= (DMA_PACK_ALIGN_LSB |
-		   DMA_PACK_PATTERN_RGB |
-		   DMA_DITHER_EN);
+	DMA_PACK_PATTERN_RGB |
+	DMA_DITHER_EN);
 	dma_cfg |= DMA_OUT_SEL_LCDC;
 	dma_cfg &= ~DMA_DST_BITS_MASK;
 #endif

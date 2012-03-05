@@ -1079,8 +1079,8 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 			inode = igrab(inode);
 		else
 			inode = NULL;
-		swap_duplicate(swap);
 		spin_unlock(&info->lock);
+		swap_duplicate(swap);
 		BUG_ON(page_mapped(page));
 		page_cache_release(page);	/* pagecache ref */
 		swap_writepage(page, wbc);
@@ -2694,11 +2694,6 @@ int shmem_zero_setup(struct vm_area_struct *vma)
 	file = shmem_file_setup("dev/zero", size, vma->vm_flags);
 	if (IS_ERR(file))
 		return PTR_ERR(file);
-
-	if (vma->vm_file)
-	  fput(vma->vm_file);
-	vma->vm_file = file;
-	vma->vm_ops = &shmem_vm_ops;
-	vma->vm_flags |= VM_CAN_NONLINEAR;
+	shmem_set_file(vma, file);
 	return 0;
 }

@@ -467,18 +467,27 @@ config HTC_BATTCHG_SMEM
 	bool "Read Battery Info via SMEM"
 
 config QSD_SVS
-	bool "QSD Static Voltage Scaling"
-	depends on (ARCH_MSM_SCORPION)
-	default y
-	help
-	  Enables static voltage scaling using the TPS65023 PMIC.
+   bool "QSD Static Voltage Scaling"
+   depends on (ARCH_MSM_SCORPION)
+   default y
+   help
+     Enables static voltage scaling using the TPS65023 PMIC.
 
 config QSD_PMIC_DEFAULT_DCDC1
-	int "PMIC default output voltage"
-	depends on (ARCH_MSM_SCORPION)
-	default 1275
-	help
-	  This is the PMIC voltage at Linux kernel boot.
+   int "PMIC default output voltage"
+   depends on (ARCH_MSM_SCORPION)
+   default 1275
+   help
+     This is the PMIC voltage at Linux kernel boot.
+
+config MSM_CPU_AVS
+   bool "Enable Adaptive Voltage Scaling (AVS)"
+   depends on (ARCH_MSM_SCORPION && QSD_SVS)
+   default n
+   help
+     This enables the Adaptive Voltage Scaling feature of
+     Qualcomm ARMv7 CPUs. It adjusts the voltage for each frequency
+     based on feedback from three ring oscillators in the CPU.
 
 config HTC_PWRSINK
 	depends on MSM_SMD
@@ -877,37 +886,6 @@ config MSM7KV2_AUDIO
           Enables QDSP5V2-based audio drivers for audio playbacks and
           voice call.
 
-config MSM7KV2_1X_AUDIO
-        bool "MSM7K v2 audio (version 1.x)"
-        depends on (ARCH_MSM7X30 && ANDROID_PMEM)
-        default n
-        help
-          Enables QDSP5V2-based audio drivers for audio playbacks and
-          voice call (for 1.x code base).
-
-config MSM_QDSP6
-	tristate "QDSP6 support"
-	depends on ARCH_QSD8X50
-	default n
-	help
-	  Enable support for qdsp6. This provides audio and video functionality.
-
-config MSM_CPU_AVS
-	bool "Enable Adaptive Voltage Scaling (AVS)"
-	depends on (ARCH_MSM_SCORPION && QSD_SVS)
-	default n
-	help
-	  This enables the Adaptive Voltage Scaling feature of
-	  Qualcomm ARMv7 CPUs. It adjusts the voltage for each frequency
-	  based on feedback from three ring oscillators in the CPU.
-
-config MSM8X60_AUDIO
-	tristate "MSM8X60 audio support"
-	depends on ARCH_MSM8X60 && ANDROID_PMEM
-	default n
-	help
-	  Enable support for qdsp6v2. This provides audio functionality.
-
 config MSM_CLOCK_CTRL_DEBUG
 	bool "Enable debugfs interface for clock control"
 	default n
@@ -989,12 +967,6 @@ config VIRTUAL_KPANIC_SRC
 	default "cache"
 	help
 	  Sets the partition to steal from to make the virtual one.
-
-config HTC_OFFMODE_ALARM
-   bool "Enables HTC offmode alarm."
-   default n
-   help
-     Support HTC offmode alarm.
 
 config MICROP_COMMON
 	tristate "MICROP COMMON Driver"
@@ -1117,10 +1089,6 @@ config MSM_SSBI
 	help
 	  Enable support for SSBI bus. This is required for communicatinig with
 	  Qualcomm PMICs and Audio codecs.
-
-config RPC_SIZE_1024
-    default n
-    bool "set RPC size to 1024"
 
 config PHYS_OFFSET
        hex

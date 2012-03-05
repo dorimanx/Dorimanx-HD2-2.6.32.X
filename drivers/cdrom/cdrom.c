@@ -2662,7 +2662,7 @@ static int cdrom_ioctl_volread(struct cdrom_device_info *cdi,
 static int cdrom_ioctl_audioctl(struct cdrom_device_info *cdi,
 		unsigned int cmd)
 {
-        int ret;
+	int ret;
 
 	cdinfo(CD_DO_IOCTL, "doing audio ioctl (start/stop/pause/resume)\n");
 

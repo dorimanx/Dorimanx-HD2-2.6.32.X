@@ -105,7 +105,7 @@ static unsigned int sleep_max_freq;
 #define DEFAULT_SLEEP_WAKEUP_FREQ 902400;
 static unsigned int sleep_wakeup_freq;
 
-#define UP_THRESHOLD_FREQ 1516800;
+#define UP_THRESHOLD_FREQ 1612800;
 static unsigned int threshold_freq;
 
 /*
@@ -141,16 +141,16 @@ static unsigned int ramp_down_step;
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 80
+#define DEFAULT_MAX_CPU_LOAD 50
 static unsigned long max_cpu_load;
 
-#define DEFAULT_X_CPU_LOAD 85
+#define DEFAULT_X_CPU_LOAD 50
 static unsigned long x_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 30
+#define DEFAULT_MIN_CPU_LOAD 20
 static unsigned long min_cpu_load;
 
 #define RAPID_MIN_CPU_LOAD 10

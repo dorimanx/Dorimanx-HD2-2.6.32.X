@@ -24,7 +24,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd.h,v 1.32.4.7.2.4.14.49.4.9 2011/01/14 22:40:45 Exp $
+ * $Id: dhd.h,v 1.32.4.7.2.4.14.49.4.7 2010/11/12 22:48:36 Exp $
  */
 
 /****************
@@ -44,7 +44,6 @@
 #include <linux/random.h>
 #include <linux/spinlock.h>
 #include <linux/ethtool.h>
-#include <linux/sched.h>
 #include <asm/uaccess.h>
 #include <asm/unaligned.h>
 
@@ -144,8 +143,7 @@ typedef struct dhd_pub {
 
 	ulong rx_readahead_cnt;	/* Number of packets where header read-ahead was used. */
 	ulong tx_realloc;	/* Number of tx packets we had to realloc for headroom */
-	ulong fc_packets;	/* Number of flow control pkts recvd */
-
+	ulong fc_packets;       /* Number of flow control pkts recvd */
 	/* Last error return */
 	int bcmerror;
 	uint tickcnt;
@@ -156,7 +154,7 @@ typedef struct dhd_pub {
 	/* Suspend disable flag and "in suspend" flag */
 	int suspend_disable_flag; /* "1" to disable all extra powersaving during suspend */
 	int in_suspend;			/* flag set to 1 when early suspend called */
-	int hang_was_sent;	/* flag that message was send at least once */
+	int hang_was_sent;      /* flag that message was send at least once */
 #ifdef PNO_SUPPORT
 	int pno_enable;                 /* pno status : "1" is pno enable */
 #endif /* PNO_SUPPORT */
@@ -166,7 +164,7 @@ typedef struct dhd_pub {
 	char * pktfilter[100];
 	int pktfilter_count;
 
-	wl_country_t dhd_cspec;		/* Current Locale info */
+	uint8 country_code[WLC_CNTRY_BUF_SZ];
 	char eventmask[WL_EVENTING_MASK_LEN];
 
 } dhd_pub_t;
@@ -216,20 +214,6 @@ typedef struct dhd_pub {
 
 #define DHD_IF_VIF	0x01	/* Virtual IF (Hidden from user) */
 
-inline static void NETIF_ADDR_LOCK(struct net_device *dev)
-{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29))
-	netif_addr_lock_bh(dev);
-#endif
-}
-
-inline static void NETIF_ADDR_UNLOCK(struct net_device *dev)
-{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29))
-	netif_addr_unlock_bh(dev);
-#endif
-}
-
 /* Wakelock Functions */
 extern int dhd_os_wake_lock(dhd_pub_t *pub);
 extern int dhd_os_wake_unlock(dhd_pub_t *pub);
@@ -240,7 +224,6 @@ extern void dhd_os_start_lock(dhd_pub_t *pub);
 extern void dhd_os_start_unlock(dhd_pub_t *pub);
 extern unsigned long dhd_os_spin_lock(dhd_pub_t *pub);
 extern void dhd_os_spin_unlock(dhd_pub_t *pub, unsigned long flags);
-extern void dhd_htc_wake_lock_timeout(struct dhd_info *dhd, int sec);
 
 typedef struct dhd_if_event {
 	uint8 ifidx;
@@ -450,11 +433,6 @@ extern char nv_path[MOD_PARAM_PATHLEN];
 
 extern void dhd_wait_for_event(dhd_pub_t *dhd, bool *lockvar);
 extern void dhd_wait_event_wakeup(dhd_pub_t*dhd);
-
-/* dhd_commn arp offload wrapers */
-extern void dhd_arp_cleanup(dhd_pub_t *dhd);
-int dhd_arp_get_arp_hostip_table(dhd_pub_t *dhd, void *buf, int buflen);
-void dhd_arp_offload_add_ip(dhd_pub_t *dhd, u32 ipaddr);
 
 #define DHD_UNICAST_FILTER_NUM         0
 #define DHD_BROADCAST_FILTER_NUM       1

@@ -32,8 +32,6 @@
 #include <mach/camera.h>
 #include <asm/cacheflush.h>
 #include <linux/rtc.h>
-#include <linux/sched.h>
-
 DEFINE_MUTEX(hlist_mut);
 
 #define MSM_MAX_CAMERA_SENSORS 5
@@ -669,7 +667,7 @@ static int msm_control(struct msm_control_device *ctrl_pmsm,
 	struct msm_ctrl_cmd udata;
 	struct msm_queue_cmd qcmd;
 	struct msm_queue_cmd *qcmd_resp = NULL;
-	uint8_t data[max_control_command_size];
+	uint8_t data[50];
 
 	if (copy_from_user(&udata, arg, sizeof(struct msm_ctrl_cmd))) {
 		ERR_COPY_FROM_USER();
@@ -2426,13 +2424,7 @@ static int msm_open_common(struct inode *inode, struct file *filep,
 	return rc;
 }
 
-static int msm_open_frame(struct inode *inode, struct file *filep)
-{
-        struct msm_device *pmsm =
-                container_of(inode->i_cdev, struct msm_device, cdev);
-        msm_queue_drain(&pmsm->sync->frame_q, list_frame);
-        return msm_open_common(inode, filep, 1);
-}
+
 
 static int msm_open(struct inode *inode, struct file *filep)
 {
@@ -2463,7 +2455,6 @@ static int msm_open_control(struct inode *inode, struct file *filep)
 	return rc;
 }
 
-#ifdef CONFIG_MSM_CAMERA_V4L2
 static int __msm_v4l2_control(struct msm_sync *sync,
 		struct msm_ctrl_cmd *out)
 {
@@ -2500,7 +2491,6 @@ end:
 	CDBG("%s: rc %d\n", __func__, rc);
 	return rc;
 }
-#endif
 
 static const struct file_operations msm_fops_config = {
 	.owner = THIS_MODULE,
@@ -2518,7 +2508,7 @@ static const struct file_operations msm_fops_control = {
 
 static const struct file_operations msm_fops_frame = {
 	.owner = THIS_MODULE,
-	.open = msm_open_frame,
+	.open = msm_open,
 	.unlocked_ioctl = msm_ioctl_frame,
 	.release = msm_release_frame,
 	.poll = msm_poll_frame,
@@ -2726,7 +2716,7 @@ error:
 	return ret;
 }
 
-#ifdef CONFIG_MSM_CAMERA_V4L2
+
 int msm_v4l2_register(struct msm_v4l2_driver *drv)
 {
 	/* FIXME: support multiple sensors */
@@ -2746,7 +2736,6 @@ int msm_v4l2_register(struct msm_v4l2_driver *drv)
 	return 0;
 }
 EXPORT_SYMBOL(msm_v4l2_register);
-#endif
 
 int msm_v4l2_unregister(struct msm_v4l2_driver *drv)
 {

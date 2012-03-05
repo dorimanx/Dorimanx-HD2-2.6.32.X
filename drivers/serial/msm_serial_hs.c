@@ -872,12 +872,11 @@ static void msm_hs_config_port(struct uart_port *uport, int cfg_flags)
 {
 	unsigned long flags;
 
+	spin_lock_irqsave(&uport->lock, flags);
 	if (cfg_flags & UART_CONFIG_TYPE) {
 		uport->type = PORT_MSM;
 		msm_hs_request_port(uport);
 	}
-	spin_lock_irqsave(&uport->lock, flags);
-
 	spin_unlock_irqrestore(&uport->lock, flags);
 }
 

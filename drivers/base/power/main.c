@@ -63,7 +63,6 @@ pm_dev_trace(int type, struct device *dev, pm_message_t state, char *info);
 void device_pm_init(struct device *dev)
 {
 	dev->power.status = DPM_ON;
-	dev->power.wakeup_count = 0;
 	pm_runtime_init(dev);
 }
 

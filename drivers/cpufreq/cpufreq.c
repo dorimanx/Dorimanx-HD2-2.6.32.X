@@ -652,69 +652,61 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
 extern ssize_t acpuclk_get_vdd_levels_havs_str(char *buf);
 static ssize_t show_vdd_levels_havs(struct cpufreq_policy *policy, char *buf)
 {
-	return acpuclk_get_vdd_levels_havs_str(buf);
+   return acpuclk_get_vdd_levels_havs_str(buf);
 }
 
-int	atoi(char *string) {
-  int	retCode=0;
-  int	sign=1;
-
-  while (*string != 0) {
-    if (*string=='+') {
-      sign=1;
-    } else if (*string=='-') {
-      sign=-1;
-    } else if ((*string>='0') && (*string<='9')) {
-      retCode *= 10;
-      retCode += *string-'0';
-    } else {
-      break;
-    }
-    string++;
-  }
-
-  retCode *= sign;
-
-  return (retCode);
+int  atoi(char *string) {
+   int  retCode=0;
+   int  sign=1;
+   while (*string != 0) {
+     if (*string=='+') {
+       sign=1;
+     } else if (*string=='-') {
+       sign=-1;
+     } else if ((*string>='0') && (*string<='9')) {
+       retCode *= 10;
+       retCode += *string-'0';
+     } else {
+       break;
+     }
+     string++;
+   }
+   retCode *= sign;
+   return (retCode);
 }
-
-#define	SEPARATORS	"\t :"
+#define  SEPARATORS  "\t :"
 extern void acpuclk_set_vdd_havs(unsigned acpu_khz, int min_vdd, int max_vdd);
 static ssize_t store_vdd_levels_havs(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
-  char	*fields[3]={0};
-  int	f, nbFields=0;
+   char  *fields[3]={0};
+   int  f, nbFields=0;
+   fields[0]=(char *)buf;
+   for (f=0; (f<count) && (nbFields<3); f++) {
+     if (strchr(SEPARATORS, buf[f]) != NULL) {
+       // new field
+       nbFields++;
+       while ((strchr(SEPARATORS, buf[f])!=NULL) && (f<count)) {
+   f++;
 
-  fields[0]=(char *)buf;
-  for (f=0; (f<count) && (nbFields<3); f++) {
-    if (strchr(SEPARATORS, buf[f]) != NULL) {
-      // new field
-      nbFields++;
-      while ((strchr(SEPARATORS, buf[f])!=NULL) && (f<count)) {
-	f++;
-
-      }
-      fields[nbFields]=(char *)&buf[f];
-    }
-  }
-  if (f==count) {
-    nbFields++;
-  }
-
-  dprintk("nbFields=%d\n", nbFields);
-  for (f=0; f<nbFields; f++) {
-    dprintk("Field%d=%s - val=%d\n", f, fields[f], atoi(fields[f]));
-  }
-
-  // 2 possibilities. Either we have 2 fields containing +/- values.
-  // Either we have 3 fields containing the frequency, new min, and new max
-  if (nbFields==2) {
-    acpuclk_set_vdd_havs(0, atoi(fields[0]), atoi(fields[1]));
-  } else if (nbFields==3) {
-    acpuclk_set_vdd_havs(atoi(fields[0]), atoi(fields[1]), atoi(fields[2]));
-  }
-
-  return count;
+       }
+       fields[nbFields]=(char *)&buf[f];
+     }
+   }
+   if (f==count) {
+     nbFields++;
+   }
+   dprintk("nbFields=%d\n", nbFields);
+   for (f=0; f<nbFields; f++) {
+     dprintk("Field%d=%s - val=%d\n", f, fields[f], atoi(fields[f]));
+   }
+   // 2 possibilities. Either we have 2 fields containing +/- values.
+   // Either we have 3 fields containing the frequency, new min, and new max
+   if (nbFields==2) {
+     acpuclk_set_vdd_havs(0, atoi(fields[0]), atoi(fields[1]));
+   } else if (nbFields==3) {
+     acpuclk_set_vdd_havs(atoi(fields[0]), atoi(fields[1]), atoi(fields[2]));
+   }
+   return count;
 }
 #else
 extern ssize_t acpuclk_get_vdd_levels_str(char *buf);
@@ -780,24 +772,8 @@ static ssize_t store_vdd_levels(struct cpufreq_policy *policy, const char *buf, 
 
 	return count;
 }
-
 #endif // AVS
 #endif // VDD_LEVELS
-
-/**
- * show_scaling_driver - show the current cpufreq HW/BIOS limitation
- */
-static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
-{
-	unsigned int limit;
-	int ret;
-	if (cpufreq_driver->bios_limit) {
-		ret = cpufreq_driver->bios_limit(policy->cpu, &limit);
-		if (!ret)
-			return sprintf(buf, "%u\n", limit);
-	}
-	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
-}
 
 #define define_one_ro(_name) \
 static struct freq_attr _name = \
@@ -818,7 +794,6 @@ define_one_ro(cpuinfo_transition_latency);
 define_one_ro(scaling_available_governors);
 define_one_ro(scaling_driver);
 define_one_ro(scaling_cur_freq);
-define_one_ro(bios_limit);
 define_one_ro(related_cpus);
 define_one_ro(affected_cpus);
 define_one_rw(scaling_min_freq);
@@ -830,7 +805,6 @@ define_one_rw(scaling_setspeed);
 define_one_rw(vdd_levels_havs);
 #else
 define_one_rw(vdd_levels);
-
 #endif // AVS
 #endif // VDD_LEVELS
 
@@ -848,9 +822,9 @@ static struct attribute *default_attrs[] = {
 	&scaling_setspeed.attr,
 #ifdef CONFIG_CPU_FREQ_VDD_LEVELS
 #ifdef CONFIG_MSM_CPU_AVS
-	&vdd_levels_havs.attr,
+    &vdd_levels_havs.attr,
 #else
- 	&vdd_levels.attr,
+    &vdd_levels.attr,
 #endif // AVS
 #endif // VDD_LEVELS
 	NULL
@@ -1067,16 +1041,6 @@ int cpufreq_add_dev_interface(unsigned int cpu, struct cpufreq_policy *policy,
 	}
 	if (cpufreq_driver->target) {
 		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
-		if (ret)
-			goto err_out_kobj_put;
-	}
-	if (cpufreq_driver->bios_limit) {
-		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
-		if (ret)
-			goto err_out_kobj_put;
-	}
-	if (cpufreq_driver->bios_limit) {
-		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
 		if (ret)
 			goto err_out_kobj_put;
 	}

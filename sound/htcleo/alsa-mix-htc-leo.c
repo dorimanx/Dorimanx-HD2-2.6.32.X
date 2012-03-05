@@ -605,4 +605,3 @@ module_exit(htcleo_alsa_exit);
 MODULE_AUTHOR("DFT-Cotulla");
 MODULE_DESCRIPTION("HTC LEO ALSA Mixer module");
 MODULE_LICENSE("GPL v2");
-

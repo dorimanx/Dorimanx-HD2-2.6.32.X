@@ -7,8 +7,7 @@
 #include <linux/i2c.h>
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
-#include <linux/slab.h>
-#include <media/msm_camera_sensor.h>
+#include <media/msm_camera.h>
 #include <mach/board.h>
 #include <mach/gpio.h>
 #include <mach/camera.h>
@@ -50,9 +49,9 @@ static uint16_t g_usModuleVersion;	/*0: rev.4, 1: rev.5 */
 #define GROUPED_PARAMETER_HOLD        0x01
 #define GROUPED_PARAMETER_UPDATE      0x00
 
-/* Greenish in low light */
-#define REG_MASK_CORRUPTED_FRAMES     0x0105
-#define MASK                          0x01
+/* Greenish in low light */ 
+#define REG_MASK_CORRUPTED_FRAMES     0x0105 
+#define MASK                          0x01 
 #define NO_MASK                       0x00
 
 /* PLL Registers */
@@ -189,7 +188,7 @@ struct s5k3e2fx_i2c_reg_conf Init_setting_evt4[] = {
 /*EVT4 */
 	 {REG_PRE_PLL_CLK_DIV, 0x06},	/* PLL setting */
 	 {REG_PLL_MULTIPLIER_MSB, 0x00},
-	 {REG_PLL_MULTIPLIER_LSB, REG_PLL_MULTIPLIER_LSB_VALUE},
+	 {REG_PLL_MULTIPLIER_LSB, 0x83},
 	 {REG_VT_PIX_CLK_DIV, 0x08},
 	 {REG_VT_SYS_CLK_DIV, 0x01},
 	 {REG_OP_PIX_CLK_DIV, 0x08},
@@ -1678,8 +1677,6 @@ static struct s5k3e2fx_waitevent s5k3e2fx_event;
 static DECLARE_WAIT_QUEUE_HEAD(s5k3e2fx_wait_queue);
 DECLARE_MUTEX(s5k3e2fx_sem);
 
-static int sensor_probe_node = 0;
-
 #define MAX_I2C_RETRIES 20
 static int i2c_transfer_retry(struct i2c_adapter *adap,
 			struct i2c_msg *msgs,
@@ -2383,26 +2380,30 @@ static int s5k3e2fc_setting_PREIODIC_EVT5(enum msm_s_setting rt)
 			{0x3063, 0x16},
 		}
 	};
-        /* Most registers are directly applied at next frame after 
-           writing except shutter and analog gain. Shutter and gain are 
-           applied at 2nd or 1st frame later depending on register 
-           writing time. When the camera is switched from preview to 
-           snapshot, the first frame may have wrong shutter/gain and 
-           should be discarded. The register REG_MASK_CORRUPTED_FRAMES 
-           can discard the frame that has wrong shutter/gain. But in 
-           preview mode, the frames should not be dropped. Otherwise 
-           the preview will not be smooth. */ 
-        if (rt == S_RES_PREVIEW) { 
-          /* Frames will be not discarded after exposure and gain are 
-             written. */ 
-          s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 
-            REG_MASK_CORRUPTED_FRAMES, NO_MASK); 
-        } else { 
-          /* Solve greenish in lowlight. Prevent corrupted frame */ 
-          s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 
-            REG_MASK_CORRUPTED_FRAMES, MASK); 
-        }
+         /* Most registers are directly applied at next frame after 
+            writing except shutter and analog gain. Shutter and gain are
+            applied at 2nd or 1st frame later depending on register 
+            writing time. When the camera is switched from preview to 
+            snapshot, the first frame may have wrong shutter/gain and 
+            should be discarded. The register REG_MASK_CORRUPTED_FRAMES 
+            can discard the frame that has wrong shutter/gain. But in 
+            preview mode, the frames should not be dropped. Otherwise 
+            the preview will not be smooth. */ 
+         if (rt == S_RES_PREVIEW) { 
+           /* Frames will be not discarded after exposure and gain are 
+              written. */ 
+           s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 
+             REG_MASK_CORRUPTED_FRAMES, NO_MASK); 
 
+         } else { 
+
+           /* Solve greenish in lowlight. Prevent corrupted frame */ 
+
+           s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 
+
+             REG_MASK_CORRUPTED_FRAMES, MASK); 
+
+         }
 /* solve greenish: hold for both */
 				rc = s5k3e2fx_i2c_write_b(
 					s5k3e2fx_client->addr,
@@ -2796,6 +2797,9 @@ static int s5k3e2fx_probe_init_lens_correction(
 			&lc_setting_evt5[0],
 			ARRAY_SIZE(lc_setting_evt5));
 
+    /* Solve EVT5 greenish in lowlight, prevent corrupted frame*/
+    s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 0x0105,0x1);
+
 	/*20090811  separates the EVT4/EVT5 sensor init and LC setting end */
 	s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr,
 			     S5K3E2FX_REG_MODE_SELECT,
@@ -2892,8 +2896,8 @@ static int s5k3e2fx_set_fps(struct fps_cfg *fps)
 				     s5k3e2fx_reg_pat[S_RES_PREVIEW].blk_l) *
 				    s5k3e2fx_ctrl->fps_divider /
 				    0x400) & 0xFF00));
-set_fps_done:
 #endif
+set_fps_done:
 	return rc;
 }
 
@@ -2902,7 +2906,7 @@ static int s5k3e2fx_write_exp_gain(uint16_t gain, uint32_t line)
 	int rc = 0;
 
 	uint16_t max_legal_gain = 0x0200;
-	/* uint32_t ll_ratio;*/	/* Q10 */
+	// uint32_t ll_ratio;	/* Q10 */
 	uint32_t ll_pck, fl_lines;
 	uint16_t offset = 4;
 	uint32_t gain_msb, gain_lsb;
@@ -3372,6 +3376,8 @@ static struct early_suspend early_suspend_s5k3e2fx = {
 static const char *s5k3e2fxVendor = "Samsung";
 static const char *s5k3e2fxNAME = "s5k3e2fx";
 static const char *s5k3e2fxSize = "5M";
+static uint32_t htcwc_value;
+static int sensor_probe_node = 0;
 
 static ssize_t sensor_vendor_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -3384,24 +3390,69 @@ static ssize_t sensor_vendor_show(struct device *dev,
 	return ret;
 }
 
-static ssize_t sensor_read_node(struct device *dev,
+static ssize_t htcwc_get(struct device *dev,
 		struct device_attribute *attr, char *buf)
+{
+	ssize_t length;
+	length = sprintf(buf, "%d\n", htcwc_value);
+	return length;
+}
+
+static ssize_t htcwc_set(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	uint32_t tmp = 0;
+
+	tmp = buf[0] - 0x30; /* only get the first char */
+
+#if 0
+	if (strcmp(current->comm,"com.android.camera")!=0){
+		pr_info("No permission : not camera ap\n");
+		return -EINVAL;
+	}
+#endif
+
+	htcwc_value = tmp;
+	//pr_info("current_comm = %s\n", current->comm);
+	pr_info("htcwc_value = %d\n", htcwc_value);
+	return count;
+}
+
+static ssize_t sensor_read_node(struct device *dev,
+				struct device_attribute *attr, char *buf)
 {
 	ssize_t length;
 	length = sprintf(buf, "%d\n", sensor_probe_node);
 	return length;
 }
 
-static DEVICE_ATTR(sensor, 0444, sensor_vendor_show, NULL);
+static DEVICE_ATTR(htcwc, 0777, htcwc_get, htcwc_set);
 static DEVICE_ATTR(node, 0444, sensor_read_node, NULL);
+static DEVICE_ATTR(sensor, 0444, sensor_vendor_show, NULL);
 
 static struct kobject *android_s5k3e2fx;
+static struct kobject *android_s5k3e2fx_des;
 
 static int s5k3e2fx_sysfs_init(void)
 {
 	int ret ;
 	pr_info("s5k3e2fx:kobject creat and add\n");
-	android_s5k3e2fx = kobject_create_and_add("android_camera", NULL);
+	android_s5k3e2fx_des = kobject_create_and_add("android_camera", NULL);
+	if (android_s5k3e2fx_des == NULL) {
+		pr_info("s5k3e2fx_sysfs_init: subsystem_register " \
+		"failed\n");
+		ret = -ENOMEM;
+		return ret ;
+	}
+	pr_info("s5k3e2fx:sysfs_create_file\n");
+	ret = sysfs_create_file(android_s5k3e2fx_des, &dev_attr_sensor.attr);
+	if (ret) {
+		pr_info("s5k3e2fx_sysfs_init: sysfs_create_file " \
+		"failed\n");
+		kobject_del(android_s5k3e2fx_des);
+	}
+	
+	android_s5k3e2fx = kobject_create_and_add("android_camera2", NULL);
 	if (android_s5k3e2fx == NULL) {
 		pr_info("s5k3e2fx_sysfs_init: subsystem_register " \
 		"failed\n");
@@ -3415,9 +3466,14 @@ static int s5k3e2fx_sysfs_init(void)
 		"failed\n");
 		kobject_del(android_s5k3e2fx);
 	}
+	ret = sysfs_create_file(android_s5k3e2fx, &dev_attr_htcwc.attr);
+	if (ret) {
+		pr_info("ov9665_sysfs_init: sysfs_create_file htcwc failed\n");
+		kobject_del(android_s5k3e2fx);
+	}
 	ret = sysfs_create_file(android_s5k3e2fx, &dev_attr_node.attr);
 	if (ret) {
-		pr_info("s5k3e2fx_sysfs_init: dev_attr_node failed\n");
+		pr_info("ov9665_sysfs_init: dev_attr_node failed\n");
 		kobject_del(android_s5k3e2fx);
 	}
 
@@ -3554,9 +3610,6 @@ static int s5k3e2fx_sensor_probe(struct msm_camera_sensor_info *info,
 		rc = -ENOTSUPP;
 		goto probe_fail;
 	}
-
-	pr_info("s5k3e2fx s->node %d\n", s->node);
-	sensor_probe_node = s->node;
 
 	msm_camio_clk_rate_set(S5K3E2FX_DEF_MCLK);
 	msleep(20);

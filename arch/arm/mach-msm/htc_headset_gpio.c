@@ -191,10 +191,9 @@ static int get_remote_keycode(int *keycode)
 
 static irqreturn_t mic_irq_handler(int irq, void *dev_id)
 {
+	pr_info("MIC IRQ Handler\n");
 	int value1, value2;
 	int retry_limit = 10;
-
-	pr_info("MIC IRQ Handler\n");
 
 	AJ_DBG("");
 
@@ -212,10 +211,9 @@ static irqreturn_t mic_irq_handler(int irq, void *dev_id)
 
 static irqreturn_t detect_irq_handler(int irq, void *dev_id)
 {
+	pr_info("DET IRQ Handler\n");
 	int value1, value2;
 	int retry_limit = 10;
-
-	pr_info("DET IRQ Handler\n");
 
 	hs_notify_hpin_irq();
 
@@ -257,9 +255,8 @@ static enum hrtimer_restart detect_35mm_event_timer_func(struct hrtimer *data)
 
 static void mic_work_func(struct work_struct *work)
 {
-	int keycode = 0;
-
 	pr_info("MIC Schedule Work\n");
+	int keycode = 0;
 
 	printk("mic_intr_work_func\n");
 	if (get_remote_keycode(&keycode) == 0) 
@@ -275,9 +272,8 @@ static void mic_work_func(struct work_struct *work)
 static void audiojack_work_func(struct work_struct *work)
 {
 	int is_insert;
-	unsigned long flags = 0;
-
 	pr_info("DET Schedule Work\n");
+	unsigned long flags = 0;
 
 	spin_lock_irqsave(&pjack_info->spin_lock, flags);
 	is_insert = pjack_info->audio_jack_flag;

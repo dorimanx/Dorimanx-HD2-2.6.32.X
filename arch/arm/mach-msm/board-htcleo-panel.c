@@ -1615,7 +1615,7 @@ static void detect_panel_type(void)
 	else
 	{
 		htcleo_panel_type = PANELTYPE_UNKNOWN;
-		
+
 		if(board_mfg_mode()==5) 
 		{
 			printk(" offmode charging, panel is off\n");
@@ -1712,7 +1712,7 @@ int __init htcleo_init_panel(void)
 	if (!machine_is_htcleo())
 		return 0;
 
-	vreg_lcd = vreg_get(NULL, "gp4");
+	vreg_lcd = vreg_get(0, "gp4");
 	if (IS_ERR(vreg_lcd))
 	{
 	    return PTR_ERR(vreg_lcd);

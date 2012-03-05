@@ -36,10 +36,10 @@
  */
 
 #define DEF_FREQUENCY_UP_THRESHOLD				(65)
-#define DEF_FREQUENCY_DOWN_THRESHOLD				(20)
+#define DEF_FREQUENCY_DOWN_THRESHOLD				(25)
 #define FREQ_STEP_DOWN 						(160000)
 #define FREQ_SLEEP_MAX 						(230400)
-#define FREQ_AWAKE_MIN 						(499200)
+#define FREQ_AWAKE_MIN 						(368640)
 #define FREQ_STEP_UP_SLEEP_PERCENT				(20)
 
 /*
@@ -62,7 +62,7 @@ unsigned int suspended = 0;
 			(def_sampling_rate / MIN_SAMPLING_RATE_RATIO)
 #define MAX_SAMPLING_RATE			(500 * def_sampling_rate)
 #define DEF_SAMPLING_DOWN_FACTOR		(4)
-#define MAX_SAMPLING_DOWN_FACTOR		(11)
+#define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 static void do_dbs_timer(struct work_struct *work);
@@ -555,7 +555,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				latency = 1;
 
 			def_sampling_rate = 10 * latency *
-				CONFIG_LATENCY_MULTIPLIER;
+				CONFIG_CPU_FREQ_SAMPLING_LATENCY_MULTIPLIER;
 
 			if (def_sampling_rate < MIN_STAT_SAMPLING_RATE)
 				def_sampling_rate = MIN_STAT_SAMPLING_RATE;

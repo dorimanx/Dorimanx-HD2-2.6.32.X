@@ -2065,16 +2065,6 @@ const struct mtd_partition full_nand_partition_info[] = {
 };
 #endif
 
-#ifdef CONFIG_MTD_PARTITIONS
-const struct mtd_partition mac_nand_partition_info[] = {
-	[0]{
-     		.name  = "mac",
-     		.offset  = 0x03f20000,
-     		.size  = 0x00020000,
-   	},
-};
-#endif
-
 static int __devinit msm_nand_probe(struct platform_device *pdev)
 {
 	struct msm_nand_info *info;
@@ -2136,8 +2126,7 @@ static int __devinit msm_nand_probe(struct platform_device *pdev)
 		add_mtd_partitions(&info->mtd, info->parts, err);
 	else if (err <= 0 && pdata && pdata->parts) {
 		add_mtd_partitions(&info->mtd, pdata->parts, pdata->nr_parts);
-		add_mtd_partitions(&info->mtd, mac_nand_partition_info, 1);
-//		add_mtd_partitions(&info->mtd, full_nand_partition_info, 1); //old setting
+		add_mtd_partitions(&info->mtd, full_nand_partition_info, 1);
 	}
 	else
 #endif

@@ -374,13 +374,13 @@
 #define  PCI_EXP_TYPE_LEG_END	0x1	/* Legacy Endpoint */
 #define  PCI_EXP_TYPE_ROOT_PORT 0x4	/* Root Port */
 #define  PCI_EXP_TYPE_UPSTREAM	0x5	/* Upstream Port */
-#define  PCI_EXP_TYPE_DOWNSTREAM 0x6   /* Downstream Port */
-#define  PCI_EXP_TYPE_PCI_BRIDGE 0x7   /* PCI/PCI-X Bridge */
-#define  PCI_EXP_TYPE_RC_END   0x9     /* Root Complex Integrated Endpoint */
-#define  PCI_EXP_TYPE_RC_EC    0xa     /* Root Complex Event Collector */
-#define PCI_EXP_FLAGS_SLOT     0x0100  /* Slot implemented */
-#define PCI_EXP_FLAGS_IRQ      0x3e00  /* Interrupt message number */
-#define PCI_EXP_DEVCAP         4       /* Device capabilities */
+#define  PCI_EXP_TYPE_DOWNSTREAM 0x6	/* Downstream Port */
+#define  PCI_EXP_TYPE_PCI_BRIDGE 0x7	/* PCI/PCI-X Bridge */
+#define  PCI_EXP_TYPE_RC_END	0x9	/* Root Complex Integrated Endpoint */
+#define  PCI_EXP_TYPE_RC_EC	0x10	/* Root Complex Event Collector */
+#define PCI_EXP_FLAGS_SLOT	0x0100	/* Slot implemented */
+#define PCI_EXP_FLAGS_IRQ	0x3e00	/* Interrupt message number */
+#define PCI_EXP_DEVCAP		4	/* Device capabilities */
 #define  PCI_EXP_DEVCAP_PAYLOAD	0x07	/* Max_Payload_Size */
 #define  PCI_EXP_DEVCAP_PHANTOM	0x18	/* Phantom functions */
 #define  PCI_EXP_DEVCAP_EXT_TAG	0x20	/* Extended tags */

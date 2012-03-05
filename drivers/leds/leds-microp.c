@@ -161,7 +161,6 @@ static void microp_led_brightness_set(struct led_classdev *led_cdev,enum led_bri
 		pr_err("%s: led_brightness_set failed to set mode\n", __func__);
 }
 
-#if 0
 static void microp_led_jogball_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness){
 	
 	struct microp_led_data *ldata;
@@ -200,13 +199,11 @@ static void microp_led_jogball_brightness_set(struct led_classdev *led_cdev,enum
 	if (ret < 0)
 		pr_err("%s failed on set jogball mode:0x%2.2X\n", __func__, data[0]);
 }
-#endif
 
 static void microp_led_mobeam_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness){
 	;
 }
 
-#if 0
 static void microp_led_wimax_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness){
 	
 	struct microp_led_data *ldata;
@@ -244,7 +241,6 @@ static void microp_led_wimax_brightness_set(struct led_classdev *led_cdev,enum l
 	if (ret < 0)
 		pr_err("%s failed on set wimax mode:0x%2.2X\n", __func__, data[0]);
 }
-#endif
 
 static void microp_led_gpo_brightness_set(struct led_classdev *led_cdev,
 			       enum led_brightness brightness)
@@ -636,10 +632,10 @@ static int microp_led_probe(struct platform_device *pdev)
 	for (i = 0; i < pdata->num_leds; i++) {
 		ldata[i].led_config = pdata->led_config + i;
 		ldata[i].ldev.name = pdata->led_config[i].name;
-//		if (pdata->led_config[i].type == LED_JOGBALL)
-//			ldata[i].ldev.brightness_set
-//				= microp_led_jogball_brightness_set;
-		if (pdata->led_config[i].type == LED_GPO)
+		if (pdata->led_config[i].type == LED_JOGBALL)
+			ldata[i].ldev.brightness_set
+				= microp_led_jogball_brightness_set;
+		else if (pdata->led_config[i].type == LED_GPO)
 			ldata[i].ldev.brightness_set
 				= microp_led_gpo_brightness_set;
 		else if (pdata->led_config[i].type == LED_PWM)
@@ -648,9 +644,9 @@ static int microp_led_probe(struct platform_device *pdev)
 		else if (pdata->led_config[i].type == LED_RGB)
 			ldata[i].ldev.brightness_set
 				= microp_led_brightness_set;
-//		else if (pdata->led_config[i].type == LED_WIMAX)
-//			ldata[i].ldev.brightness_set
-//				= microp_led_wimax_brightness_set;
+		else if (pdata->led_config[i].type == LED_WIMAX)
+			ldata[i].ldev.brightness_set
+				= microp_led_wimax_brightness_set;
 		else if (pdata->led_config[i].type == LED_MOBEAM)
 			ldata[i].ldev.brightness_set
 				= microp_led_mobeam_brightness_set;

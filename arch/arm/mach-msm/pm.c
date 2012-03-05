@@ -715,7 +715,7 @@ void msm_pm_flush_console(void)
 }
 
 #if defined(CONFIG_MACH_HTCLEO)
-static void htcleo_save_reset_reason(void)
+static void htcleo_save_reset_reason(int ijy)
 {
 	/* save restart_reason to be accesible in bootloader @ ramconsole - 0x1000*/
 	uint32_t *bootloader_reset_reason = ioremap(0x2FFB0000, PAGE_SIZE);
@@ -733,7 +733,7 @@ static void msm_pm_restart(char str, const char *cmd)
 	msm_pm_flush_console();
 
 #if defined(CONFIG_MACH_HTCLEO)
-	htcleo_save_reset_reason();
+	htcleo_save_reset_reason(1);
 #endif
 
 	/*  always reboot device through proc comm */
@@ -868,7 +868,7 @@ static void axi_early_suspend(struct early_suspend *handler)
 static void axi_late_resume(struct early_suspend *handler)
 {
 	axi_rate = 128000000;
-	sleep_axi_rate = 61000000;
+	sleep_axi_rate = 117000000;
 	clk_set_rate(axi_clk, axi_rate);
 }
 
@@ -888,7 +888,7 @@ static void __init msm_pm_axi_init(void)
 		return;
 	}
 	axi_rate = 128000000;
-	sleep_axi_rate = 61000000;
+	sleep_axi_rate = 117000000;
 	clk_set_rate(axi_clk, axi_rate);
 	register_early_suspend(&axi_screen_suspend);
 #else
@@ -940,4 +940,3 @@ static int __init msm_pm_init(void)
 }
 
 __initcall(msm_pm_init);
-

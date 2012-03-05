@@ -31,7 +31,6 @@ enum {
 	DEBUG_EXPIRE = 1U << 3,
 	DEBUG_WAKE_LOCK = 1U << 4,
 	DEBUG_FORBID_SUSPEND = 1U << 5,
-	DEBUG_DESTROY = 1U << 5,
 };
 static int debug_mask = DEBUG_EXIT_SUSPEND | DEBUG_WAKEUP | DEBUG_FORBID_SUSPEND;
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
@@ -46,10 +45,6 @@ static DEFINE_SPINLOCK(list_lock);
 static LIST_HEAD(inactive_locks);
 static struct list_head active_wake_locks[WAKE_LOCK_TYPE_COUNT];
 static int current_event_num;
-static int suspend_sys_sync_count;
-static DEFINE_SPINLOCK(suspend_sys_sync_lock);
-static struct workqueue_struct *suspend_sys_sync_work_queue;
-static DECLARE_COMPLETION(suspend_sys_sync_comp);
 struct workqueue_struct *suspend_work_queue;
 struct wake_lock main_wake_lock;
 suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
@@ -215,25 +210,21 @@ static void expire_wake_lock(struct wake_lock *lock)
 static void print_active_locks_locked(int type)
 {
 	struct wake_lock *lock;
-	bool print_expired = true;
 
 	BUG_ON(type >= WAKE_LOCK_TYPE_COUNT);
 	list_for_each_entry(lock, &active_wake_locks[type], link) {
 		if (lock->flags & WAKE_LOCK_AUTO_EXPIRE) {
 			long timeout = lock->expires - jiffies;
-			if (timeout > 0)
-				pr_info("active wake lock %s, time left %ld\n",
-					lock->name, timeout);
-			else if (print_expired)
+			if (timeout <= 0)
 				pr_info("wake lock %s, expired\n", lock->name);
-		} else {
+			else
+				pr_info("active wake lock %s, time left %ld.%03lu\n",
+					lock->name, timeout / HZ,
+					(timeout % HZ) * MSEC_PER_SEC / HZ);
+		} else
 			pr_info("active wake lock %s\n", lock->name);
-			if (!(debug_mask & DEBUG_EXPIRE))
-				print_expired = false;
-		}
 	}
 }
-
 
 void print_active_locks(int type)
 {
@@ -268,77 +259,8 @@ long has_wake_lock(int type)
 	unsigned long irqflags;
 	spin_lock_irqsave(&list_lock, irqflags);
 	ret = has_wake_lock_locked(type);
-	if (ret && (debug_mask & DEBUG_SUSPEND) && type == WAKE_LOCK_SUSPEND)
-		print_active_locks(type);
 	spin_unlock_irqrestore(&list_lock, irqflags);
 	return ret;
-}
-
-static void suspend_sys_sync(struct work_struct *work)
-{
-   if (debug_mask & DEBUG_SUSPEND)
-     pr_info("PM: Syncing filesystems...\n");
-
-   sys_sync();
-
-   if (debug_mask & DEBUG_SUSPEND)
-     pr_info("sync done.\n");
-
-   spin_lock(&suspend_sys_sync_lock);
-   suspend_sys_sync_count--;
-   spin_unlock(&suspend_sys_sync_lock);
-}
-
-static DECLARE_WORK(suspend_sys_sync_work, suspend_sys_sync);
-
-void suspend_sys_sync_queue(void)
-{
-   int ret;
-
-   spin_lock(&suspend_sys_sync_lock);
-   ret = queue_work(suspend_sys_sync_work_queue, &suspend_sys_sync_work);
-   if (ret)
-     suspend_sys_sync_count++;
-   spin_unlock(&suspend_sys_sync_lock);
-}
-
-static bool suspend_sys_sync_abort;
-
-static void suspend_sys_sync_handler(unsigned long);
-static DEFINE_TIMER(suspend_sys_sync_timer, suspend_sys_sync_handler, 0, 0);
- /* value should be less then half of input event wake lock timeout value
-  * which is currently set to 5*HZ (see drivers/input/evdev.c)
-  */
-
-#define SUSPEND_SYS_SYNC_TIMEOUT (HZ/4)
-static void suspend_sys_sync_handler(unsigned long arg)
-{
-   if (suspend_sys_sync_count == 0) {
-     complete(&suspend_sys_sync_comp);
-   } else if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
-     suspend_sys_sync_abort = true;
-     complete(&suspend_sys_sync_comp);
-   } else {
-     mod_timer(&suspend_sys_sync_timer, jiffies +
-         SUSPEND_SYS_SYNC_TIMEOUT);
-   }
-}
-
-int suspend_sys_sync_wait(void)
-{
-   suspend_sys_sync_abort = false;
-
-   if (suspend_sys_sync_count != 0) {
-     mod_timer(&suspend_sys_sync_timer, jiffies +
-         SUSPEND_SYS_SYNC_TIMEOUT);
-     wait_for_completion(&suspend_sys_sync_comp);
-   }
-   if (suspend_sys_sync_abort) {
-     pr_info("suspend aborted....while waiting for sys_sync\n");
-     return -EAGAIN;
-   }
-
-   return 0;
 }
 
 static void suspend(struct work_struct *work)
@@ -346,6 +268,7 @@ static void suspend(struct work_struct *work)
 	int ret;
 	int entry_event_num;
 
+	pr_info("[R] suspend start\n");
 	if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
 		if (debug_mask & DEBUG_SUSPEND || debug_mask & DEBUG_FORBID_SUSPEND)
 			pr_info("suspend: abort suspend\n");
@@ -355,7 +278,7 @@ static void suspend(struct work_struct *work)
 	}
 
 	entry_event_num = current_event_num;
-	suspend_sys_sync_queue();
+	sys_sync();
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("suspend: enter suspend\n");
 	ret = pm_suspend(requested_suspend_state);
@@ -374,6 +297,7 @@ static void suspend(struct work_struct *work)
 			pr_info("suspend: pm_suspend returned with no event\n");
 		wake_lock_timeout(&unknown_wakeup, HZ / 2);
 	}
+	pr_info("[R] resume end\n");
 }
 static DECLARE_WORK(suspend_work, suspend);
 
@@ -427,6 +351,7 @@ void wake_lock_init(struct wake_lock *lock, int type, const char *name)
 	if (name)
 		lock->name = name;
 	BUG_ON(!lock->name);
+	BUG_ON(lock->flags & WAKE_LOCK_INITIALIZED);
 
 	if (debug_mask & DEBUG_WAKE_LOCK)
 		pr_info("wake_lock_init name=%s\n", lock->name);
@@ -451,7 +376,7 @@ EXPORT_SYMBOL(wake_lock_init);
 void wake_lock_destroy(struct wake_lock *lock)
 {
 	unsigned long irqflags;
-	if (debug_mask & (DEBUG_WAKE_LOCK | DEBUG_DESTROY))
+	if (debug_mask & DEBUG_WAKE_LOCK)
 		pr_info("wake_lock_destroy name=%s\n", lock->name);
 	spin_lock_irqsave(&list_lock, irqflags);
 	lock->flags &= ~WAKE_LOCK_INITIALIZED;
@@ -649,14 +574,6 @@ static int __init wakelocks_init(void)
 		goto err_platform_driver_register;
 	}
 
-	INIT_COMPLETION(suspend_sys_sync_comp);
-	suspend_sys_sync_work_queue =
-     	  create_singlethread_workqueue("suspend_sys_sync");
-	if (suspend_sys_sync_work_queue == NULL) {
-     	  	ret = -ENOMEM;
-     	  	goto err_suspend_sys_sync_work_queue;
-        }
-
 	suspend_work_queue = create_singlethread_workqueue("suspend");
 	if (suspend_work_queue == NULL) {
 		ret = -ENOMEM;
@@ -669,7 +586,6 @@ static int __init wakelocks_init(void)
 
 	return 0;
 
-err_suspend_sys_sync_work_queue:
 err_suspend_work_queue:
 	platform_driver_unregister(&power_driver);
 err_platform_driver_register:
@@ -689,7 +605,6 @@ static void  __exit wakelocks_exit(void)
 	remove_proc_entry("wakelocks", NULL);
 #endif
 	destroy_workqueue(suspend_work_queue);
-	destroy_workqueue(suspend_sys_sync_work_queue);
 	platform_driver_unregister(&power_driver);
 	platform_device_unregister(&power_device);
 	wake_lock_destroy(&unknown_wakeup);

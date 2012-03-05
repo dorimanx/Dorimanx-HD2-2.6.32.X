@@ -38,9 +38,8 @@
 #include <linux/mutex.h>
 #include <linux/file.h>
 #include <asm/uaccess.h>
-#include <linux/backing-dev.h>
-#include <linux/cleancache.h>
 #include "internal.h"
+#include <linux/cleancache.h>
 
 LIST_HEAD(super_blocks);
 DEFINE_SPINLOCK(sb_lock);
@@ -64,7 +63,6 @@ static struct super_block *alloc_super(struct file_system_type *type)
 			goto out;
 		}
 		INIT_LIST_HEAD(&s->s_files);
-		s->s_bdi = &default_backing_dev_info;
 		INIT_LIST_HEAD(&s->s_instances);
 		INIT_HLIST_HEAD(&s->s_anon);
 		INIT_LIST_HEAD(&s->s_inodes);
@@ -188,20 +186,21 @@ void put_super(struct super_block *sb)
  *	tell fs driver to shut it down and drop the temporary reference we
  *	had just acquired.
  */
-
 void deactivate_super(struct super_block *s)
 {
-        struct file_system_type *fs = s->s_type;
-        if (atomic_dec_and_lock(&s->s_active, &sb_lock)) {
-                s->s_count -= S_BIAS-1;
-                spin_unlock(&sb_lock);
-                vfs_dq_off(s, 0);
-                down_write(&s->s_umount);
-                fs->kill_sb(s);
-                put_filesystem(fs);
-                put_super(s);
-        }
+	struct file_system_type *fs = s->s_type;
+	if (atomic_dec_and_lock(&s->s_active, &sb_lock)) {
+		s->s_count -= S_BIAS-1;
+		spin_unlock(&sb_lock);
+		vfs_dq_off(s, 0);
+		down_write(&s->s_umount);
+		fs->kill_sb(s);
+		cleancache_flush_fs(s);
+		put_filesystem(fs);
+		put_super(s);
+	}
 }
+
 EXPORT_SYMBOL(deactivate_super);
 
 /**
@@ -219,7 +218,6 @@ void deactivate_locked_super(struct super_block *s)
 {
 	struct file_system_type *fs = s->s_type;
 	if (atomic_dec_and_lock(&s->s_active, &sb_lock)) {
-		cleancache_flush_fs(s);
 		s->s_count -= S_BIAS-1;
 		spin_unlock(&sb_lock);
 		vfs_dq_off(s, 0);
@@ -469,29 +467,6 @@ rescan:
 }
 
 EXPORT_SYMBOL(get_super);
-
-/**
- *  get_super_thawed - get thawed superblock of a device
- *  @bdev: device to get the superblock for
- *
- *  Scans the superblock list and finds the superblock of the file system
- *  mounted on the device. The superblock is returned once it is thawed
- *  (or immediately if it was not frozen). %NULL is returned if no match
- *  is found.
- */
-
-struct super_block *get_super_thawed(struct block_device *bdev)
-{
-   while (1) {
-     struct super_block *s = get_super(bdev);
-     if (!s || s->s_frozen == SB_UNFROZEN)
-       return s;
-     up_read(&s->s_umount);
-     vfs_check_frozen(s, SB_FREEZE_WRITE);
-     put_super(s);
-   }
-}
-EXPORT_SYMBOL(get_super_thawed);
 
 /**
  * get_active_super - get an active reference to the superblock of a device
@@ -966,7 +941,6 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void 
 	if (error < 0)
 		goto out_free_secdata;
 	BUG_ON(!mnt->mnt_sb);
-	WARN_ON(mnt->mnt_sb->s_bdi == &default_backing_dev_info);
 
  	error = security_sb_kern_mount(mnt->mnt_sb, flags, secdata);
  	if (error)

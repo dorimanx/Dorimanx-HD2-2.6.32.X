@@ -55,15 +55,9 @@ include/linux/version.h
 include/linux/utsrelease.h
 include/linux/bounds.h
 include/generated
-include/config/auto.conf
-include/config/auto.conf.cmd
-include/config/tristate.conf
-include/generated/autoconf.h
-include/generated/compile.h
 
 # stgit generated dirs
 patches-*
-file-bkp/
 
 # quilt's files
 patches

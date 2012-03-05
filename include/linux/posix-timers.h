@@ -63,7 +63,6 @@ struct k_itimer {
 			unsigned long incr;
 			unsigned long expires;
 		} mmtimer;
-		struct rcu_head rcu;
 	} it;
 };
 

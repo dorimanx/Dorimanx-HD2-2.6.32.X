@@ -501,9 +501,13 @@ static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
 		mdp_writel_dbg(mdp, regs->bg_img_sz, MDP_PPP_BG_IMAGE_SIZE);
 		mdp_writel_dbg(mdp, regs->bg_alpha_sel,
 			       MDP_PPP_BLEND_BG_ALPHA_SEL);
+			       
+#if defined(CONFIG_MACH_HTCLEO)
+      		mdp_writel_dbg(mdp, 0, MDP_TFETCH_TEST_MODE);
+#endif
 #endif
 	}
-//	if( src_file != -1 && dst_file != -1 )
+	if( src_file != -1 && dst_file != -1 )
 		flush_imgs(req, regs, src_file, dst_file);
 	mdp_writel_dbg(mdp, 0x1000, MDP_DISPLAY0_START);
 	return 0;

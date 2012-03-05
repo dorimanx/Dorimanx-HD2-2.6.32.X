@@ -171,14 +171,6 @@ size_t ksize(const void *);
 #include <linux/slab_def.h>
 #endif
 
-#ifdef CONFIG_SLQB
-#ifdef CONFIG_FAILSLAB
-# define SLAB_FAILSLAB          0x02000000UL    /* Fault injection mark */
-#else
-# define SLAB_FAILSLAB          0x00000000UL
-#endif
-#endif
-
 /**
  * kcalloc - allocate memory for an array. The memory is set to zero.
  * @n: number of elements.

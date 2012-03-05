@@ -19,7 +19,7 @@
 #include <linux/wait.h>
 #include <linux/dma-mapping.h>
 #include <linux/clk.h>
-#include <linux/slab.h>
+
 #include <linux/delay.h>
 #include <linux/wakelock.h>
 #include <linux/firmware.h>
@@ -37,8 +37,7 @@
 
 #include "q6audio_devices.h"
 
-#define TRACE_CHECKS_Q6 0
-#if TRACE_CHECKS_Q6
+#if 0
 #define TRACE(x...) pr_info("Q6: "x)
 #else
 #define TRACE(x...) do{}while(0)
@@ -343,7 +342,9 @@ static int audio_ioctl(struct audio_client *ac, void *ptr, uint32_t len)
 	hdr->src = AUDIO_ADDR(ac->session, 0, AUDIO_DOMAIN_MODEM);
 	hdr->context = ac->session;
 	ac->cb_status = -EBUSY;
+	pr_info("DAL CALL OPCODE: %d\n", hdr->opcode);
 	r = dal_call(ac->client, AUDIO_OP_CONTROL, 5, ptr, len, &tmp, sizeof(tmp));
+	pr_info("DAL CALL RET: %d\n", r);
 	if (r != 4)
 		return -EIO;
 	if (!wait_event_timeout(ac->wait, (ac->cb_status != -EBUSY), 5*HZ)) {
@@ -683,7 +684,6 @@ static int audio_rx_mute(struct audio_client *ac, uint32_t dev_id, int mute)
 	return audio_ioctl(ac, &rpc, sizeof(rpc));
 }
 
-#if 0
 static int audio_tx_volume(struct audio_client *ac, uint32_t dev_id, int32_t volume)
 {
 	struct adsp_set_dev_volume_command rpc;
@@ -695,7 +695,6 @@ static int audio_tx_volume(struct audio_client *ac, uint32_t dev_id, int32_t vol
 	rpc.volume = volume;
 	return audio_ioctl(ac, &rpc, sizeof(rpc));
 }
-#endif
 
 static int audio_tx_mute(struct audio_client *ac, uint32_t dev_id, int mute)
 {
@@ -737,9 +736,7 @@ static void callback(void *data, int len, void *cookie)
 {
 	struct adsp_event_hdr *e = data;
 	struct audio_client *ac;
-#if TRACE_CHECKS_Q6
 	struct adsp_buffer_event *abe = data;
-#endif
 
 	TRACE("audio callback: context %d, event 0x%x, status %d\n",
 	      e->context, e->event_id, e->status);

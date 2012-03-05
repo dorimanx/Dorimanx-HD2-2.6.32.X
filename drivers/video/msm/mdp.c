@@ -140,7 +140,7 @@ static irqreturn_t mdp_isr(int irq, void *data)
 	mdp_writel(mdp, status, MDP_INTR_CLEAR);
 
 
-#if 0 && defined(CONFIG_MACH_HTCLEO)
+#if defined(CONFIG_MACH_HTCLEO)
 	status &= ~0x10000; // Cotulla
 #endif
 
@@ -258,7 +258,7 @@ static void mdp_dmas_to_mddi(void *priv, uint32_t addr, uint32_t stride,
 {
 	struct mdp_info *mdp = priv;
 	uint32_t dma2_cfg;
-	uint32_t video_packet_parameter = 0;
+	uint32_t video_packet_parameter;
 	uint16_t ld_param = 1;
 
 
@@ -720,7 +720,6 @@ end:
 	return ret;
 }
 
-#if 0 //DEAD function
 int mdp_fb_mirror(struct mdp_device *mdp_dev,
 		struct fb_info *src_fb, struct fb_info *dst_fb,
 		struct mdp_blit_req *req)
@@ -751,7 +750,6 @@ err_bad_blit:
 err_wait_failed:
 	return ret;
 }
-#endif
 
 void mdp_set_grp_disp(struct mdp_device *mdp_dev, unsigned disp_id)
 {
@@ -1016,7 +1014,6 @@ int mdp_probe(struct platform_device *pdev)
 
 	mdp->clk = clk_get(&pdev->dev, "mdp_clk");
 	if (IS_ERR(mdp->clk)) {
-		kfree(mdp);
 		printk(KERN_INFO "mdp: failed to get mdp clk");
 		ret = PTR_ERR(mdp->clk);
 		goto error_get_mdp_clk;

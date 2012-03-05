@@ -65,6 +65,7 @@ do { \
 		printk(KERN_INFO "msmfb: "fmt, ##args); \
 } while (0)
 
+#define BITS_PER_PIXEL(info) (info->fb->var.bits_per_pixel)
 #define BYTES_PER_PIXEL(info) (info->fb->var.bits_per_pixel >> 3)
 static int msmfb_debug_mask;
 module_param_named(msmfb_debug_mask, msmfb_debug_mask, int,
@@ -455,12 +456,12 @@ static int display_notifier_callback(struct notifier_block *nfb,
 		unsigned long action,                       
 		void *ignored)                              
 {                                                                                
-//	struct msmfb_info *msm_fb = (struct msmfb_info *)ignored;
+	struct msmfb_info *msm_fb = (struct msmfb_info *)ignored;
 	
 	switch (action) {
 	case NOTIFY_MSM_FB:
 		printk(KERN_DEBUG "NOTIFY_MSM_FB\n");
-//		msmfb_resume(&msm_fb->early_suspend);
+		msmfb_resume(&msm_fb->early_suspend);
 		break;
 	case NOTIFY_POWER:
 		/* nothing to do */

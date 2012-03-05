@@ -277,7 +277,9 @@ void invalidate_bdev(struct block_device *bdev)
 
 	invalidate_bh_lrus();
 	invalidate_mapping_pages(mapping, 0, -1);
-
+	/* 99% of the time, we don't need to flush the cleancache on the bdev.
+	 * But, for the strange corners, lets be cautious
+	 */
 	cleancache_flush_inode(mapping);
 }
 EXPORT_SYMBOL(invalidate_bdev);

@@ -790,7 +790,6 @@ static long wb_writeback(struct bdi_writeback *wb,
 	};
 	unsigned long oldest_jif;
 	long wrote = 0;
-	long write_chunk;
 	struct inode *inode;
 
 	if (wbc.for_kupdate) {
@@ -802,15 +801,6 @@ static long wb_writeback(struct bdi_writeback *wb,
 		wbc.range_start = 0;
 		wbc.range_end = LLONG_MAX;
 	}
-	/*
-	 * In WB_SYNC_ALL mode, we just want to ignore nr_to_write as
-	 * we need to write everything and livelock avoidance is implemented
-	 * differently.
-	 */
-	if (wbc.sync_mode == WB_SYNC_NONE)
-		write_chunk = MAX_WRITEBACK_PAGES;
-	else
-		write_chunk = LONG_MAX;
 
 	for (;;) {
 		/*
@@ -828,7 +818,7 @@ static long wb_writeback(struct bdi_writeback *wb,
 
 		wbc.more_io = 0;
 		wbc.encountered_congestion = 0;
-		wbc.nr_to_write = write_chunk;
+		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
 		wbc.pages_skipped = 0;
 		writeback_inodes_wb(wb, &wbc);
 		args->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
@@ -847,7 +837,7 @@ static long wb_writeback(struct bdi_writeback *wb,
 		/*
 		 * Did we write something? Try for more
 		 */
-		if (wbc.nr_to_write < write_chunk)
+		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
 			continue;
 		/*
 		 * Nothing written. Wait for some inode to
@@ -1116,7 +1106,6 @@ void __mark_inode_dirty(struct inode *inode, int flags)
 	 * -- mikulas
 	 */
 	smp_mb();
-
 
 	/* avoid the locking if we can */
 	if ((inode->i_state & flags) == flags)

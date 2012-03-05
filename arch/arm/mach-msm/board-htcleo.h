@@ -38,12 +38,6 @@
 #define MSM_FB_BASE		MSM_PMEM_SMI_BASE
 #define MSM_FB_SIZE		0x00600000
 
-#define MSM_PMEM_MDP_BASE  	0x3B700000
-#define MSM_PMEM_MDP_SIZE  	0x02000000
-
-#define MSM_PMEM_ADSP_BASE	0x3D700000
-#define MSM_PMEM_ADSP_SIZE	0x02900000
-
 #define MSM_GPU_PHYS_BASE	(MSM_PMEM_SMI_BASE + MSM_FB_SIZE)
 #define MSM_GPU_PHYS_SIZE	0x00800000
 /* #define MSM_GPU_PHYS_SIZE	0x00300000 */
@@ -60,7 +54,7 @@
 
 #define MSM_PMEM_SF_SIZE        0x02000000
 
-//#define MSM_PMEM_ADSP_SIZE	0x02196000
+#define MSM_PMEM_ADSP_SIZE	0x02196000
 
 /* MSM_RAM_CONSOLE uses the last 0x00040000 of EBI memory, defined in msm_iomap.h
 #define MSM_RAM_CONSOLE_SIZE    0x00040000
@@ -179,9 +173,8 @@
 #define HTCLEO_LCD_DE				(138)
 	
 /* Voltage driver */
-#define HTCLEO_TPS65023_MIN_UV_MV		(800)
+#define HTCLEO_TPS65023_MIN_UV_MV		(850)
 #define HTCLEO_TPS65023_MAX_UV_MV		(1375)
-#define HTCLEO_TPS65023_UV_STEP_MV		(25)
 
 /* LEDS */
 #define LED_RGB	(1 << 0)
@@ -202,9 +195,5 @@ struct microp_led_platform_data {
 int htcleo_pm_set_vreg(int enable, unsigned id);
 int __init htcleo_init_panel(void);
 int htcleo_is_nand_boot(void);
-unsigned htcleo_get_vbus_state(void);
-void config_camera_on_gpios(void);
-void config_camera_off_gpios(void);
-int is_valid_mac_address(char *mac);
 
 #endif /* __ARCH_ARM_MACH_MSM_BOARD_HTCLEO_H */

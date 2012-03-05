@@ -23,7 +23,6 @@
 
 #include <linux/kernel.h>
 #include <linux/fs.h>
-#include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/hdreg.h>
 #include <linux/kdev_t.h>
@@ -125,6 +124,7 @@ static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
 			ret = -EROFS;
 		}
 	}
+
 	return ret;
 }
 

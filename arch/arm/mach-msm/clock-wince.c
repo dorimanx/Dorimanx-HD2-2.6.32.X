@@ -34,8 +34,6 @@
 
 //#define ENABLE_CLOCK_INFO   1
 
-extern struct clk msm_clocks[];
-
 static DEFINE_MUTEX(clocks_mutex);
 static DEFINE_SPINLOCK(clocks_lock);
 static LIST_HEAD(clocks);
@@ -241,10 +239,6 @@ int control_set_grp_clk;
 
 static void set_grp_clk( int on )
 {
-	int i = 0;
-	int status = 0;
-	int control;
-
 	if ( on != 0 )
 	{
 		//axi_reset
@@ -284,10 +278,9 @@ static void set_grp_clk( int on )
 		writel(readl(MSM_CLK_CTL_BASE)       |0x8,           MSM_CLK_CTL_BASE);
 		//grp MD
 		writel(readl(MSM_CLK_CTL_BASE+0x80)  |0x1,      	 MSM_CLK_CTL_BASE+0x80);  //PRPH_WEB_NS_REG
-
-		while ( status == 0 && i < 100) {
-			i++;
-			status = readl(MSM_CLK_CTL_BASE+0x84) & 0x1;			
+		while ( status_set_grp_clk == 0 && i_set_grp_clk < 100) {
+			i_set_grp_clk++;
+			status_set_grp_clk = readl(MSM_CLK_CTL_BASE+0x84) & 0x1;			
 		}
 		
 		//axi_reset
@@ -306,8 +299,8 @@ static void set_grp_clk( int on )
 		writel(readl(MSM_CLK_CTL_BASE+0x290) |0x4,      	MSM_CLK_CTL_BASE+0x290); //MSM_RAIL_CLAMP_IO
 		writel(                              0x11f,         MSM_CLK_CTL_BASE+0x284); //VDD_GRP_GFS_CTL
 
-		control = readl(MSM_CLK_CTL_BASE+0x288); //VDD_VDC_GFS_CTL
-		if ( control & 0x100 )
+		control_set_grp_clk = readl(MSM_CLK_CTL_BASE+0x288); //VDD_VDC_GFS_CTL
+		if ( control_set_grp_clk & 0x100 )
 			writel(readl(MSM_CLK_CTL_BASE) &(~(0x8)),      	MSM_CLK_CTL_BASE);
 	}
 }
@@ -932,8 +925,8 @@ static int pc_clk_enable(uint32_t id)
 static void pc_clk_disable(uint32_t id)
 {
 	struct msm_clock_params params;
-	int r;
 	params = msm_clk_get_params(id);
+	int r;
 
     r = new_clk_disable(id);
     if (r != -1) return;
@@ -962,9 +955,9 @@ static void pc_clk_disable(uint32_t id)
 
 static int pc_clk_set_rate(uint32_t id, unsigned long rate)
 {
-	int retval, r;
-
+	int retval;
 	retval = 0;
+	int r;
 
     r = new_clk_set_rate(id, rate);
 	if (r != -1) return r;
@@ -1300,18 +1293,5 @@ static int __init clock_late_init(void)
 	//pr_info("reset imem_config\n");
 	return 0;
 }
-late_initcall(clock_late_init);
 
-struct clk_ops clk_ops_pcom = {
-	.enable = pc_clk_enable,
-	.disable = pc_clk_disable,
-	.auto_off = pc_clk_disable,
-//	.reset = pc_clk_reset,
-	.set_rate = pc_clk_set_rate,
-	.set_min_rate = pc_clk_set_min_rate,
-	.set_max_rate = pc_clk_set_max_rate,
-	.set_flags = pc_clk_set_flags,
-	.get_rate = pc_clk_get_rate,
-	.is_enabled = pc_clk_is_enabled,
-//	.round_rate = pc_clk_round_rate,
-};
+late_initcall(clock_late_init);

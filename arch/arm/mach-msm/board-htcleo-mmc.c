@@ -30,7 +30,6 @@
 
 #include <mach/vreg.h>
 #include <mach/gpio.h>
-#include <mach/board-htcleo-mmc.h>
 
 #include "board-htcleo.h"
 #include "devices.h"
@@ -40,6 +39,7 @@
 
 #undef HTCLEO_DEBUG_MMC
 
+static bool opt_disable_sdcard;
 static int __init htcleo_disablesdcard_setup(char *str)
 {
 	opt_disable_sdcard = (bool)simple_strtol(str, NULL, 0);
@@ -195,6 +195,8 @@ static struct embedded_sdio_data htcleo_wifi_emb_data = {
 };
 
 static int htcleo_wifi_cd = 0; /* WIFI virtual 'card detect' status */
+static void (*wifi_status_cb)(int card_present, void *dev_id);
+static void *wifi_status_cb_devid;
 
 static int htcleo_wifi_status_register(
 			void (*callback)(int card_present, void *dev_id),
@@ -213,12 +215,12 @@ static unsigned int htcleo_wifi_status(struct device *dev)
 }
 
 static struct mmc_platform_data htcleo_wifi_data = {
-	/* 
-	 * wifi vdd to 2750 for now, might test lower vdds later, lets see if more power = more signal power!
-	 * incredible uses 2050 and seems to work without issues
-	 * by dorimanx
-	 */
-	.ocr_mask		= MMC_VDD_27_28,
+   /* 
+    * lowered wifi vdd to 2650 for now, might test lower vdds later
+    * incredible uses 2050 and seems to work without issues
+    * by marc1706
+    */
+	.ocr_mask		= MMC_VDD_26_27,
 	.status			= htcleo_wifi_status,
 	.register_status_notify	= htcleo_wifi_status_register,
 	.embedded_sdio		= &htcleo_wifi_emb_data,
@@ -252,7 +254,7 @@ int htcleo_wifi_power(int on)
 	
 	mdelay(100);
 	gpio_set_value(HTCLEO_GPIO_WIFI_SHUTDOWN_N, on); /* WIFI_SHUTDOWN */
-	mdelay(300);
+	mdelay(100);
 
 	htcleo_wifi_power_state = on;
 	return 0;
@@ -278,7 +280,7 @@ int __init htcleo_init_mmc(unsigned debug_uart)
 
 	/* initial WIFI_SHUTDOWN# */	
 	id = PCOM_GPIO_CFG(HTCLEO_GPIO_WIFI_SHUTDOWN_N, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),
-	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, NULL);
+	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, 0);
 	gpio_set_value(HTCLEO_GPIO_WIFI_SHUTDOWN_N, 0);
 
 	msm_add_sdcc(1, &htcleo_wifi_data, 0, 0);
@@ -294,10 +296,10 @@ int __init htcleo_init_mmc(unsigned debug_uart)
 
 	sdslot_vreg_enabled = 0;
 
-        sdslot_vreg = PM_VREG_GP6_ID;
-        wlan_vreg_1 = PM_VREG_WLAN_ID;
-        wlan_vreg_2 = PM_VREG_MSME1_ID;
-        wlan_vreg_3 = PM_VREG_RFTX_ID;
+	sdslot_vreg = PM_VREG_GP6_ID;
+	wlan_vreg_1 = PM_VREG_WLAN_ID;
+	wlan_vreg_2 = PM_VREG_MSME1_ID;
+	wlan_vreg_3 = PM_VREG_RFTX_ID;
 
 	set_irq_wake(MSM_GPIO_TO_INT(HTCLEO_GPIO_SD_STATUS), 1);
 	msm_add_sdcc(2, &htcleo_sdslot_data,
@@ -394,7 +396,7 @@ static int __init htcleommc_dbg_init(void)
 {
 	struct dentry *dent;
 
-	if (!machine_is_htcleo() && !machine_is_htcleoc())
+	if (!machine_is_htcleo() && !machine_is_htcleo())
 		return 0;
 
 	dent = debugfs_create_dir("htcleo_mmc_dbg", 0);

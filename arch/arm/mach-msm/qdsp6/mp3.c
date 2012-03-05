@@ -14,13 +14,11 @@
  *
  */
 
-#include <linux/version.h>
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/miscdevice.h>
 #include <linux/mutex.h>
 #include <linux/sched.h>
-#include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/uaccess.h>
 
@@ -182,11 +180,7 @@ static ssize_t mp3_write(struct file *file, const char __user *buf,
 	return buf - start;
 }
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 34))
-static int mp3_fsync(struct file *f, int datasync)
-#else
 static int mp3_fsync(struct file *f, struct dentry *dentry, int datasync)
-#endif
 {
 	struct mp3 *mp3 = f->private_data;
 	if (mp3->ac)

@@ -1,16 +1,4 @@
-obj-y += io.o dma.o memory.o
-
-ifdef CONFIG_ARCH_MSM8X60
-obj-y += timer-8x60.o clock-core.o clock-voter.o
-else
-obj-y += timer.o 
-endif
-
-ifndef CONFIG_ARCH_MSM8X60
-obj-y += irq.o devices.o pmic.o vreg.o
-obj-y += dex_comm.o
-endif
-obj-y += pwrtest.o
+obj-y += io.o irq.o timer.o dma.o memory.o
 obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
 obj-y += devices.o pwrtest.o
 obj-y += proc_comm.o
@@ -29,13 +17,6 @@ obj-$(CONFIG_MSM_CPU_AVS) += avs.o avs_hw.o
 obj-$(CONFIG_ARCH_MSM7X30) += rpc_hsusb.o
 obj-$(CONFIG_ARCH_MSM_SCORPION) += idle-v7.o
 obj-y += gpio.o generic_gpio.o
-
-ifdef CONFIG_ARCH_MSM8X60
-obj-$(CONFIG_CPU_V7) += idle-v7-8x60.o msm_fault_handlers.o
-else
-obj-$(CONFIG_CPU_V7) += idle-v7.o msm_fault_handlers.o
-endif
-
 obj-y += nand_partitions.o
 obj-y += drv_callback.o
 obj-$(CONFIG_ARCH_QSD8X50) += pmic.o
@@ -54,7 +35,6 @@ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
 obj-$(CONFIG_MSM_SMD) += htc_port_list.o
 ifdef CONFIG_MACH_HTCLEO
 obj-$(CONFIG_MSM_SMD) +=  smd_qmi_wince.o
-obj-y += clock-wince.o
 else
 obj-$(CONFIG_MSM_SMD) +=  smd_qmi.o
 endif
@@ -145,6 +125,7 @@ obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-ts.o board-htcleo-mmc.o ieee754-df.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o board-htcleo-acoustic.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-rfkill.o board-htcleo-wifi.o board-htcleo-microp.o htc_awb_cal.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-proximity.o board-htcleo-ls.o
+obj-$(CONFIG_MACH_HTCLEO) += clock-wince.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT) += board-htcleo-bl.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT_LED) += board-htcleo-bl-led.o
 obj-$(CONFIG_HTCLEO_BTN_BACKLIGHT_MANAGER) += board-htcleo-btn_backlight-manager.o

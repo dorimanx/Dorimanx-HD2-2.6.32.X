@@ -1,7 +1,7 @@
 VERSION = 2
 PATCHLEVEL = 6
 SUBLEVEL = 32
-EXTRAVERSION = .57
+EXTRAVERSION = .50
 NAME = Man-Eating Seals of Antiquity
 
 # *DOCUMENTATION*
@@ -522,9 +522,9 @@ endif # $(dot-config)
 # Defaults vmlinux but it is usually overridden in the arch makefile
 all: vmlinux
 
-ifdef CONFIG_MACH_HTCLEO
-KBUILD_CFLAGS   += -march=armv7-a -mtune=cortex-a8 -mfpu=neon
-endif
+#ifdef CONFIG_MACH_HTCLEO
+KBUILD_CFLAGS   += -march=armv7-a -mtune=cortex-a8 -mfpu=vfpv3
+#endif
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os

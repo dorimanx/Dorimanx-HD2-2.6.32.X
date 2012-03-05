@@ -10,7 +10,6 @@
 #include <linux/gfp.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/rcu_types.h>
 #include <linux/mm_types.h>
 #include <linux/kernel.h>
 
@@ -298,5 +297,3 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
 #endif
 
 #endif /* _LINUX_SLQB_DEF_H */
-
-

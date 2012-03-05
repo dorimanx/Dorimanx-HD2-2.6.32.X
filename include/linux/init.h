@@ -149,8 +149,6 @@ void prepare_namespace(void);
 
 extern void (*late_time_init)(void);
 
-extern int initcall_debug;
-
 #endif
   
 #ifndef MODULE

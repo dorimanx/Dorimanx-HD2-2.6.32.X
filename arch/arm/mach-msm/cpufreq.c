@@ -17,13 +17,6 @@
  *
  */
 
-#include <linux/workqueue.h>
-#include <linux/completion.h>
-#include <linux/cpu.h>
-#include <linux/cpumask.h>
-#include <linux/sched.h>
-#include <linux/suspend.h>
-
 #include <linux/cpufreq.h>
 #include <linux/earlysuspend.h>
 #include <linux/init.h>
@@ -56,7 +49,6 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 				unsigned int target_freq,
 				unsigned int relation)
 {
-	int ret = -EFAULT;
 	int index;
 	struct cpufreq_freqs freqs;
 	struct cpufreq_frequency_table *table =
@@ -65,13 +57,11 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 	if (cpufreq_frequency_table_target(policy, table, target_freq, relation,
 			&index)) {
 		pr_err("cpufreq: invalid target_freq: %d\n", target_freq);
-		ret = -EINVAL;
+		return -EINVAL;
 	}
 
-	if (policy->cur == table[index].frequency) {
-	  	ret = 0;
-
-	}
+	if (policy->cur == table[index].frequency)
+		return 0;
 
 #ifdef CONFIG_CPU_FREQ_DEBUG
 	printk("msm_cpufreq_target %d r %d (%d-%d) selected %d\n", target_freq,
@@ -101,19 +91,13 @@ static int __init msm_cpufreq_init(struct cpufreq_policy *policy)
 	BUG_ON(cpufreq_frequency_table_cpuinfo(policy, table));
 	policy->cur = acpuclk_get_rate();
 #ifdef	CONFIG_HTCLEO_OVERCLOCK
-	policy->max = 1190400;
+	policy->max = 998400;
 #endif
 #ifdef	CONFIG_HTCLEO_EXOVERCLOCK
-	  policy->max = 1497600;
+	policy->max = 1113600;
 #endif
 	policy->cpuinfo.transition_latency =
 		acpuclk_get_switch_time() * NSEC_PER_USEC;
-#ifdef CONFIG_SMP
-	cpu_work = &per_cpu(cpufreq_work, policy->cpu);
-	INIT_WORK(&cpu_work->work, set_cpu_work);
-	init_completion(&cpu_work->complete);
-#endif
-
 	return 0;
 }
 
@@ -121,6 +105,7 @@ static struct freq_attr *msm_cpufreq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
 	NULL,
 };
+
 static struct cpufreq_driver msm_cpufreq_driver = {
 	/* lps calculations are handled here. */
 	.flags		= CPUFREQ_STICKY | CPUFREQ_CONST_LOOPS,

@@ -42,7 +42,6 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/sched.h>
-#include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/uaccess.h>
 #include <linux/android_pmem.h>
@@ -636,4 +635,3 @@ MODULE_VERSION("2.0");
 
 module_init(q6venc_init);
 module_exit(q6venc_exit);
-

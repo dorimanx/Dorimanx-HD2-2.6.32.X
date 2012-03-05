@@ -27,10 +27,10 @@
  */
 
 #define DEF_FREQUENCY_UP_THRESHOLD		(65)
-#define DEF_FREQUENCY_DOWN_THRESHOLD		(20)
-#define DEFAULT_SLEEP_MAX_FREQ 245000
-#define DEFAULT_SLEEP_MIN_FREQ 96000
-#define DEFAULT_SLEEP_PREV_FREQ 128000 //This is so that if there are any issues resulting in sleep_prev_freq getting set, there will be a backup freq
+#define DEF_FREQUENCY_DOWN_THRESHOLD		(25)
+#define DEFAULT_SLEEP_MAX_FREQ 230400
+#define DEFAULT_SLEEP_MIN_FREQ 122000
+#define DEFAULT_SLEEP_PREV_FREQ 122000 //This is so that if there are any issues resulting in sleep_prev_freq getting set, there will be a backup freq
 #define DEFAULT_PREV_MAX 230400
 static unsigned int suspended;
 static unsigned int sleep_max_freq=DEFAULT_SLEEP_MAX_FREQ;
@@ -52,9 +52,10 @@ static unsigned int sleep_prev_max=DEFAULT_PREV_MAX;
 
 static unsigned int min_sampling_rate;
 
+#define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
-#define MAX_SAMPLING_DOWN_FACTOR		(11)
+#define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 
@@ -650,7 +651,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					MIN_LATENCY_MULTIPLIER * latency);
 			dbs_tuners_ins.sampling_rate =
 				max(min_sampling_rate,
-				    latency * CONFIG_LATENCY_MULTIPLIER);
+				    latency * LATENCY_MULTIPLIER);
 
 			cpufreq_register_notifier(
 					&dbs_cpufreq_notifier_block,

@@ -658,7 +658,7 @@ static void gs_write_complete(struct usb_ep *ep, struct usb_request *req)
 		/* Implemented handling in future if needed */
 		spin_unlock(&port->port_lock);
 		break;
-
+	default:
 		spin_lock(&port->port_lock);
 		list_add_tail(&req->list, &port->read_pool);
 		printk(KERN_ERR
@@ -668,6 +668,38 @@ static void gs_write_complete(struct usb_ep *ep, struct usb_request *req)
 		/* goto requeue; */
 		break;
 	}
+}
+
+static void gs_write_complete(struct usb_ep *ep, struct usb_request *req)
+{
+	struct gs_port	*port = ep->driver_data;
+	unsigned long flags;
+
+	if (MODEM_DEBUG_ON)
+		printk("%s: %d bytes\n", __func__, req->actual);
+
+	spin_lock_irqsave(&port->port_lock, flags);
+	list_add(&req->list, &port->write_pool);
+
+	switch (req->status) {
+	default:
+		/* presumably a transient fault */
+		pr_warning("%s: unexpected %s status %d\n",
+				__func__, ep->name, req->status);
+		/* FALL THROUGH */
+	case 0:
+		/* normal completion */
+		if (port->port_usb)
+		gs_start_tx(port);
+		break;
+
+	case -ESHUTDOWN:
+		/* disconnect */
+		pr_vdebug("%s: %s shutdown\n", __func__, ep->name);
+		break;
+	}
+
+	spin_unlock_irqrestore(&port->port_lock, flags);
 }
 
 static void gs_free_requests(struct usb_ep *ep, struct list_head *head)

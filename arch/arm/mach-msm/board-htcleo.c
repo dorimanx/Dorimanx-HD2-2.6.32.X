@@ -55,19 +55,18 @@
 #ifdef CONFIG_SERIAL_BCM_BT_LPM
 #include <mach/bcm_bt_lpm.h>
 #endif
-#ifdef CONFIG_PERFLOCK
 #include <mach/perflock.h>
-#endif
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
 
 #include <mach/board-htcleo-microp.h>
-#include <mach/board-htcleo-ts.h>
 
 #include "board-htcleo.h"
+#include "board-htcleo-ts.h"
 #include "devices.h"
 #include "proc_comm.h"
 #include "dex_comm.h"
+
 
 #define ATAG_MAGLDR_BOOT    0x4C47414D
 struct tag_magldr_entry
@@ -174,8 +173,8 @@ static struct htc_headset_gpio_platform_data htc_headset_gpio_data = {
 	.hpin_gpio		= HTCLEO_GPIO_HDS_DET,
 	.mic_detect_gpio	= HTCLEO_GPIO_HDS_MIC,
 	.microp_channel		= 1,
-	.key_enable_gpio	= 0,
-	.mic_select_gpio	= 0,
+	.key_enable_gpio	= NULL,
+	.mic_select_gpio	= NULL,
 };
 
 static struct platform_device htc_headset_gpio = {
@@ -392,9 +391,10 @@ static uint32_t flashlight_gpio_table[] =
 	PCOM_GPIO_CFG(HTCLEO_GPIO_FLASHLIGHT_FLASH, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),
 };
 
-static void config_htcleo_flashlight_gpios(void)
+static int config_htcleo_flashlight_gpios(void)
 {
 	config_gpio_table(flashlight_gpio_table, ARRAY_SIZE(flashlight_gpio_table));
+	return 0;
 }
 
 static struct flashlight_platform_data htcleo_flashlight_data =
@@ -501,7 +501,7 @@ static struct camera_flash_cfg msm_camera_sensor_flash_cfg = {
 	.camera_flash		= flashlight_control,
 	.num_flash_levels	= FLASHLIGHT_NUM,
 	.low_temp_limit		= 5,
-	.low_cap_limit		= 10,
+	.low_cap_limit		= 15,
 };
 
 static struct msm_camera_sensor_info msm_camera_sensor_s5k3e2fx_data =
@@ -779,7 +779,7 @@ static int htcleo_kgsl_power(bool on)
 	int rail_id = 0;
 
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
-    	return msm_proc_comm(cmd, &rail_id, NULL);
+    	return msm_proc_comm(cmd, &rail_id, 0);
 }
 
 static struct platform_device msm_kgsl_device =
@@ -796,16 +796,12 @@ static struct platform_device msm_kgsl_device =
 
 static struct android_pmem_platform_data mdp_pmem_pdata = {
 	.name		= "pmem",
-	.start		= MSM_PMEM_MDP_BASE,
-	.size		= MSM_PMEM_MDP_SIZE,
 	.no_allocator	= 0,
 	.cached		= 1,
 };
 
 static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.name		= "pmem_adsp",
-	.start		= MSM_PMEM_ADSP_BASE,
-	.size		= MSM_PMEM_ADSP_SIZE,
 	.no_allocator	= 0,
 	.cached		= 1,
 };
@@ -849,10 +845,8 @@ static struct platform_device android_pmem_venc_device = {
 
 static struct resource ram_console_resources[] = {
 	{
-//		.start	= MSM_RAM_CONSOLE_BASE,
-//		.end	= MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE - 1,
-		.start  = CONFIG_ANDROID_RAM_CONSOLE_EARLY_ADDR,
-		.end    = CONFIG_ANDROID_RAM_CONSOLE_EARLY_ADDR + CONFIG_ANDROID_RAM_CONSOLE_EARLY_SIZE - 1,
+		.start	= MSM_RAM_CONSOLE_BASE,
+		.end	= MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 };
@@ -863,7 +857,6 @@ static struct platform_device ram_console_device = {
 	.num_resources	= ARRAY_SIZE(ram_console_resources),
 	.resource	= ram_console_resources,
 };
-
 ///////////////////////////////////////////////////////////////////////
 // Power/Battery
 ///////////////////////////////////////////////////////////////////////
@@ -1014,9 +1007,7 @@ static struct msm_acpu_clock_platform_data htcleo_clock_data = {
 //	.wait_for_irq_khz	= 19200,   // TCXO
 };
 
-#ifdef CONFIG_PERFLOCK
 static unsigned htcleo_perf_acpu_table[] = {
-	128000000,
 	245000000,
 	576000000,
 	998400000,
@@ -1026,8 +1017,6 @@ static struct perflock_platform_data htcleo_perflock_data = {
 	.perf_acpu_table = htcleo_perf_acpu_table,
 	.table_size = ARRAY_SIZE(htcleo_perf_acpu_table),
 };
-#endif
-
 ///////////////////////////////////////////////////////////////////////
 // Reset
 ///////////////////////////////////////////////////////////////////////
@@ -1074,9 +1063,7 @@ static void __init htcleo_init(void)
 
 	msm_acpu_clock_init(&htcleo_clock_data);
 
-#ifdef CONFIG_PERFLOCK
 	perflock_init(&htcleo_perflock_data);
-#endif
 
 #if defined(CONFIG_MSM_SERIAL_DEBUGGER)
 	msm_serial_debug_init(MSM_UART1_PHYS, INT_UART1,

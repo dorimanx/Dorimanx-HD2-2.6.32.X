@@ -802,7 +802,7 @@ int kgsl_yamato_idle(struct kgsl_device *device, unsigned int timeout)
 	struct kgsl_mmu_debug mmu_dbg;
 	unsigned int rbbm_status;
 	int idle_count = 0;
-#define IDLE_COUNT_MAX 1000000
+#define IDLE_COUNT_MAX 1500000
 
 	KGSL_DRV_VDBG("enter (device=%p, timeout=%d)\n", device, timeout);
 
@@ -986,7 +986,7 @@ int __init kgsl_yamato_config(struct kgsl_devconfig *devconfig,
 		    | (2 << MH_MMU_CONFIG__TC_R_CLNT_BEHAVIOR__SHIFT)
 		    | (2 << MH_MMU_CONFIG__PA_W_CLNT_BEHAVIOR__SHIFT);
 
-	/*TODO: these should probably be configurable from platform device
+	/*todo: these should probably be configurable from platform device
 	 * stuff */
 	devconfig->va_base = 0x66000000;
 	devconfig->va_range = SZ_128M;

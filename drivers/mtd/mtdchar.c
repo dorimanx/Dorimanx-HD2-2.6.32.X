@@ -21,6 +21,7 @@
 
 #include <asm/uaccess.h>
 
+
 /*
  * Data structure to hold the pointer to the mtd device as well
  * as mode information ofr various use cases.
@@ -498,7 +499,7 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	}
 
 	case MEMGETINFO:
-		memset(&info, 0, sizeof(info));
+		memset(&info, 0, sizeof(info)); //savan
 		info.type	= mtd->type;
 		info.flags	= mtd->flags;
 		info.size	= mtd->size;
@@ -506,9 +507,8 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		info.writesize	= mtd->writesize;
 		info.oobsize	= mtd->oobsize;
 		/* The below fields are obsolete */
-//		info.ecctype	= -1;
-//		info.eccsize	= 0;
-		info.padding    = 0;
+		info.ecctype	= -1;
+		//info.eccsize	= 0; //savan
 		if (copy_to_user(argp, &info, sizeof(struct mtd_info_user)))
 			return -EFAULT;
 		break;

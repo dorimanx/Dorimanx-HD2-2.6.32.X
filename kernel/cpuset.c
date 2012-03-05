@@ -1402,8 +1402,8 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
 		to = node_possible_map;
 	} else {
 		guarantee_online_cpus(cs, cpus_attach);
+		guarantee_online_mems(cs, &to);
 	}
-	guarantee_online_mems(cs, &to);
 
 	/* do per-task migration stuff possibly for each in the threadgroup */
 	cpuset_attach_task(tsk, &to, cs);
@@ -2101,22 +2101,14 @@ static int cpuset_track_online_cpus(struct notifier_block *unused_nb,
 static int cpuset_track_online_nodes(struct notifier_block *self,
 				unsigned long action, void *arg)
 {
-	nodemask_t oldmems;
-
 	cgroup_lock();
 	switch (action) {
 	case MEM_ONLINE:
-		oldmems = top_cpuset.mems_allowed;
+	case MEM_OFFLINE:
 		mutex_lock(&callback_mutex);
 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
 		mutex_unlock(&callback_mutex);
-		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
-		break;
-	case MEM_OFFLINE:
-		/*
-		 * needn't update top_cpuset.mems_allowed explicitly because
-		 * scan_for_empty_cpusets() will update it.
-		 */
+		if (action == MEM_OFFLINE)
 			scan_for_empty_cpusets(&top_cpuset);
 		break;
 	default:

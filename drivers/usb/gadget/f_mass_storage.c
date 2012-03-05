@@ -72,15 +72,12 @@
 #include <linux/usb.h>
 #include <linux/usb_usual.h>
 #include <linux/usb/ch9.h>
-#include <linux/usb/gadget.h>
-
 #include <linux/usb/android_composite.h>
 #include <mach/board.h>
 #include <mach/msm_hsusb.h>
 
 #include "gadget_chips.h"
 
-#include <asm/unaligned.h>
 
 #define BULK_BUFFER_SIZE           16384
 
@@ -494,13 +491,11 @@ static u32 get_be32(u8 *buf)
 			((u32) buf[2] << 8) | ((u32) buf[3]);
 }
 
-#if 0 //unused
 static void put_be16(u8 *buf, u16 val)
 {
 	buf[0] = val >> 8;
 	buf[1] = val;
 }
-#endif
 
 static void put_be32(u8 *buf, u32 val)
 {
@@ -1053,7 +1048,7 @@ int      i;
      */
     			if (bh->state == BUF_STATE_FULL && fsg->residue) {
 #else
-			if (bh->state == BUF_STATE_FULL) {
+		if (bh->state == BUF_STATE_FULL) {
 #endif
 			smp_rmb();
 			fsg->next_buffhd_to_drain = bh->next;
@@ -1535,6 +1530,9 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 
 	/* No block descriptors */
 
+	/* Disabled to workaround USB reset problems with a Vista host.
+	 */
+#if 0
 	/* The mode pages, in numerical order.  The only page we support
 	 * is the Caching page. */
 	if (page_code == 0x08 || all_pages) {
@@ -1544,19 +1542,20 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 		memset(buf+2, 0, 10);	/* None of the fields are changeable */
 
 		if (!changeable_values) {
-			buf[2] = 0x04;	/* Write cache enable, */
+			buf[2] = 0x00;	/* Write cache disable, */
 					/* Read cache not disabled */
 					/* No cache retention priorities */
-			put_unaligned_be16(0xffff, &buf[4]);
-					/* Don't disable prefetch */
+			put_be16(&buf[4], 0xffff);  /* Don't disable prefetch */
 					/* Minimum prefetch = 0 */
-			put_unaligned_be16(0xffff, &buf[8]);
-					/* Maximum prefetch */
-					/* Maximum prefetch ceiling */
-			put_unaligned_be16(0xffff, &buf[10]);
+			put_be16(&buf[8], 0xffff);  /* Maximum prefetch */
+			/* Maximum prefetch ceiling */
+			put_be16(&buf[10], 0xffff);
 		}
 		buf += 12;
 	}
+#else
+	valid_page = 1;
+#endif
 
 	/* Check that a valid page was requested and the mode data length
 	 * isn't too long. */
@@ -1570,7 +1569,7 @@ static int do_mode_sense(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 	if (mscmnd == SC_MODE_SENSE_6)
 		buf0[0] = len - 1;
 	else
-		put_unaligned_be16(len - 2, buf0);
+		put_be16(buf0, len - 2);
 	return len;
 }
 
@@ -1881,11 +1880,11 @@ static int send_status(struct fsg_dev *fsg)
    * writing on to storage media, need to set
    * residue to zero,assuming that write will succeed.
    */
-  	if (write_error_after_csw_sent) {
-    	  write_error_after_csw_sent = 0;
+  if (write_error_after_csw_sent) {
+    write_error_after_csw_sent = 0;
 	csw->Residue = cpu_to_le32(fsg->residue);
-  	} else
-	csw->Residue = 0;
+  } else
+    csw->Residue = 0;
 #else
 	csw->Residue = cpu_to_le32(fsg->residue);
 #endif

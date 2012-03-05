@@ -73,7 +73,7 @@ static int msmsdcc_auto_suspend(struct mmc_host *, int);
 #define BUSCLK_TIMEOUT (HZ)
 #define SQN_BUSCLK_TIMEOUT (5 * HZ)
 static unsigned int msmsdcc_fmin = 144000;
-static unsigned int msmsdcc_fmax = 49152000;
+static unsigned int msmsdcc_fmax = 50000000;
 static unsigned int msmsdcc_4bit = 1;
 static unsigned int msmsdcc_pwrsave = 1;
 static unsigned int msmsdcc_piopoll = 1;
@@ -122,12 +122,6 @@ msmsdcc_print_status(struct msmsdcc_host *host, char *hdr, uint32_t status)
 }
 #endif
 
-#ifdef CONFIG_MMC_BUSCLK_PWRSAVE
-
-/* All already defined below, so this was ON all the time! */
-
-#endif
-
 static int is_sd_platform(struct mmc_platform_data *plat)
 {
 	if (plat->slot_type && *plat->slot_type == MMC_TYPE_SD)
@@ -163,7 +157,6 @@ msmsdcc_disable_clocks(struct msmsdcc_host *host, int deferr)
 		mod_timer(&host->busclk_timer, jiffies + delay);
 	} else {
 		del_timer_sync(&host->busclk_timer);
-		/* dev_info(mmc_dev(host->mmc), "Immediate clock shutdown\n"); */
 		if (host->clks_on) {
 			clk_disable(host->clk);
 			clk_disable(host->pclk);
@@ -784,7 +777,6 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 	struct msmsdcc_host	*host = dev_id;
 	uint32_t		status;
 
-	spin_lock(&host->lock);
 	status = msmsdcc_readl(host, MMCISTATUS);
 #if IRQ_DEBUG
 	msmsdcc_print_status(host, "irq1-r", status);
@@ -821,7 +813,6 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 			printk("TX\n");
 		}
 
-		spin_unlock(&host->lock);
 		return IRQ_HANDLED;
 	}
 
@@ -887,7 +878,6 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 	if (!host->curr.xfer_remain)
 		msmsdcc_writel(host, 0, MMCIMASK1);
 
-	spin_unlock(&host->lock);
 	return IRQ_HANDLED;
 }
 
@@ -973,11 +963,8 @@ msmsdcc_handle_irq_data(struct msmsdcc_host *host, u32 status,
 		 * Check to see if there is still data to be read,
 		 * and simulate a PIO irq.
 		 */
-		if (readl(base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-			spin_unlock(&host->lock);
+		if (readl(base + MMCISTATUS) & MCI_RXDATAAVLBL)
 			msmsdcc_pio_irq(1, host);
-			spin_lock(&host->lock);
-		}
 
 		msmsdcc_stop_data(host);
 		if (!data->error)
@@ -1528,7 +1515,6 @@ msmsdcc_probe(struct platform_device *pdev)
 	host->early_suspend.level   = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&host->early_suspend);
 #endif
-
 	pr_info("%s: Qualcomm MSM SDCC at 0x%016llx irq %d,%d dma %d\n",
 		mmc_hostname(mmc), (unsigned long long)memres->start,
 		(unsigned int) cmd_irqres->start,
@@ -1559,7 +1545,6 @@ msmsdcc_probe(struct platform_device *pdev)
 #if defined(CONFIG_DEBUG_FS)
 	msmsdcc_dbg_createhost(host);
 #endif
-
 #if BUSCLK_PWRSAVE
 	msmsdcc_disable_clocks(host, 1);
 #endif
@@ -1633,10 +1618,12 @@ msmsdcc_resume(struct platform_device *dev)
 
 		if (host->stat_irq)
 			enable_irq(host->stat_irq);
+
 #if BUSCLK_PWRSAVE
 		if (host->clks_on)
 			msmsdcc_disable_clocks(host, 1);
 #endif
+
 	}
 	return 0;
 }

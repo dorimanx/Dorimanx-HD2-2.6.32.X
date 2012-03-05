@@ -411,15 +411,12 @@ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
 
 		/* In case of an error, tell the caller that it wasn't
 		   a specific control that caused it. */
-               p->error_idx = p->count;
-               user_ptr = (void __user *)p->controls;
-               if (p->count) {
-                       err = -EINVAL;
-                       if (p->count > V4L2_CID_MAX_CTRLS)
-                               goto out_ext_ctrl;
-                       ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
-                       /* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
-                       mbuf = kmalloc(ctrls_size, GFP_KERNEL);
+		p->error_idx = p->count;
+		user_ptr = (void __user *)p->controls;
+		if (p->count) {
+			ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
+			/* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
+			mbuf = kmalloc(ctrls_size, GFP_KERNEL);
 			err = -ENOMEM;
 			if (NULL == mbuf)
 				goto out_ext_ctrl;
@@ -1912,15 +1909,12 @@ long video_ioctl2(struct file *file,
 
 		/* In case of an error, tell the caller that it wasn't
 		   a specific control that caused it. */
-               p->error_idx = p->count;
-               user_ptr = (void __user *)p->controls;
-               if (p->count) {
-                       err = -EINVAL;
-                       if (p->count > V4L2_CID_MAX_CTRLS)
-                               goto out_ext_ctrl;
-                       ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
-                       /* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
-                       mbuf = kmalloc(ctrls_size, GFP_KERNEL);
+		p->error_idx = p->count;
+		user_ptr = (void __user *)p->controls;
+		if (p->count) {
+			ctrls_size = sizeof(struct v4l2_ext_control) * p->count;
+			/* Note: v4l2_ext_controls fits in sbuf[] so mbuf is still NULL. */
+			mbuf = kmalloc(ctrls_size, GFP_KERNEL);
 			err = -ENOMEM;
 			if (NULL == mbuf)
 				goto out_ext_ctrl;
