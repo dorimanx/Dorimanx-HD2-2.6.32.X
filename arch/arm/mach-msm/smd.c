@@ -948,6 +948,7 @@ int smd_open(const char *name, smd_channel_t **_ch,
 
 	return 0;
 }
+EXPORT_SYMBOL(smd_open);
 
 int smd_close(smd_channel_t *ch)
 {
@@ -973,16 +974,19 @@ int smd_close(smd_channel_t *ch)
 
 	return 0;
 }
+EXPORT_SYMBOL(smd_close);
 
 int smd_read(smd_channel_t *ch, void *data, int len)
 {
 	return ch->read(ch, data, len);
 }
+EXPORT_SYMBOL(smd_read);
 
 int smd_write(smd_channel_t *ch, const void *data, int len)
 {
 	return ch->write(ch, data, len);
 }
+EXPORT_SYMBOL(smd_write);
 
 int smd_write_atomic(smd_channel_t *ch, const void *data, int len)
 {
@@ -997,11 +1001,13 @@ int smd_write_atomic(smd_channel_t *ch, const void *data, int len)
 	}
 	return res;
 }
+EXPORT_SYMBOL(smd_write_atomic);
 
 int smd_read_avail(smd_channel_t *ch)
 {
 	return ch->read_avail(ch);
 }
+EXPORT_SYMBOL(smd_read_avail);
 
 int smd_write_avail(smd_channel_t *ch)
 {
@@ -1042,6 +1048,7 @@ int smd_cur_packet_size(smd_channel_t *ch)
 {
 	return ch->current_packet;
 }
+EXPORT_SYMBOL(smd_cur_packet_size);
 
 /* Returns SMD buffer size */
 int smd_total_fifo_size(smd_channel_t *ch)
