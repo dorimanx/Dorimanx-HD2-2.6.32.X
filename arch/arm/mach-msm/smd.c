@@ -80,6 +80,30 @@ static unsigned last_heap_free = 0xffffffff;
 #define MSM_TRIG_A2M_INT(n) (writel(1 << n, MSM_GCC_BASE + 0x8))
 #endif
 
+int fifo_almost_full = 0;
+int fifo_almost_full_threshold = 100;
+/* return 0 : do not dbg it
+ *        1 : we need to dbg it */
+int dbg_condition(char* name) {
+	/*
+	printk("dbg-> name=%s, len=%d, 5=%d, 6=%d, 7=%d\n", name, strlen(name),
+		!strcmp(name, "SMD_DATA5"),
+		!strcmp(name, "SMD_DATA6"),
+		!strcmp(name, "SMD_DATA7"));
+	*/
+
+	if(strlen(name) != 9)
+		return 0;
+
+	if(!strcmp(name, "SMD_DATA5") ||
+		!strcmp(name, "SMD_DATA6") ||
+		!strcmp(name, "SMD_DATA7") ) {
+		return 1;
+	}
+
+	return 0; // len = 9, but name not same
+}
+
 static inline void notify_other_smsm(void)
 {
 #if defined(CONFIG_ARCH_MSM7X30)
@@ -118,7 +142,7 @@ static void smd_diag(void)
 	x = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
 	if (x != 0) {
 		x[SZ_DIAG_ERR_MSG - 1] = 0;
-		pr_info("smem: DIAG '%s'\n", x);
+		pr_info("[SMD]smem: DIAG '%s'\n", x);
 	}
 }
 
@@ -127,7 +151,7 @@ void msm_pm_flush_console(void);
 /* call when SMSM_RESET flag is set in the A9's smsm_state */
 static void handle_modem_crash(void)
 {
-	pr_err("ARM9 has CRASHED\n");
+	pr_err("[SMD]ARM9 has CRASHED\n");
 	smd_diag();
 	msm_pm_flush_console();
 
@@ -150,6 +174,9 @@ uint32_t raw_smsm_get_state(enum smsm_state_item item)
 static int check_for_modem_crash(void)
 {
 	if (raw_smsm_get_state(SMSM_STATE_MODEM) & SMSM_RESET) {
+		dump_stack();
+		show_state_filter(TASK_UNINTERRUPTIBLE);
+		msm_pm_flush_console();
 		handle_modem_crash();
 		return -1;
 	}
@@ -253,7 +280,7 @@ static void smd_channel_probe_worker(struct work_struct *work)
 
 	shared = smem_find(ID_CH_ALLOC_TBL, sizeof(*shared) * 64);
 	if (!shared) {
-		pr_err("smd: cannot find allocation table\n");
+		pr_err("[SMD]smd: cannot find allocation table\n");
 		return;
 	}
 	for (n = 0; n < 64; n++) {
@@ -314,6 +341,11 @@ static int smd_packet_write_avail(struct smd_channel *ch)
 
 static int ch_is_open(struct smd_channel *ch)
 {
+	if(dbg_condition(ch->name)) {
+		if(fifo_almost_full == 1) {
+			printk("[SMD][dzt] name=%s, ch->recv->state=%x, ch->send->state=%x\n", ch->name, ch->recv->state, ch->send->state);
+		}
+	}
 	return (ch->recv->state == SMD_SS_OPENED ||
 		ch->recv->state == SMD_SS_FLUSHING)
 		&& (ch->send->state == SMD_SS_OPENED);
@@ -381,17 +413,18 @@ static void update_packet_state(struct smd_channel *ch)
 	int r;
 
 	/* can't do anything if we're in the middle of a packet */
-	if (ch->current_packet != 0)
-		return;
+	while (ch->current_packet == 0) {
+		/* discard 0 length packets if any */
 
-	/* don't bother unless we can get the full header */
-	if (smd_stream_read_avail(ch) < SMD_HEADER_SIZE)
-		return;
+		/* don't bother unless we can get the full header */
+		if (smd_stream_read_avail(ch) < SMD_HEADER_SIZE)
+			return;
 
-	r = ch_read(ch, hdr, SMD_HEADER_SIZE);
-	BUG_ON(r != SMD_HEADER_SIZE);
+		r = ch_read(ch, hdr, SMD_HEADER_SIZE);
+		BUG_ON(r != SMD_HEADER_SIZE);
 
-	ch->current_packet = hdr[0];
+		ch->current_packet = hdr[0];
+	}
 }
 
 /* provide a pointer and length to next free space in the fifo */
@@ -451,7 +484,7 @@ static void smd_state_change(struct smd_channel *ch,
 {
 	ch->last_state = next;
 
-	pr_info("SMD: ch %d %d -> %d\n", ch->n, last, next);
+	pr_info("[SMD]SMD: ch %d %d -> %d\n", ch->n, last, next);
 
 	switch (next) {
 	case SMD_SS_OPENING:
@@ -484,12 +517,13 @@ static void handle_smd_irq(struct list_head *list, void (*notify)(void))
 {
 	unsigned long flags;
 	struct smd_channel *ch;
+	int do_notify = 0;
 	unsigned ch_flags;
 	unsigned tmp;
 #ifdef CONFIG_BUILD_CIQ
 	/* put here to make sure we got the disable/enable index */
 	if (!msm_smd_ciq_info)
-		msm_smd_ciq_info = (*(volatile uint32_t *)(MSM_SHARED_RAM_BASE + 0xFC11C));
+		msm_smd_ciq_info = (*(volatile uint32_t *)(MSM_SHARED_RAM_BASE + SMD_CIQ_BASE));
 #endif
 	spin_lock_irqsave(&smd_lock, flags);
 	list_for_each_entry(ch, list, ch_list) {
@@ -498,14 +532,17 @@ static void handle_smd_irq(struct list_head *list, void (*notify)(void))
 			if (ch->recv->fHEAD) {
 				ch->recv->fHEAD = 0;
 				ch_flags |= 1;
+				do_notify |= 1;
 			}
 			if (ch->recv->fTAIL) {
 				ch->recv->fTAIL = 0;
 				ch_flags |= 2;
+				do_notify |= 1;
 			}
 			if (ch->recv->fSTATE) {
 				ch->recv->fSTATE = 0;
 				ch_flags |= 4;
+				do_notify |= 1;
 			}
 		}
 		tmp = ch->recv->state;
@@ -516,6 +553,8 @@ static void handle_smd_irq(struct list_head *list, void (*notify)(void))
 			ch->notify(ch->priv, SMD_EVENT_DATA);
 		}
 	}
+	if (do_notify)
+		notify();
 	spin_unlock_irqrestore(&smd_lock, flags);
 	do_smd_probe();
 }
@@ -577,7 +616,7 @@ void smd_sleep_exit(void)
 
 	if (need_int) {
 		if (msm_smd_debug_mask & MSM_SMD_DEBUG)
-			pr_info("smd_sleep_exit need interrupt\n");
+			pr_info("[SMD]smd_sleep_exit need interrupt\n");
 		tasklet_schedule(&smd_fake_irq_tasklet);
 	}
 }
@@ -635,8 +674,24 @@ static int smd_stream_write(smd_channel_t *ch, const void *_data, int len)
 
 	if (len < 0)
 		return -EINVAL;
+	else if (len == 0)
+		return 0;
+
+//	if(dbg_condition(ch->name)){
+//		printk("[dzt] %s: write while start, name=%s\n", __FUNCTION__, ch->name);
+//	}
 
 	while ((xfer = ch_write_buffer(ch, &ptr)) != 0) {
+		if(dbg_condition(ch->name)) {
+			if(xfer <= fifo_almost_full_threshold) {
+				printk("[SMD][dzt] fifo almost full flag on, name=%s, xfer=%d, ulen=%d\n", ch->name, xfer, len);
+				fifo_almost_full = 1;
+			} else if (xfer > fifo_almost_full_threshold && fifo_almost_full == 1) {
+				printk("[SMD][dzt] fifo almost full flag off, name=%s, xfer=%d, ulen=%d\n", ch->name, xfer, len);
+	            fifo_almost_full = 0;
+			}
+		}
+
 		if (!ch_is_open(ch))
 			break;
 		if (xfer > len)
@@ -649,8 +704,20 @@ static int smd_stream_write(smd_channel_t *ch, const void *_data, int len)
 			break;
 	}
 
-	ch->notify_other_cpu();
+//	if(dbg_condition(ch->name)) {
+//		printk("[dzt] %s: write while end, name=%s, orig_len=%d, len=%d\n", __FUNCTION__, ch->name, orig_len, len);
+//	}
 
+	if (orig_len - len) {
+		if(dbg_condition(ch->name) && fifo_almost_full == 1) {
+			printk("[SMD][dzt] %s: name=%s, call notify_modem_smd()\n", __FUNCTION__, ch->name);
+		}
+		ch->notify_other_cpu();
+	}
+
+	if(dbg_condition(ch->name) && fifo_almost_full == 1) {
+		printk("[SMD][dzt] %s: name=%s, return=%d\n", __FUNCTION__, ch->name, (orig_len - len));
+	}
 	return orig_len - len;
 }
 
@@ -658,8 +725,10 @@ static int smd_packet_write(smd_channel_t *ch, const void *_data, int len)
 {
 	unsigned hdr[5];
 
-	if (len <= 0)
+	if (len < 0)
 		return -EINVAL;
+	else if (len == 0)
+		return 0;
 
 	if (smd_stream_write_avail(ch) < (len + SMD_HEADER_SIZE))
 		return -ENOMEM;
@@ -718,13 +787,13 @@ static int smd_alloc_v2(struct smd_channel *ch)
 
 	shared2 = smem_alloc(SMEM_SMD_BASE_ID + ch->n, sizeof(*shared2));
 	if (!shared2) {
-		pr_err("smd_alloc_v2: cid %d does not exist\n", ch->n);
+		pr_err("[SMD]smd_alloc_v2: cid %d does not exist\n", ch->n);
 		return -1;
 	}
 	buffer = smem_item(SMEM_SMD_FIFO_BASE_ID + ch->n, &buffer_sz);
 
 	if (!buffer) {
-		pr_err("smd_alloc_v2: ch%d buffer allocate fail\n", ch->n);
+		pr_err("[SMD]smd_alloc_v2: ch%d buffer allocate fail\n", ch->n);
 		return -1;
 	}
 
@@ -746,7 +815,7 @@ static int smd_alloc_v1(struct smd_channel *ch)
 	struct smd_shared_v1 *shared1;
 	shared1 = smem_alloc(ID_SMD_CHANNELS + ch->n, sizeof(*shared1));
 	if (!shared1) {
-		pr_err("smd_alloc_v1: cid %d does not exist\n", ch->n);
+		pr_err("[SMD]smd_alloc_v1: cid %d does not exist\n", ch->n);
 		return -1;
 	}
 	ch->send = &shared1->ch0;
@@ -764,7 +833,7 @@ static unsigned smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
 
 	ch = kzalloc(sizeof(struct smd_channel), GFP_KERNEL);
 	if (ch == 0) {
-		pr_err("smd_alloc_channel() out of memory\n");
+		pr_err("[SMD]smd_alloc_channel() out of memory\n");
 		return -EAGAIN;
 	}
 	ch->n = cid;
@@ -807,7 +876,7 @@ static unsigned smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
 	ch->pdev.name = ch->name;
 	ch->pdev.id = ch->type;
 
-	pr_info("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
+	pr_info("[SMD]smd_alloc_channel() cid=%02d size=%05d '%s'\n",
 		ch->n, ch->fifo_size, ch->name);
 
 	mutex_lock(&smd_creation_mutex);
@@ -846,13 +915,13 @@ int smd_open(const char *name, smd_channel_t **_ch,
 	unsigned long flags;
 
 	if (smd_initialized == 0) {
-		pr_info("smd_open() before smd_init()\n");
+		pr_info("[SMD]smd_open() before smd_init()\n");
 		return -ENODEV;
 	}
 
 	ch = smd_get_channel(name);
-	if (!ch){
-		pr_info("smd_open() fail, because radio no open %s smd chnnel\n",name);
+	if (!ch) {
+		pr_info("[SMD]smd_open() fail, because radio no open %s smd chnnel\n", name);
 		return -ENODEV;
 	}
 
@@ -879,13 +948,12 @@ int smd_open(const char *name, smd_channel_t **_ch,
 
 	return 0;
 }
-EXPORT_SYMBOL(smd_open);
 
 int smd_close(smd_channel_t *ch)
 {
 	unsigned long flags;
 
-	pr_info("smd_close(%p)\n", ch);
+	pr_info("[SMD]smd_close(%p)\n", ch);
 
 	if (ch == 0)
 		return -1;
@@ -910,7 +978,6 @@ int smd_read(smd_channel_t *ch, void *data, int len)
 {
 	return ch->read(ch, data, len);
 }
-EXPORT_SYMBOL(smd_read);
 
 int smd_write(smd_channel_t *ch, const void *data, int len)
 {
@@ -924,15 +991,17 @@ int smd_write_atomic(smd_channel_t *ch, const void *data, int len)
 	spin_lock_irqsave(&smd_lock, flags);
 	res = ch->write(ch, data, len);
 	spin_unlock_irqrestore(&smd_lock, flags);
+	if(fifo_almost_full == 1) {
+		if(dbg_condition(ch->name))
+			printk("[SMD][dzt] %s: res=%d\n", __FUNCTION__, res);
+	}
 	return res;
 }
-EXPORT_SYMBOL(smd_write_atomic);
 
 int smd_read_avail(smd_channel_t *ch)
 {
 	return ch->read_avail(ch);
 }
-EXPORT_SYMBOL(smd_read_avail);
 
 int smd_write_avail(smd_channel_t *ch)
 {
@@ -973,8 +1042,12 @@ int smd_cur_packet_size(smd_channel_t *ch)
 {
 	return ch->current_packet;
 }
-EXPORT_SYMBOL(smd_cur_packet_size);
 
+/* Returns SMD buffer size */
+int smd_total_fifo_size(smd_channel_t *ch)
+{
+	return ch->fifo_size;
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -1012,7 +1085,7 @@ void *smem_find(unsigned id, unsigned size_in)
 
 	size_in = ALIGN(size_in, 8);
 	if (size_in != size) {
-		pr_err("smem_find(%d, %d): wrong size %d\n",
+		pr_err("[SMD]smem_find(%d, %d): wrong size %d\n",
 		       id, size_in, size);
 		return 0;
 	}
@@ -1031,7 +1104,7 @@ static irqreturn_t smsm_irq_handler(int irq, void *data)
 	modm = raw_smsm_get_state(SMSM_STATE_MODEM);
 
 	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
-		pr_info("<SM %08x %08x>\n", apps, modm);
+		pr_info("[SMD]<SM %08x %08x>\n", apps, modm);
 	if (modm & SMSM_RESET) {
 		handle_modem_crash();
 	}
@@ -1060,7 +1133,7 @@ int smsm_change_state(enum smsm_state_item item,
 	writel(state, addr);
 
 	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
-		pr_info("smsm_change_state %d %x\n", item, state);
+		pr_info("[SMD]smsm_change_state %d %x\n", item, state);
 	notify_other_smsm();
 
 	spin_unlock_irqrestore(&smem_lock, flags);
@@ -1092,11 +1165,11 @@ int smsm_set_sleep_duration(uint32_t delay)
 
 	ptr = smem_find(SMEM_APPS_DEM_SLAVE_DATA, sizeof(*ptr));
 	if (ptr == NULL) {
-		pr_err("smsm_set_sleep_duration <SM NO APPS_DEM_SLAVE_DATA>\n");
+		pr_err("[SMD]smsm_set_sleep_duration <SM NO APPS_DEM_SLAVE_DATA>\n");
 		return -EIO;
 	}
 	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
-		pr_info("smsm_set_sleep_duration %d -> %d\n",
+		pr_info("[SMD]smsm_set_sleep_duration %d -> %d\n",
 		       ptr->sleep_time, delay);
 	ptr->sleep_time = delay;
 	return 0;
@@ -1108,11 +1181,11 @@ int smsm_set_sleep_limit(uint32_t sleep_limit)
 
 	ptr = smem_find(SMEM_APPS_DEM_SLAVE_DATA, sizeof(*ptr));
 	if (ptr == NULL) {
-		pr_err("smsm_set_sleep_limit <SM NO APPS_DEM_SLAVE_DATA>\n");
+		pr_err("[SMD]smsm_set_sleep_limit <SM NO APPS_DEM_SLAVE_DATA>\n");
 		return -EIO;
 	}
 	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
-		pr_info("smsm_set_sleep_limit %d -> %d\n",
+		pr_info("[SMD]smsm_set_sleep_limit %d -> %d\n",
 		       ptr->resources_used, sleep_limit);
 	ptr->resources_used = sleep_limit;
 	return 0;
@@ -1125,11 +1198,11 @@ int smsm_set_sleep_duration(uint32_t delay)
 
 	ptr = smem_find(SMEM_SMSM_SLEEP_DELAY, sizeof(*ptr));
 	if (ptr == NULL) {
-		pr_err("smsm_set_sleep_duration <SM NO SLEEP_DELAY>\n");
+		pr_err("[SMD]smsm_set_sleep_duration <SM NO SLEEP_DELAY>\n");
 		return -EIO;
 	}
 	if (msm_smd_debug_mask & MSM_SMSM_DEBUG)
-		pr_info("smsm_set_sleep_duration %d -> %d\n",
+		pr_info("[SMD]smsm_set_sleep_duration %d -> %d\n",
 		       *ptr, delay);
 	*ptr = delay;
 	return 0;
@@ -1144,7 +1217,7 @@ inline int smsm_set_sleep_limit(uint32_t sleep_limit)
 int smd_core_init(void)
 {
 	int r;
-	pr_info("smd_core_init()\n");
+	pr_info("[SMD]smd_core_init()\n");
 
 	/* wait for essential items to be initialized */
 	for (;;) {
@@ -1153,6 +1226,8 @@ int smd_core_init(void)
 		state = smem_item(SMEM_SMSM_SHARED_STATE, &size);
 		if (size == SMSM_V1_SIZE || size == SMSM_V2_SIZE) {
 			smd_info.state = (unsigned)state;
+			pr_info("[SMD]phy addr of smd_info.state=0x%X\n",
+				MSM_SHARED_RAM_PHYS + (smd_info.state -	(uint32_t)MSM_SHARED_RAM_BASE));
 			break;
 		}
 	}
@@ -1165,7 +1240,7 @@ int smd_core_init(void)
 		return r;
 	r = enable_irq_wake(INT_A9_M2A_0);
 	if (r < 0)
-		pr_err("smd_core_init: enable_irq_wake failed for A9_M2A_0\n");
+		pr_err("[SMD]smd_core_init: enable_irq_wake failed for A9_M2A_0\n");
 
 	r = request_irq(INT_A9_M2A_5, smsm_irq_handler,
 			IRQF_TRIGGER_RISING, "smsm_dev", 0);
@@ -1175,7 +1250,7 @@ int smd_core_init(void)
 	}
 	r = enable_irq_wake(INT_A9_M2A_5);
 	if (r < 0)
-		pr_err("smd_core_init: enable_irq_wake failed for A9_M2A_5\n");
+		pr_err("[SMD]smd_core_init: enable_irq_wake failed for A9_M2A_5\n");
 
 #if defined(CONFIG_QDSP6)
 	r = request_irq(INT_ADSP_A11, smd_dsp_irq_handler,
@@ -1187,7 +1262,7 @@ int smd_core_init(void)
 	}
 	r = enable_irq_wake(INT_ADSP_A11);
 	if (r < 0)
-		printk(KERN_ERR "smd_core_init: "
+		printk(KERN_ERR "[SMD]smd_core_init: "
 		       "enable_irq_wake failed for INT_ADSP_A11\n");
 #endif
 
@@ -1201,21 +1276,21 @@ int smd_core_init(void)
 	smsm_change_state(SMSM_STATE_APPS_DEM, ~0, 0);
 #endif
 
-	pr_info("smd_core_init() done\n");
+	pr_info("[SMD]smd_core_init() done\n");
 
 	return 0;
 }
 
 extern void msm_init_last_radio_log(struct module *);
 
-static int __init msm_smd_probe(struct platform_device *pdev)
+static int msm_smd_probe(struct platform_device *pdev)
 {
-	pr_info("smd_init()\n");
+	pr_info("[SMD]smd_init()\n");
 
 	INIT_WORK(&probe_work, smd_channel_probe_worker);
 
 	if (smd_core_init()) {
-		pr_err("smd_core_init() failed\n");
+		pr_err("[SMD]smd_core_init() failed\n");
 		return -1;
 	}
 

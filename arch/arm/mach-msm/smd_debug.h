@@ -13,12 +13,12 @@
  *            */
 #ifndef _ARCH_ARM_MACH_MSM_MSM_SMD_DEBUG_H_
 #define _ARCH_ARM_MACH_MSM_MSM_SMD_DEBUG_H_
-#define CONFIG_SMD_OFFSET_TCXO_SATA 0x0
 
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
 #include <linux/list.h>
 
+#if !defined(CONFIG_ARCH_MSM7X30_LTE)
 struct smd_alloc_elm {
 	char name[20];
 	uint32_t cid;
@@ -39,6 +39,7 @@ struct smd_half_channel {
 	unsigned tail;
 	unsigned head;
 } __attribute__((packed));
+#endif
 
 struct smd_shared_v1 {
 	struct smd_half_channel ch0;

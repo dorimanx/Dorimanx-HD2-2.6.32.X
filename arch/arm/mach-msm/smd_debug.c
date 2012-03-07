@@ -27,7 +27,6 @@
 #include "smd_debug.h"
 
 
-#if CONFIG_SMD_OFFSET_TCXO_STAT
 enum {
 	F_SCREEN_OFF = 0,
 	F_SUSPEND,
@@ -45,13 +44,40 @@ struct smem_sleep_stat {
 	uint32_t idle_hand_off_cnt;
 	uint32_t mo_2g_probe_cnt;
 	uint32_t mo_3g_probe_cnt;
-	uint32_t reserved[5];
+	uint32_t garbage_cnt;
+	uint32_t cell_swt_cnt;
+	uint32_t reserved[3];
 };
+
+struct mem_sleep_stat_attr {
+	struct attribute attr;
+	ssize_t (*show)(struct device *dev, struct mem_sleep_stat_attr *, char *);
+	ssize_t (*store)(struct device *dev, struct mem_sleep_stat_attr *, char *);
+};
+
+struct kobject *sleep_stat_kobj;
+
+static ssize_t show_mem_sleep_stat_attr(struct device *dev,
+						struct mem_sleep_stat_attr *attr,
+						char *buf);
+
+struct smem_negate_client {
+	uint32_t htc_negate_tcxo_client[16];
+	uint32_t tcxo_cnt_during_suspend;
+	uint32_t htc_total_sleep_clients;
+	uint32_t htc_insuff_time_count;
+};
+
+struct mutex mem_sleep_stat_lock;
 static struct smem_sleep_stat *sleep_stat;
 static struct smem_sleep_stat *get_smem_sleep_stat(void)
 {
+#if CONFIG_SMD_OFFSET_TCXO_STAT
 	return (struct smem_sleep_stat *)
 		(MSM_SHARED_RAM_BASE + CONFIG_SMD_OFFSET_TCXO_STAT);
+#else
+	return 0;
+#endif
 }
 
 static void print_sleep_stat(int flag)
@@ -64,19 +90,57 @@ static void print_sleep_stat(int flag)
 	if (!sleep_stat)
 		return;
 
-	pr_info("sleep_stat.%d: %ds %d %ds %d - "
+	pr_info("sleep_stat.%d: %dms %d %dms %d - "
 		"%d %d %d - %d %d - %d %d %d %d %d"
 		"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n",
 		flag, sleep_stat->tcxo_time, sleep_stat->tcxo_cnt,
 		sleep_stat->suspend_tcxo_time, sleep_stat->suspend_tcxo_cnt,
 		sleep_stat->garbage_pkt_cnt, sleep_stat->zone_based_reg_cnt,
 		sleep_stat->idle_hand_off_cnt, sleep_stat->mo_2g_probe_cnt,
-		sleep_stat->mo_3g_probe_cnt, sleep_stat->reserved[0],
+		sleep_stat->mo_3g_probe_cnt, sleep_stat->garbage_cnt,
+		sleep_stat->cell_swt_cnt, sleep_stat->reserved[0],
 		sleep_stat->reserved[1], sleep_stat->reserved[2],
-		sleep_stat->reserved[3], sleep_stat->reserved[4],
 		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
 
+}
+
+static struct smem_negate_client *negate_client_stat;
+static struct smem_negate_client *get_smem_negate_client_stat(void)
+{
+#if CONFIG_SMD_OFFSET_NEGATE_CLIENT_STAT
+	return (struct smem_negate_client *)
+		(MSM_SHARED_RAM_BASE + CONFIG_SMD_OFFSET_NEGATE_CLIENT_STAT);
+#else
+	return 0;
+#endif
+}
+
+static void print_negate_client_stat(void)
+{
+	if (!negate_client_stat)
+		return;
+
+	pr_info("negate_client_stat: %d - %d %d %d %d - %d %d %d %d - %d %d %d %d - %d %d %d %d - %d %d\n",
+		negate_client_stat->tcxo_cnt_during_suspend,
+		negate_client_stat->htc_negate_tcxo_client[0],
+		negate_client_stat->htc_negate_tcxo_client[1],
+		negate_client_stat->htc_negate_tcxo_client[2],
+		negate_client_stat->htc_negate_tcxo_client[3],
+		negate_client_stat->htc_negate_tcxo_client[4],
+		negate_client_stat->htc_negate_tcxo_client[5],
+		negate_client_stat->htc_negate_tcxo_client[6],
+		negate_client_stat->htc_negate_tcxo_client[7],
+		negate_client_stat->htc_negate_tcxo_client[8],
+		negate_client_stat->htc_negate_tcxo_client[9],
+		negate_client_stat->htc_negate_tcxo_client[10],
+		negate_client_stat->htc_negate_tcxo_client[11],
+		negate_client_stat->htc_negate_tcxo_client[12],
+		negate_client_stat->htc_negate_tcxo_client[13],
+		negate_client_stat->htc_negate_tcxo_client[14],
+		negate_client_stat->htc_negate_tcxo_client[15],
+		negate_client_stat->htc_total_sleep_clients,
+		negate_client_stat->htc_insuff_time_count);
 }
 
 static int sleep_stat_suspend_notifier(struct notifier_block *nb,
@@ -90,6 +154,7 @@ static int sleep_stat_suspend_notifier(struct notifier_block *nb,
 	/* exit suspend */
 	case PM_POST_SUSPEND:
 		print_sleep_stat(F_RESUME);
+		print_negate_client_stat();
 		return NOTIFY_OK;
 	default:
 		return NOTIFY_DONE;
@@ -114,7 +179,6 @@ static struct early_suspend sleep_stat_screen_hdl = {
 	.suspend = sleep_stat_early_suspend,
 	.resume = sleep_stat_late_resume,
 };
-#endif
 
 #if defined(CONFIG_DEBUG_FS)
 
@@ -343,9 +407,120 @@ static void debug_create(const char *name, mode_t mode,
 	debugfs_create_file(name, mode, dent, fill, &debug_ops);
 }
 
+enum {
+	TCXO_TIME = 0,
+	TCXO_CNT,
+	SUSPEND_TCXO_TIME,
+	SUSPEND_TCXO_CNT,
+	GARBAGE_CNT,
+	GARBAGE_PKT_CNT,
+	CELL_SWT_CNT,
+	ZONE_BASED_REG_CNT,
+	IDLE_HAND_OFF_CNT,
+	MO_2G_PROBE_CNT,
+	MO_3G_PROBE_CNT,
+};
+
+#define SLEEP_STAT_ATTR(_name)                         \
+{                                       \
+	.attr = { .name = #_name, .mode = S_IRUGO, .owner = THIS_MODULE },  \
+	.show = show_mem_sleep_stat_attr,                  \
+	.store = NULL,                              \
+}
+
+static struct mem_sleep_stat_attr mem_sleep_stat_attrs[] = {
+	SLEEP_STAT_ATTR(tcxo_time),
+	SLEEP_STAT_ATTR(tcxo_cnt),
+	SLEEP_STAT_ATTR(suspend_tcxo_time),
+	SLEEP_STAT_ATTR(suspend_tcxo_cnt),
+	SLEEP_STAT_ATTR(garbage_cnt),
+	SLEEP_STAT_ATTR(garbage_pkt_cnt),
+	SLEEP_STAT_ATTR(cell_swt_cnt),
+	SLEEP_STAT_ATTR(zone_based_reg_cnt),
+	SLEEP_STAT_ATTR(idle_hand_off_cnt),
+	SLEEP_STAT_ATTR(mo_2g_probe_cnt),
+	SLEEP_STAT_ATTR(mo_3g_probe_cnt),
+};
+
+/**
+ * show_mem_sleep_stat_attr - current MEM Sleep status attributes
+ */
+static ssize_t show_mem_sleep_stat_attr(struct device *dev,
+                      struct mem_sleep_stat_attr *attr,
+                      char *buf)
+{
+	int i = 0;
+	const ptrdiff_t off = attr - mem_sleep_stat_attrs;
+
+	if (!sleep_stat) {
+		pr_err("%s: sleep_stat is NULL", __func__);
+		return sprintf(buf, "%d\n", 0);
+	}
+
+	pr_info("%s: mem_sleep_stat_attr: %s", __func__, attr->attr.name);
+
+	mutex_lock(&mem_sleep_stat_lock);
+	switch (off) {
+	case TCXO_TIME:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->tcxo_time);
+		break;
+	case TCXO_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->tcxo_cnt);
+		break;
+	case SUSPEND_TCXO_TIME:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->suspend_tcxo_time);
+		break;
+	case SUSPEND_TCXO_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->suspend_tcxo_cnt);
+		break;
+	case GARBAGE_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->garbage_cnt);
+		break;
+	case GARBAGE_PKT_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->garbage_pkt_cnt);
+		break;
+	case CELL_SWT_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->cell_swt_cnt);
+		break;
+	case ZONE_BASED_REG_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->zone_based_reg_cnt);
+		break;
+	case IDLE_HAND_OFF_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->idle_hand_off_cnt);
+		break;
+	case MO_2G_PROBE_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->mo_2g_probe_cnt);
+		break;
+	case MO_3G_PROBE_CNT:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+						sleep_stat->mo_3g_probe_cnt);
+		break;
+	default:
+		i = -EINVAL;
+	}
+	mutex_unlock(&mem_sleep_stat_lock);
+
+	if (i < 0)
+		pr_err("%s: attribute is not supported: %d", __func__, off);
+
+	return i;
+}
+
 static int __init smd_debugfs_init(void)
 {
 	struct dentry *dent;
+	int ret;
+	int i;
 
 	dent = debugfs_create_dir("smd", 0);
 	if (IS_ERR(dent))
@@ -359,8 +534,22 @@ static int __init smd_debugfs_init(void)
 	debug_create("build", 0444, dent, debug_read_build_id);
 #if CONFIG_SMD_OFFSET_TCXO_STAT
 	sleep_stat = get_smem_sleep_stat();
+	negate_client_stat = get_smem_negate_client_stat();
 	register_early_suspend(&sleep_stat_screen_hdl);
 	register_pm_notifier(&sleep_stat_notif_block);
+
+	mutex_init(&mem_sleep_stat_lock);
+	sleep_stat_kobj = kobject_create_and_add("systemlog", NULL);
+	if (sleep_stat_kobj == NULL) {
+		pr_err("smd_debugfs_init: create sleep_stat_kobj failed\n");
+		return 0;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(mem_sleep_stat_attrs); i++) {
+		ret = sysfs_create_file(sleep_stat_kobj, &mem_sleep_stat_attrs[i].attr);
+		if (ret)
+			pr_err("%s: sysfs_create_file for attr %d failed\n", __func__, i);
+	}
 #else
 	pr_info("No sleep statistics\n");
 #endif

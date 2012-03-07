@@ -14,6 +14,12 @@
  *
  */
 
+#if defined(CONFIG_ARCH_MSM7X30_LTE)
+#include <mach/7x30-lte/msm_smd.h>
+#elif defined(CONFIG_ARCH_MSM8X60)
+#include <mach/msm_smd-8x60.h>
+#endif
+
 #ifndef __ASM_ARCH_MSM_SMD_H
 #define __ASM_ARCH_MSM_SMD_H
 
@@ -62,6 +68,8 @@ int smd_wait_until_readable(smd_channel_t *ch, int bytes);
 int smd_wait_until_writable(smd_channel_t *ch, int bytes);
 #endif
 int smd_wait_until_opened(smd_channel_t *ch, int timeout_us);
+
+int smd_total_fifo_size(smd_channel_t *ch);
 
 typedef enum
 {
