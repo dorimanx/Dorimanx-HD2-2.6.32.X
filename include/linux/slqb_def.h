@@ -10,7 +10,7 @@
 #include <linux/gfp.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/rcu_types.h>
+#include <linux/rcupdate.h>
 #include <linux/mm_types.h>
 #include <linux/kernel.h>
 
