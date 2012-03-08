@@ -1013,6 +1013,7 @@ int smd_write_avail(smd_channel_t *ch)
 {
 	return ch->write_avail(ch);
 }
+EXPORT_SYMBOL_GPL(smd_write_avail);
 
 int smd_wait_until_readable(smd_channel_t *ch, int bytes)
 {
