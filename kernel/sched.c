@@ -71,6 +71,7 @@
 #include <linux/debugfs.h>
 #include <linux/ctype.h>
 #include <linux/ftrace.h>
+#include <linux/membarrier.h>
 
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
@@ -11092,6 +11093,199 @@ struct cgroup_subsys cpuacct_subsys = {
 	.subsys_id = cpuacct_subsys_id,
 };
 #endif	/* CONFIG_CGROUP_CPUACCT */
+
+#ifdef CONFIG_SMP
+
+/*
+ * Execute a memory barrier on all active threads from the current process
+ * on SMP systems. Do not rely on implicit barriers in IPI handler execution,
+ * because batched IPI lists are synchronized with spinlocks rather than full
+ * memory barriers. This is not the bulk of the overhead anyway, so let's stay
+ * on the safe side.
+ */
+static void membarrier_ipi(void *unused)
+{
+	smp_mb();
+}
+
+/*
+ * Handle out-of-mem by sending per-cpu IPIs instead.
+ */
+static void membarrier_retry(void)
+{
+	struct mm_struct *mm;
+	int cpu;
+
+	for_each_cpu(cpu, mm_cpumask(current->mm)) {
+		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+		mm = cpu_curr(cpu)->mm;
+		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+		if (current->mm == mm)
+			smp_call_function_single(cpu, membarrier_ipi, NULL, 1);
+	}
+}
+
+/*
+ * sys_membarrier - issue memory barrier on current process running threads
+ * @flags: One of these must be set:
+ *         MEMBARRIER_EXPEDITED
+ *             Adds some overhead, fast execution (few microseconds)
+ *         MEMBARRIER_DELAYED
+ *             Low overhead, but slow execution (few milliseconds)
+ *
+ *         MEMBARRIER_QUERY
+ *           This optional flag can be set to query if the kernel supports
+ *           a set of flags.
+ *
+ * return values: Returns -EINVAL if the flags are incorrect. Testing for kernel
+ * sys_membarrier support can be done by checking for -ENOSYS return value.
+ * Return values >= 0 indicate success. For a given set of flags on a given
+ * kernel, this system call will always return the same value. It is therefore
+ * correct to check the return value only once during a process lifetime,
+ * passing the MEMBARRIER_QUERY flag in addition to only check if the flags are
+ * supported, without performing any synchronization.
+ *
+ * This system call executes a memory barrier on all running threads of the
+ * current process. Upon completion, the caller thread is ensured that all
+ * process threads have passed through a state where all memory accesses to
+ * user-space addresses match program order. (non-running threads are de facto
+ * in such a state.)
+ *
+ * Using the non-expedited mode is recommended for applications which can
+ * afford leaving the caller thread waiting for a few milliseconds. A good
+ * example would be a thread dedicated to execute RCU callbacks, which waits
+ * for callbacks to enqueue most of the time anyway.
+ *
+ * The expedited mode is recommended whenever the application needs to have
+ * control returning to the caller thread as quickly as possible. An example
+ * of such application would be one which uses the same thread to perform
+ * data structure updates and issue the RCU synchronization.
+ *
+ * It is perfectly safe to call both expedited and non-expedited
+ * sys_membarrier() in a process.
+ *
+ * mm_cpumask is used as an approximation of the processors which run threads
+ * belonging to the current process. It is a superset of the cpumask to which we
+ * must send IPIs, mainly due to lazy TLB shootdown. Therefore, for each CPU in
+ * the mm_cpumask, we check each runqueue with the rq lock held to make sure our
+ * ->mm is indeed running on them. The rq lock ensures that a memory barrier is
+ * issued each time the rq current task is changed. This reduces the risk of
+ * disturbing a RT task by sending unnecessary IPIs. There is still a slight
+ * chance to disturb an unrelated task, because we do not lock the runqueues
+ * while sending IPIs, but the real-time effect of this heavy locking would be
+ * worse than the comparatively small disruption of an IPI.
+ *
+ * RED PEN: before assigning a system call number for sys_membarrier() to an
+ * architecture, we must ensure that switch_mm issues full memory barriers
+ * (or a synchronizing instruction having the same effect) between:
+ * - memory accesses to user-space addresses and clear mm_cpumask.
+ * - set mm_cpumask and memory accesses to user-space addresses.
+ *
+ * The reason why these memory barriers are required is that mm_cpumask updates,
+ * as well as iteration on the mm_cpumask, offer no ordering guarantees.
+ * These added memory barriers ensure that any thread modifying the mm_cpumask
+ * is in a state where all memory accesses to user-space addresses are
+ * guaranteed to be in program order.
+ *
+ * In some case adding a comment to this effect will suffice, in others we
+ * will need to add smp_mb__before_clear_bit()/smp_mb__after_clear_bit() or
+ * simply smp_mb(). These barriers are required to ensure we do not _miss_ a
+ * CPU that need to receive an IPI, which would be a bug.
+ *
+ * On uniprocessor systems, this system call simply returns 0 without doing
+ * anything, so user-space knows it is implemented.
+ *
+ * The flags argument has room for extensibility, with 16 lower bits holding
+ * mandatory flags for which older kernels will fail if they encounter an
+ * unknown flag. The high 16 bits are used for optional flags, which older
+ * kernels don't have to care about.
+ *
+ * This synchronization only takes care of threads using the current process
+ * memory map. It should not be used to synchronize accesses performed on memory
+ * maps shared between different processes.
+ */
+SYSCALL_DEFINE1(membarrier, unsigned int, flags)
+{
+	struct mm_struct *mm;
+	cpumask_var_t tmpmask;
+	int cpu;
+
+	/*
+	 * Expect _only_ one of expedited or delayed flags.
+	 * Don't care about optional mask for now.
+	 */
+	switch (flags & MEMBARRIER_MANDATORY_MASK) {
+	case MEMBARRIER_EXPEDITED:
+	case MEMBARRIER_DELAYED:
+		break;
+	default:
+		return -EINVAL;
+	}
+	if (unlikely(flags & MEMBARRIER_QUERY
+		     || thread_group_empty(current))
+		     || num_online_cpus() == 1)
+		return 0;
+	if (flags & MEMBARRIER_DELAYED) {
+		synchronize_sched();
+		return 0;
+	}
+	/*
+	 * Memory barrier on the caller thread between previous memory accesses
+	 * to user-space addresses and sending memory-barrier IPIs. Orders all
+	 * user-space address memory accesses prior to sys_membarrier() before
+	 * mm_cpumask read and membarrier_ipi executions. This barrier is paired
+	 * with memory barriers in:
+	 * - membarrier_ipi() (for each running threads of the current process)
+	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
+	 *                accesses to user-space addresses)
+	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
+	 *   A memory barrier is issued each time ->mm is changed while the rq
+	 *   lock is held.
+	 */
+	smp_mb();
+	if (!alloc_cpumask_var(&tmpmask, GFP_NOWAIT)) {
+		membarrier_retry();
+		goto out;
+	}
+	cpumask_copy(tmpmask, mm_cpumask(current->mm));
+	preempt_disable();
+	cpumask_clear_cpu(smp_processor_id(), tmpmask);
+	for_each_cpu(cpu, tmpmask) {
+		raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+		mm = cpu_curr(cpu)->mm;
+		raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+		if (current->mm != mm)
+			cpumask_clear_cpu(cpu, tmpmask);
+	}
+	smp_call_function_many(tmpmask, membarrier_ipi, NULL, 1);
+	preempt_enable();
+	free_cpumask_var(tmpmask);
+out:
+	/*
+	 * Memory barrier on the caller thread between sending & waiting for
+	 * memory-barrier IPIs and following memory accesses to user-space
+	 * addresses. Orders mm_cpumask read and membarrier_ipi executions
+	 * before all user-space address memory accesses following
+	 * sys_membarrier(). This barrier is paired with memory barriers in:
+	 * - membarrier_ipi() (for each running threads of the current process)
+	 * - switch_mm() (ordering scheduler mm_cpumask update wrt memory
+	 *                accesses to user-space addresses)
+	 * - Each CPU ->mm update performed with rq lock held by the scheduler.
+	 *   A memory barrier is issued each time ->mm is changed while the rq
+	 *   lock is held.
+	 */
+	smp_mb();
+	return 0;
+}
+
+#else /* !CONFIG_SMP */
+
+SYSCALL_DEFINE1(membarrier, unsigned int, flags)
+{
+	return 0;
+}
+
+#endif /* CONFIG_SMP */
 
 #ifndef CONFIG_SMP
 

@@ -36,12 +36,28 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	unsigned cpu = smp_processor_id();
 
 	if (likely(prev != next)) {
+ 		/*
+		 * smp_mb() between memory accesses to user-space addresses and
+		 * mm_cpumask clear is required by sys_membarrier(). This
+		 * ensures that all user-space address memory accesses are in
+		 * program order when the mm_cpumask is cleared.
+		 * smp_mb__before_clear_bit() turns into a barrier() on x86. It
+		 * is left here to document that this barrier is needed, as an
+		 * example for other architectures.
+		 */
+		smp_mb__before_clear_bit();
 #ifdef CONFIG_SMP
 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
 		percpu_write(cpu_tlbstate.active_mm, next);
 #endif
 		cpumask_set_cpu(cpu, mm_cpumask(next));
-
+		/*
+		 * smp_mb() between mm_cpumask set and memory accesses to
+		 * user-space addresses is required by sys_membarrier(). This
+		 * ensures that all user-space address memory accesses performed
+		 * by the current thread are in program order when the
+		 * mm_cpumask is set. Implied by load_cr3.
+		 */
 		/* Re-load page tables */
 		load_cr3(next->pgd);
 
@@ -60,9 +76,17 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		BUG_ON(percpu_read(cpu_tlbstate.active_mm) != next);
 
 		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
-			/* We were in lazy tlb mode and leave_mm disabled
+			/*
+			 * We were in lazy tlb mode and leave_mm disabled
 			 * tlb flush IPI delivery. We must reload CR3
 			 * to make sure to use no freed page tables.
+			 *
+			 * smp_mb() between mm_cpumask set and memory accesses
+			 * to user-space addresses is required by
+			 * sys_membarrier(). This ensures that all user-space
+			 * address memory accesses performed by the current
+			 * thread are in program order when the mm_cpumask is
+			 * set. Implied by load_cr3.
 			 */
 			load_cr3(next->pgd);
 			load_LDT_nolock(&next->context);
