@@ -942,6 +942,8 @@ enum
 
 #ifdef __KERNEL__
 #include <linux/list.h>
+#include <linux/rcupdate.h>
+#include <../arch/arm/include/asm/atomic.h>
 
 /* For the /proc/sys support */
 struct ctl_table;
