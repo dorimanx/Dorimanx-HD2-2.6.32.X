@@ -22,6 +22,7 @@
 #define dec_preempt_count() sub_preempt_count(1)
 
 #define preempt_count()	(current_thread_info()->preempt_count)
+extern int preempt_count_cpu(int cpu);
 
 #ifdef CONFIG_PREEMPT
 

@@ -79,6 +79,8 @@ extern int rcu_scheduler_active;
 #include <linux/rcutree.h>
 #elif CONFIG_TINY_RCU
 #include <linux/rcutiny.h>
+#elif defined(CONFIG_JRCU)
+#include <linux/jrcu.h>
 #else
 #error "Unknown RCU implementation specified to kernel configuration"
 #endif
