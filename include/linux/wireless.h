@@ -346,8 +346,8 @@
 #define SIOCIWFIRST	0x8B00
 #define SIOCIWLAST	SIOCIWLASTPRIV		/* 0x8BFF */
 #define IW_IOCTL_IDX(cmd)	((cmd) - SIOCIWFIRST)
-#define IW_HANDLER(id, func)      \
-   [IW_IOCTL_IDX(id)] = func
+#define IW_HANDLER(id, func)			\
+	[IW_IOCTL_IDX(id)] = func
 
 /* Odd : get (world access), even : set (root access) */
 #define IW_IS_SET(cmd)	(!((cmd) & 0x1))
@@ -1157,6 +1157,6 @@ struct __compat_iw_event {
 #define IW_EV_PARAM_PK_LEN	(IW_EV_LCP_PK_LEN + sizeof(struct iw_param))
 #define IW_EV_ADDR_PK_LEN	(IW_EV_LCP_PK_LEN + sizeof(struct sockaddr))
 #define IW_EV_QUAL_PK_LEN	(IW_EV_LCP_PK_LEN + sizeof(struct iw_quality))
-#define IW_EV_POINT_PK_LEN	(IW_EV_LCP_LEN + 4)
+#define IW_EV_POINT_PK_LEN	(IW_EV_LCP_PK_LEN + 4)
 
 #endif	/* _LINUX_WIRELESS_H */
