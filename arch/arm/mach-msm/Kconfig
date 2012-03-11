@@ -1051,6 +1051,13 @@ config SMD_OFFSET_TCXO_STAT
 	help
           TCXO off time is in tick of sleep clock, 1/32768.
 
+config SMD_OFFSET_NEGATE_CLIENT_STAT
+        depends on MSM_SMD
+	hex "SMD offset of negate clinet stat"
+        default 0x0
+        help
+          TCXO shutdown retry conuter and negate tcxoc client counters.
+
 config AXI_SCREEN_POLICY
         depends on ARCH_QSD8X50 || ARCH_MSM7X00A || ARCH_MSM7227 || ARCH_MSM7225
 	depends on HAS_EARLYSUSPEND

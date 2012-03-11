@@ -34,11 +34,11 @@
 #define DEF_SAMPLING_DOWN_FACTOR		(50)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(85)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(40)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
-#define DEF_SUSPEND_FREQ                        (499200)
+#define DEF_SUSPEND_FREQ                        (128000)
 
 /*
  * The polling frequency of this governor depends on the capability of

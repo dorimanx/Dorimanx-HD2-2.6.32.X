@@ -127,7 +127,6 @@
 #include <linux/jhash.h>
 #include <linux/random.h>
 #include <trace/events/napi.h>
-#include <linux/iface_stat.h>
 
 #include "net-sysfs.h"
 
@@ -4663,10 +4662,6 @@ static void rollback_registered(struct net_device *dev)
 
 	synchronize_net();
 
-#ifdef CONFIG_IFACE_STAT
-	/* Store stats for this device in persistent iface_stat */
-	iface_stat_update(dev);
-#endif
 	/* Shutdown queueing discipline. */
 	dev_shutdown(dev);
 
