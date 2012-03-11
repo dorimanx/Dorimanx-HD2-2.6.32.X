@@ -201,6 +201,7 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"HU", "EU", 5},
 	{"IE", "EU", 5},
 	{"IT", "EU", 5},
+	{"JP", "JP", -1},
 	{"LV", "EU", 5},
 	{"LI", "EU", 5},
 	{"LT", "EU", 5},
