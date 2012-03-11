@@ -36,9 +36,6 @@
 #include <dhd_proto.h>
 #include <dhd_dbg.h>
 #include <msgtrace.h>
-#ifdef CONFIG_HAS_WAKELOCK
-#include <linux/wakelock.h>
-#endif
 
 #include <wlioctl.h>
 
@@ -888,18 +885,6 @@ wl_host_event(struct dhd_info *dhd, int *ifidx, void *pktdata,
 		default:
 		/* Fall through: this should get _everything_  */
 
-#ifdef CONFIG_HAS_WAKELOCK
-#if defined(LINUX)
-		if (type == WLC_E_LINK) {//link up/down event
-			dhd_htc_wake_lock_timeout(dhd, 15);
-				printf("wake lock 15 secs!\n");
-		}else if (type == WLC_E_PFN_NET_FOUND) {
-				printf("pfn lock 30 secs!\n");
-			dhd_htc_wake_lock_timeout(dhd, 30);
-		}
-#endif
-#endif
-
 			*ifidx = dhd_ifname2idx(dhd, event->ifname);
 			/* push up to external supp/auth */
 			dhd_event(dhd, (char *)pvt_data, evlen, *ifidx);
@@ -1384,10 +1369,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #endif /* SET_RANDOM_MAC_SOFTAP */
 
 	/* Set Country code */
-	if (dhd->dhd_cspec.ccode[0] != 0) {
-		bcm_mkiovar("country", (char *)&dhd->dhd_cspec, \
-			sizeof(wl_country_t), iovbuf, sizeof(iovbuf));
-		if ((ret = dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf))) < 0) {
+	if (dhd->country_code[0] != 0) {
+		if (dhdcdc_set_ioctl(dhd, 0, WLC_SET_COUNTRY,
+			dhd->country_code, sizeof(dhd->country_code)) < 0) {
 			DHD_ERROR(("%s: country code setting failed\n", __FUNCTION__));
 		}
 	}
@@ -1911,6 +1895,41 @@ fail:
 
 #endif
 
+/*
+ * returns = TRUE if associated, FALSE if not associated
+ */
+bool is_associated(dhd_pub_t *dhd, void *bss_buf)
+{
+	char bssid[ETHER_ADDR_LEN], zbuf[ETHER_ADDR_LEN];
+	int ret = -1;
+
+	bzero(bssid, ETHER_ADDR_LEN);
+	bzero(zbuf, ETHER_ADDR_LEN);
+
+	ret = dhdcdc_set_ioctl(dhd, 0, WLC_GET_BSSID, (char *)bssid, ETHER_ADDR_LEN);
+	DHD_TRACE((" %s WLC_GET_BSSID ioctl res = %d\n", __FUNCTION__, ret));
+
+	if (ret == BCME_NOTASSOCIATED) {
+		DHD_TRACE(("%s: not associated! res:%d\n", __FUNCTION__, ret));
+	}
+
+	if (ret < 0)
+		return FALSE;
+
+	if ((memcmp(bssid, zbuf, ETHER_ADDR_LEN) != 0)) {
+		/*  STA is assocoated BSSID is non zero */
+
+		if (bss_buf) {
+			/* return bss if caller provided buf */
+			memcpy(bss_buf, bssid, ETHER_ADDR_LEN);
+		}
+		return TRUE;
+	} else {
+		DHD_TRACE(("%s: WLC_GET_BSSID ioctl returned zero bssid\n", __FUNCTION__));
+		return FALSE;
+	}
+}
+
 /* Function to estimate possible DTIM_SKIP value */
 int dhd_get_dtim_skip(dhd_pub_t *dhd)
 {
@@ -1994,7 +2013,6 @@ int dhd_pno_clean(dhd_pub_t *dhd)
 int dhd_pno_enable(dhd_pub_t *dhd, int pfn_enabled)
 {
 	char iovbuf[128];
-	uint8 bssid[6];
 	int ret = -1;
 
 	if ((!dhd) && ((pfn_enabled != 0) || (pfn_enabled != 1))) {
@@ -2005,12 +2023,7 @@ int dhd_pno_enable(dhd_pub_t *dhd, int pfn_enabled)
 	memset(iovbuf, 0, sizeof(iovbuf));
 
 	/* Check if disassoc to enable pno */
-	if ((pfn_enabled) && \
-		((ret = dhdcdc_set_ioctl(dhd, 0, WLC_GET_BSSID, \
-				 (char *)&bssid, ETHER_ADDR_LEN)) == BCME_NOTASSOCIATED)) {
-		DHD_TRACE(("%s pno enable called in disassoc mode\n", __FUNCTION__));
-	}
-	else if (pfn_enabled) {
+	if (pfn_enabled && (is_associated(dhd, NULL) == TRUE)) {
 		DHD_ERROR(("%s pno enable called in assoc mode ret=%d\n", \
 			__FUNCTION__, ret));
 		return ret;

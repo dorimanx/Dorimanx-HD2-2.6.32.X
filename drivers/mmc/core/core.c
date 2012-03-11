@@ -1074,7 +1074,7 @@ void mmc_rescan(struct work_struct *work)
 	int err = 0;
         int extend_wakelock = 0;
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
-        int retries = 3;
+        int retries = 2;
 #endif
 
 #ifdef CONFIG_MMC_UNSAFE_RESUME

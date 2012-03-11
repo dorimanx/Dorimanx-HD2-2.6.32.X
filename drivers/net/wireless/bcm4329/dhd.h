@@ -166,7 +166,7 @@ typedef struct dhd_pub {
 	char * pktfilter[100];
 	int pktfilter_count;
 
-	wl_country_t dhd_cspec;		/* Current Locale info */
+	uint8 country_code[WLC_CNTRY_BUF_SZ];
 	char eventmask[WL_EVENTING_MASK_LEN];
 
 } dhd_pub_t;
@@ -240,7 +240,6 @@ extern void dhd_os_start_lock(dhd_pub_t *pub);
 extern void dhd_os_start_unlock(dhd_pub_t *pub);
 extern unsigned long dhd_os_spin_lock(dhd_pub_t *pub);
 extern void dhd_os_spin_unlock(dhd_pub_t *pub, unsigned long flags);
-extern void dhd_htc_wake_lock_timeout(struct dhd_info *dhd, int sec);
 
 typedef struct dhd_if_event {
 	uint8 ifidx;
