@@ -31,6 +31,7 @@
 #include <linux/delay.h>
 #include <linux/earlysuspend.h>
 #include <linux/wakelock.h>
+#include <asm/uaccess.h>
 
 #include <mach/msm_fb.h>
 #include "mddi_hw.h"
@@ -204,10 +205,8 @@ static void mddi_wait_interrupt(struct mddi_info *mddi, uint32_t intmask);
 
 static void mddi_handle_rev_data_avail(struct mddi_info *mddi)
 {
-	union mddi_rev *rev = mddi->rev_data;
 	uint32_t rev_data_count;
 	uint32_t rev_crc_err_count;
-	int i;
 	struct reg_read_info *ri;
 	size_t prev_offset;
 	uint16_t length;
@@ -242,6 +241,8 @@ static void mddi_handle_rev_data_avail(struct mddi_info *mddi)
 		return;
 
 	if (mddi_debug_flags & 1) {
+		int i;
+		union mddi_rev *rev = mddi->rev_data;
 		printk(KERN_INFO "INT %x, STAT %x, CURR_REV_PTR %x\n",
 		       mddi_readl(INT), mddi_readl(STAT),
 		       mddi_readl(CURR_REV_PTR));
@@ -355,7 +356,7 @@ static irqreturn_t mddi_isr(int irq, void *data)
 static long mddi_wait_interrupt_timeout(struct mddi_info *mddi,
 					uint32_t intmask, int timeout)
 {
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 
 	spin_lock_irqsave(&mddi->int_lock, irq_flags);
 	mddi->got_int &= ~intmask;
@@ -369,7 +370,7 @@ static long mddi_wait_interrupt_timeout(struct mddi_info *mddi,
 static void mddi_wait_interrupt(struct mddi_info *mddi, uint32_t intmask)
 {
 	if (mddi_wait_interrupt_timeout(mddi, intmask, HZ/10) == 0)
-		printk(KERN_INFO KERN_ERR "mddi_wait_interrupt %d, timeout "
+		printk(KERN_INFO "mddi_wait_interrupt %d, timeout "
 		       "waiting for %x, INT = %x, STAT = %x gotint = %x\n",
 		       current->pid, intmask, mddi_readl(INT), mddi_readl(STAT),
 		       mddi->got_int);
@@ -689,7 +690,7 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 	struct reg_read_info ri;
 	unsigned s;
 	int retry_count = 2;
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 
 	mutex_lock(&mddi->reg_read_lock);
 

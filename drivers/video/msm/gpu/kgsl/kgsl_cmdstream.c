@@ -1,17 +1,17 @@
 /*
 * Copyright (c) 2008-2009 QUALCOMM USA, INC.
-* 
+*
 * All source code in this file is licensed under the following license
-* 
+*
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * version 2 as published by the Free Software Foundation.
-* 
+*
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, you can find it at http://www.fsf.org
 */
@@ -45,7 +45,6 @@ kgsl_cmdstream_readtimestamp(struct kgsl_device *device,
 	else if (type == KGSL_TIMESTAMP_RETIRED)
 		KGSL_CMDSTREAM_GET_EOP_TIMESTAMP(device,
 						 (unsigned int *)&timestamp);
-
 	rmb();
 
 	KGSL_CMD_VDBG("return %d\n", timestamp);
@@ -83,7 +82,7 @@ void kgsl_cmdstream_memqueue_drain(struct kgsl_device *device)
 		KGSL_MEM_DBG("ts_processed %d ts_free %d gpuaddr %x)\n",
 			     ts_processed, entry->free_timestamp,
 			     entry->memdesc.gpuaddr);
-		kgsl_remove_mem_entry(entry);
+		kgsl_remove_mem_entry(entry, true);
 	}
 }
 

@@ -53,6 +53,12 @@ struct mdp_info {
 	int pack_pattern;
 	bool dma_config_dirty;
 	struct mdp_blit_req *req;
+        uint32_t state;
+        struct timer_list standby_timer;
+        struct timer_list dma_timer;
+
+        int (*enable_irq)(struct mdp_info *mdp, uint32_t mask);
+        int (*disable_irq)(struct mdp_info *mdp, uint32_t mask);
 };
 
 extern int mdp_out_if_register(struct mdp_device *mdp_dev, int interface,
@@ -73,6 +79,9 @@ void mdp_ppp_dump_debug(const struct mdp_info *mdp);
 
 #define mdp_writel(mdp, value, offset) writel(value, mdp->base + offset)
 #define mdp_readl(mdp, offset) readl(mdp->base + offset)
+
+/* define mdp state for multi purpose */
+#define MDP_STATE_STANDBY                (1 << 0)
 
 #ifdef CONFIG_MSM_MDP302
 #define MDP_SYNC_CONFIG_0                ( 0x00300)

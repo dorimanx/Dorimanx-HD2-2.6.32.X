@@ -21,6 +21,7 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 #include <linux/clk.h>
+#include <linux/timer.h>
 #include <linux/file.h>
 #include <linux/android_pmem.h>
 #include <linux/major.h>
@@ -40,6 +41,7 @@ struct class *mdp_class;
 
 static DECLARE_WAIT_QUEUE_HEAD(mdp_ppp_waitqueue);
 static unsigned int mdp_irq_mask;
+static unsigned int mdp_dma_timer_enable = 0;
 struct clk *mdp_clk_to_disable_later = 0;
 static struct  mdp_blit_req *timeout_req;
 #ifdef CONFIG_FB_MSM_OVERLAY
@@ -55,6 +57,18 @@ extern void mdp4_mddi_overlay(void *priv, uint32_t addr, uint32_t stride,
 #endif
 DEFINE_MUTEX(mdp_mutex);
 
+static void mdp_do_standby_timer(unsigned long data)
+{
+	struct mdp_info *mdp = (struct mdp_info *) data;
+	if (!mdp_irq_mask) {
+		clk_set_rate(mdp->ebi1_clk, 0);
+		mdp->state |= MDP_STATE_STANDBY;
+	} else {
+		mod_timer(&mdp->standby_timer,
+			jiffies + msecs_to_jiffies(200));
+	}
+}
+
 static int locked_enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 {
 	BUG_ON(!mask);
@@ -69,7 +83,17 @@ static int locked_enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 	if (!mdp_irq_mask) {
 		clk_enable(mdp->clk);
 		enable_irq(mdp->irq);
-		clk_set_rate(mdp->ebi1_clk, 128000000);
+		if (mdp->state & MDP_STATE_STANDBY) {
+#ifdef CONFIG_MSM_MDP40
+			clk_set_rate(mdp->ebi1_clk, 153000000);
+#else
+			clk_set_rate(mdp->ebi1_clk, 128000000);
+#endif
+			mdp->state &= ~MDP_STATE_STANDBY;
+		} else {
+			del_timer_sync(&mdp->standby_timer);
+			barrier();
+		}
 	}
 
 	/* clear out any previous irqs for the requested mask*/
@@ -84,7 +108,7 @@ static int locked_enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 
 static int enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 {
-	unsigned long flags;
+	unsigned long flags=0;
 	int ret;
 
 	spin_lock_irqsave(&mdp->lock, flags);
@@ -111,14 +135,16 @@ static int locked_disable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 		disable_irq_nosync(mdp->irq);
 		if (mdp->clk)
 			clk_disable(mdp->clk);
-		clk_set_rate(mdp->ebi1_clk, 0);
+		if (!(mdp->state & MDP_STATE_STANDBY))
+			mod_timer(&mdp->standby_timer,
+				jiffies + msecs_to_jiffies(200));
 	}
 	return 0;
 }
 
 int disable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 {
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 	int ret;
 
 	spin_lock_irqsave(&mdp->lock, irq_flags);
@@ -130,7 +156,7 @@ int disable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 static irqreturn_t mdp_isr(int irq, void *data)
 {
 	uint32_t status;
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 	struct mdp_info *mdp = data;
 	int i;
 
@@ -140,12 +166,18 @@ static irqreturn_t mdp_isr(int irq, void *data)
 	mdp_writel(mdp, status, MDP_INTR_CLEAR);
 
 
-#if 0 && defined(CONFIG_MACH_HTCLEO)
+#if defined(CONFIG_MACH_HTCLEO)
 	status &= ~0x10000; // Cotulla
 #endif
 
 //	pr_info("%s: status=%08x (irq_mask=%08x)\n", __func__, status,
 //		mdp_irq_mask);
+
+	if (mdp_dma_timer_enable) {
+		del_timer_sync(&mdp->dma_timer);
+		mdp_dma_timer_enable = 0;
+	}
+
 	status &= mdp_irq_mask;
 #ifdef CONFIG_MSM_MDP40
 	if (mdp->mdp_dev.overrides & MSM_MDP4_MDDI_DMA_SWITCH) {
@@ -178,10 +210,43 @@ static irqreturn_t mdp_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+static void mdp_do_dma_timer(unsigned long data)
+{
+	uint32_t status;
+	struct mdp_info *mdp = (struct mdp_info *) data;
+	unsigned long irq_flags=0;
+	int i;
+
+	spin_lock_irqsave(&mdp->lock, irq_flags);
+
+	status = mdp_readl(mdp, MDP_INTR_STATUS);
+	mdp_writel(mdp, mdp_irq_mask, MDP_INTR_CLEAR);
+
+	for (i = 0; i < MSM_MDP_NUM_INTERFACES; ++i) {
+		struct mdp_out_interface *out_if = &mdp->out_if[i];
+		if (mdp_irq_mask & out_if->dma_mask) {
+			if (out_if->dma_cb) {
+				out_if->dma_cb->func(out_if->dma_cb);
+				out_if->dma_cb = NULL;
+			}
+			wake_up(&out_if->dma_waitqueue);
+		}
+		if (mdp_irq_mask & out_if->irq_mask) {
+			out_if->irq_cb->func(out_if->irq_cb);
+			out_if->irq_cb = NULL;
+		}
+	}
+
+	locked_disable_mdp_irq(mdp, mdp_irq_mask);
+
+	spin_unlock_irqrestore(&mdp->lock, irq_flags);
+
+}
+
 static uint32_t mdp_check_mask(struct mdp_info *mdp, uint32_t mask)
 {
 	uint32_t ret;
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 
 	spin_lock_irqsave(&mdp->lock, irq_flags);
 	ret = mdp_irq_mask & mask;
@@ -192,7 +257,7 @@ static uint32_t mdp_check_mask(struct mdp_info *mdp, uint32_t mask)
 static int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq)
 {
 	int ret = 0;
-	unsigned long irq_flags;
+	unsigned long irq_flags=0;
 
 //	pr_info("%s: WAITING for 0x%x\n", __func__, mask);
 	wait_event_timeout(*wq, !mdp_check_mask(mdp, mask), HZ);
@@ -214,7 +279,7 @@ static int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq)
 	return ret;
 }
 
-void mdp_dma_wait(struct mdp_device *mdp_dev, int interface)
+static void mdp_dma_wait(struct mdp_device *mdp_dev, int interface)
 {
 #define MDP_MAX_TIMEOUTS 20
 	static int timeout_count;
@@ -435,13 +500,18 @@ void mdp_dma(struct mdp_device *mdp_dev, uint32_t addr, uint32_t stride,
 
 	spin_lock_irqsave(&mdp->lock, flags);
 	if (locked_enable_mdp_irq(mdp, out_if->dma_mask)) {
+		/* something wrong in dma, workaround it */
+                mdp_dma_timer_enable = 1;
 		pr_err("%s: busy\n", __func__);
-		goto done;
 	}
 
 	out_if->dma_cb = callback;
 	out_if->dma_start(out_if->priv, addr, stride, width, height, x, y);
-done:
+
+	if (mdp_dma_timer_enable)
+		mod_timer(&mdp->dma_timer,
+			jiffies + msecs_to_jiffies(17));
+
 	spin_unlock_irqrestore(&mdp->lock, flags);
 }
 
@@ -720,7 +790,6 @@ end:
 	return ret;
 }
 
-#if 0 //DEAD function
 int mdp_fb_mirror(struct mdp_device *mdp_dev,
 		struct fb_info *src_fb, struct fb_info *dst_fb,
 		struct mdp_blit_req *req)
@@ -751,7 +820,6 @@ err_bad_blit:
 err_wait_failed:
 	return ret;
 }
-#endif
 
 void mdp_set_grp_disp(struct mdp_device *mdp_dev, unsigned disp_id)
 {
@@ -979,6 +1047,9 @@ int mdp_probe(struct platform_device *pdev)
 	mdp->mdp_dev.check_output_format = mdp_check_output_format;
 	mdp->mdp_dev.configure_dma = mdp_configure_dma;
 
+	mdp->enable_irq = enable_mdp_irq;
+	mdp->disable_irq = disable_mdp_irq;
+
 	if (pdata == NULL || pdata->overrides == 0)
 		mdp->mdp_dev.overrides = 0;
 	else if(pdata->overrides)
@@ -989,7 +1060,6 @@ int mdp_probe(struct platform_device *pdev)
 	else if(pdata->color_format)
 		mdp->mdp_dev.color_format = pdata->color_format;
 
-	if (pdata == NULL || pdata->dma_channel == MDP_DMA_P) {
 #ifdef CONFIG_MSM_MDP40
 		if (mdp->mdp_dev.overrides & MSM_MDP4_MDDI_DMA_SWITCH) {
 			ret = mdp_out_if_register(&mdp->mdp_dev,
@@ -1001,15 +1071,17 @@ int mdp_probe(struct platform_device *pdev)
 				mdp4_mddi_overlay);
 		}
 #else
+	if (pdata == NULL || pdata->dma_channel == MDP_DMA_P) {
 		ret = mdp_out_if_register(&mdp->mdp_dev,
 				MSM_MDDI_PMDH_INTERFACE, mdp, MDP_DMA_P_DONE,
 				mdp_dma_to_mddi);
-#endif
+
 	} else if (pdata->dma_channel == MDP_DMA_S) {
 		ret = mdp_out_if_register(&mdp->mdp_dev,
 				MSM_MDDI_PMDH_INTERFACE, mdp, MDP_DMA_S_DONE,
 				mdp_dmas_to_mddi);
 	}
+#endif
 
 	if (ret)
 		goto error_mddi_pmdh_register;
@@ -1071,6 +1143,9 @@ extern void mdp4_hw_init(struct mdp_info *mdp);
 	ret = device_register(&mdp->mdp_dev.dev);
 	if (ret)
 		goto error_device_register;
+
+	setup_timer(&mdp->standby_timer, mdp_do_standby_timer, (unsigned long )mdp);
+	setup_timer(&mdp->dma_timer, mdp_do_dma_timer, (unsigned long )mdp);
 
 	pr_info("%s: initialized\n", __func__);
 

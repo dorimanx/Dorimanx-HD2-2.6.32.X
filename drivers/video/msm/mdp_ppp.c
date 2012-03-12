@@ -15,8 +15,11 @@
 #include <linux/fb.h>
 #include <linux/file.h>
 #include <linux/delay.h>
+#include <linux/major.h>
 #include <linux/msm_mdp.h>
+#include <linux/mutex.h>
 #include <linux/android_pmem.h>
+#include <linux/wait.h>
 #include <mach/msm_fb.h>
 
 #include "mdp_hw.h"
@@ -501,6 +504,10 @@ static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
 		mdp_writel_dbg(mdp, regs->bg_img_sz, MDP_PPP_BG_IMAGE_SIZE);
 		mdp_writel_dbg(mdp, regs->bg_alpha_sel,
 			       MDP_PPP_BLEND_BG_ALPHA_SEL);
+
+#if defined(CONFIG_MACH_HTCLEO)
+      		mdp_writel_dbg(mdp, 0, MDP_TFETCH_TEST_MODE);
+#endif
 #endif
 	}
 //	if( src_file != -1 && dst_file != -1 )
