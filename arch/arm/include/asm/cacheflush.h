@@ -155,22 +155,16 @@
  *	Please note that the implementation of these, and the required
  *	effects are cache-type (VIVT/VIPT/PIPT) specific.
  *
- *	flush_icache_all()
- *
- *		Unconditionally clean and invalidate the entire icache.
- *		Currently only needed for cache-v6.S and cache-v7.S, see
- *		__flush_icache_all for the generic implementation.
- *
- *	flush_cache_kern_all()
+ *	flush_kern_all()
  *
  *		Unconditionally clean and invalidate the entire cache.
  *
- *	flush_cache_user_mm(mm)
+ *	flush_user_all()
  *
  *		Clean and invalidate all user space cache entries
  *		before a change of page tables.
  *
- *	flush_cache_user_range(start, end, flags)
+ *	flush_user_range(start, end, flags)
  *
  *		Clean and invalidate a range of cache entries in the
  *		specified address space before a change of page tables.
@@ -186,23 +180,22 @@
  *		- start  - virtual start address
  *		- end    - virtual end address
  *
+ *	coherent_user_range(start, end)
+ *
+ *		Ensure coherency between the Icache and the Dcache in the
+ *		region described by start, end.  If you have non-snooping
+ *		Harvard caches, you need to implement this function.
+ *		- start  - virtual start address
+ *		- end    - virtual end address
+ *
+ *	flush_kern_dcache_area(kaddr, size)
+ *
+ *		Ensure that the data held in page is written back.
+ *		- kaddr  - page address
+ *		- size   - region size
+ *
  *	DMA Cache Coherency
  *	===================
- *
- *	dma_inv_range(start, end)
- *
- *		Invalidate (discard) the specified virtual address range.
- *		May not write back any entries.  If 'start' or 'end'
- *		are not cache line aligned, those lines must be written
- *		back.
- *		- start  - virtual start address
- *		- end    - virtual end address
- *
- *	dma_clean_range(start, end)
- *
- *		Clean (write back) the specified virtual address range.
- *		- start  - virtual start address
- *		- end    - virtual end address
  *
  *	dma_flush_range(start, end)
  *
@@ -212,7 +205,6 @@
  */
 
 struct cpu_cache_fns {
-	void (*flush_icache_all)(void);
 	void (*flush_kern_all)(void);
 	void (*flush_user_all)(void);
 	void (*flush_user_range)(unsigned long, unsigned long, unsigned int);
@@ -239,7 +231,6 @@ struct outer_cache_fns {
 
 extern struct cpu_cache_fns cpu_cache;
 
-#define __cpuc_flush_icache_all		cpu_cache.flush_icache_all
 #define __cpuc_flush_kern_all		cpu_cache.flush_kern_all
 #define __cpuc_flush_user_all		cpu_cache.flush_user_all
 #define __cpuc_flush_user_range		cpu_cache.flush_user_range
@@ -259,7 +250,6 @@ extern struct cpu_cache_fns cpu_cache;
 
 #else
 
-#define __cpuc_flush_icache_all		__glue(_CACHE,_flush_icache_all)
 #define __cpuc_flush_kern_all		__glue(_CACHE,_flush_kern_cache_all)
 #define __cpuc_flush_user_all		__glue(_CACHE,_flush_user_cache_all)
 #define __cpuc_flush_user_range		__glue(_CACHE,_flush_user_cache_range)
@@ -267,7 +257,6 @@ extern struct cpu_cache_fns cpu_cache;
 #define __cpuc_coherent_user_range	__glue(_CACHE,_coherent_user_range)
 #define __cpuc_flush_dcache_page	__glue(_CACHE,_flush_kern_dcache_page)
 
-extern void __cpuc_flush_icache_all(void);
 extern void __cpuc_flush_kern_all(void);
 extern void __cpuc_flush_user_all(void);
 extern void __cpuc_flush_user_range(unsigned long, unsigned long, unsigned int);
@@ -341,32 +330,6 @@ static inline void outer_flush_range(unsigned long start, unsigned long end)
 /*
  * Convert calls to our calling convention.
 */
-
-/* Invalidate I-cache */
-#define __flush_icache_all_generic()					\
-	asm("mcr	p15, 0, %0, c7, c5, 0"				\
-	    : : "r" (0));
-
-/* Invalidate I-cache inner shareable */
-#define __flush_icache_all_v7_smp()					\
-	asm("mcr	p15, 0, %0, c7, c1, 0"				\
-	    : : "r" (0));
-
-/*
- * Optimized __flush_icache_all for the common cases. Note that UP ARMv7
- * will fall through to use __flush_icache_all_generic.
- */
-#if (defined(CONFIG_CPU_V7) && defined(CONFIG_CPU_V6)) ||		\
-	defined(CONFIG_SMP_ON_UP)
-#define __flush_icache_preferred	__cpuc_flush_icache_all
-#elif __LINUX_ARM_ARCH__ >= 7 && defined(CONFIG_SMP)
-#define __flush_icache_preferred	__flush_icache_all_v7_smp
-#elif __LINUX_ARM_ARCH__ == 6 && defined(CONFIG_ARM_ERRATA_411920)
-#define __flush_icache_preferred	__cpuc_flush_icache_all
-#else
-#define __flush_icache_preferred	__flush_icache_all_generic
-#endif
-
 #define flush_cache_all()		__cpuc_flush_kern_all()
 #ifndef CONFIG_CPU_CACHE_VIPT
 static inline void flush_cache_mm(struct mm_struct *mm)
@@ -454,11 +417,25 @@ static inline void __flush_icache_all(void)
 #ifdef CONFIG_ARM_ERRATA_411920
 	extern void v6_icache_inval_all(void);
 	v6_icache_inval_all();
+#elif defined(CONFIG_SMP) && __LINUX_ARM_ARCH__ >= 7
+	asm("mcr	p15, 0, %0, c7, c1, 0	@ invalidate I-cache inner shareable\n"
+	    :
+	    : "r" (0));
 #else
 	asm("mcr	p15, 0, %0, c7, c5, 0	@ invalidate I-cache\n"
 	    :
 	    : "r" (0));
 #endif
+}
+static inline void flush_kernel_vmap_range(void *addr, int size)
+{
+	if ((cache_is_vivt() || cache_is_vipt_aliasing()))
+	  __cpuc_flush_dcache_page(addr);
+}
+static inline void invalidate_kernel_vmap_range(void *addr, int size)
+{
+	if ((cache_is_vivt() || cache_is_vipt_aliasing()))
+	  __cpuc_flush_dcache_page(addr);
 }
 
 #define ARCH_HAS_FLUSH_ANON_PAGE
