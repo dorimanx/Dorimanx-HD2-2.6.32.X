@@ -385,6 +385,7 @@ unifdef-y += xattr.h
 unifdef-y += xfrm.h
 
 header-y += genlock.h
+header-y += ashmem.h
 
 objhdr-y += version.h
 header-y += wimax.h
