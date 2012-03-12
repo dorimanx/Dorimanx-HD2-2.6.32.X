@@ -1,0 +1,378 @@
+Change Log:
+
+13/3/12 Time:01:00
+
+New Kernel 5.7 ULTRA ICS+CM7
+
+*Added tons of code for SWAP and ZRAM! now we get lots of free RAM!
+Swap will be auto refreshed and reduced, and free ram will grow back to to max possible or balance with swap use!
+
+*Added more fixed and tuned BUSYBOX! now it's 1.9MB (check that you have free space on system before update.! at least 5mb free! (just in case) )
+
+*Added new CPU cache instructions for better cache processing (RAM cache not disk cache)
+
+*I have added new WIFI driver from CM7 kernel, now CH13/14 works!
+Tuned the wifi driver, added new code for ROAMING and for wake locks add/remove in need.
+Also reduced the voltage that wifi use from 2750mv to 2050mv!
+lots of power will be saved!
+
+*I have added lots of code to video drivers from CM7 kernel!
+
+*Added Power Manager full code for longer standby and deep sleep, and wake locks remove.
+
+*Added more tweaks for hyper and ondemand, now we have to most advanced GOVS! even in kernel 3.2.0 they dont have it!
+It's is was HUGE code change! see my GIT (ics branch!)
+
+11/3/12 Time:03:00
+
+New Kernel 5.6 ULTRA ICS+CM7
+
+I have worked on this one, countless hours!!! (i have reuploaded kernel now! i know i have uploaded it before, but now it's done!)
+
+*I have cleaned and readded the RCU TINY CPU addon, it's was damaged and not adapted for 2.6.32, now it's is and in V8 was V3!
+This boost the cpu and keep the stability at max.
+
+*Removed the lagfree gov. it's not tuned and bad for use, instead i have boosted the hyper and ondemand even more!
+
+*Added new ADB driver from 2.3.37 kernel. all cool and one less warning in kernel build.
+
+*Reverted shared memory driver, i have found some bug and i hope it's will fix some problems.
+
+*I have found out that if i use 2 zram drives each 150MB then system is more stable that way and working better, the first zram filled, then the second filled.
+and the process working faster with less ram drive!
+So now it's load balanced! they will work together to give us 300 more ram!
+
+*Added to install menu some good stuff!
+1)you can now install the non CM7 ZRAM from menu.
+2)you can now activated the keys light on/off by light, mod!
+3)you can choose languages and theme!
+4)you can install most advanced busybox 1.19.4 FULL! all included! 1.763MB! not some 400kb
+Updated and Compiled by me
+5)you can safely reboot after all installed.
+
+Important message for CM7 and My ROM users!
+
+Update the BUSYBOX!
+Update the ZRAM for CM7
+
+Important message for NON CM7 ROM users!
+
+Update the ZRAM for NON CM7
+Update the BUSYBOX but remember to backup yours first, just in case!
+
+Have fun and report.
+
+for BETA team i cooked some test kernel i will upload it also in time..
+Still some stuff to do.
+
+
+
+05/3/12 Time:19:15
+
+New Kernel 5.5 ULTRA ICS+CM7
+
+*Lots of network tuning done.
+*Added new boost code to HYPER and to ONDEMAND govs
+*Added new USB tether driver
+*Fixed the WIFI driver, now channels 13 /14 work
+*Tuned system cpu performance. now more stability in cost of performance.
+*Added new lowmemorykiller module to help with ram management.
+
+For more info see my GIT.
+26/2/12 Time:10:40
+
+New Kernel 5.3 ULTIMATE ICS
+*Retuned the settings to stop the black screen after wakeup.
+
+I am pausing my development for now, i need to focus on things and fix the bugs off line.
+I will contact some active people to test the BETA kernel that i will upload to secret folder. When stability will be OK i will upload for public.
+
+Stable kernels are 4.7, 3.8, 3.2.
+
+
+26/2/12 Time:01:15
+
+New Kernel 5.2 ULTIMATE ICS
+
+*tuned networks settings some more, now google translate works, and rest of the apps.
+*Tuned also some global settings.
+
+Known bugs!:
+WIFI channels 13/14 dont work. i need to fix it be reverting code changes.
+
+
+25/2/12 Time:22:00
+
+New Kernel 5.1 ULTIMATE ICS
+
+*Reverted lots of network code to find what make so much problems with apps.
+Now i see that multicast apps working! (facebook and all the rest) so should be ok now.
+*Added some more stuff to network filters!
+
+I have found new source for commits that fix stuff, so there is lot of work to do now!
+
+Please check the DATA connection speed.
+Have fun.
+
+25/2/12 Time:01:20
+
+New Kernel 5.0 ULTIMATE ICS
+
+*Fixed the Native USB tether!
+*Added lots of Advanced Network futures!
+I hope it's will reduce the net bugs or clear them!
+*Tuned some code.
+*Removed unused governors, less resource spent.
+
+kernel development is really pain in #@@, and bugs are jump on us every time!
+But if i can find them and remove them, then we are closer to perfect kernel!
+
+So keep the reports flow!
+
+28/10/11 Time:19:25 > TO > 24/2/12 Time:03:25
+
+Kernel 1.7 -> 4.9 ULTIMATE
+
+
+    All very important change log!
+
+    *Added new install menu! AROMA INSTALLER! by great Developer Amarullz from HERE
+    HUGE Thanks to TYTUNG for his hard work on ICS parts!
+
+    *Updated all ICS tweaks from Tytung ICS Kernel to my Kernel!
+    Included:
+    Tuned Video Driver
+    Tuned System parts (system is huge, so to support ICS is had to add some more stuff)
+    *I have fixed the GPS stuck and hold wakelock,
+    *I have tuned the DEEP SLEEP, now phone sleep and rest
+    *Since there is no more bug with BT and 2way recording! now kernel is 2way as default! only one kernel now!
+    *Added frame buffer fix for camera (credits to fhasovic )
+    *Added lots of new code for PowerManager! now phone sleep as a baby
+    *Fixed the file transfer over dual mount apps, i get stable 1.5~2MB write over usb with no lag or delay in phone.
+    If mounted as normal via usb mount, then close to 5MB write. but no access to sdcard.
+    *Updated to busybox 1.19.4!
+    *Tuned the cpu freq to be stable on 1.574, so the danger freq is only 1.62
+    Many CPU will stuck!(some will work) and lots of apps will crash on 1.62, this is must know info!
+    *Added Hyper as default governor + fixed it's deep sleep function!
+    *Added deep sleep function to ondeman governor
+    *Fixed MMC sdcard, now kernel will not remove it in any condition!
+    So we will have stable phone, that wake up when we need it, and do it faster.
+    *Added helper driver for touch screen, it will help to reduce cpu usage when using touch screen.
+    *Tweaked RCU boost for faster cpu respond.
+    *Tweaked most governors to be fast as hyper!
+    *Added new network driver Stochastic Fair Blue Net Scheduler (SFB) (all credits to fhasovic)
+    *Changed network settings as in CM-KERNEL + light mod.
+    *Added new hyper governor (very strong and fast!) (All credits to fhasovic)
+    *Compiled with builder 2010.09 (gcc 4.5.1)
+
+    *If strange problems with ROM use your initrd.gz! put it to custom-initd folder before install! (to zip use latest winrar or 7zip)
+
+    *Updated to 2.6.32.56!
+
+    *Fixed power manager code
+    *Fixed the WIFI Sleep state,
+    *Added ICS headset fix. (working for CM7 also with no problem)
+    *Added new tunned for miui initrd, try to install kernel without adding your miui ROM initrd in custom folder, use miui in kernel install menu.
+    *Boosted CPU voltage in script, to help with CPU stuck on some ROMS...
+
+    *I have merged lots of things from 2.6.37.6 and from 2.6.35.4
+    NEW Stuff:
+    *Wifi driver
+    *G-sensor driver
+    *Lots of bug fix and cleanups,
+    *Boosted CPU power
+    *Added new Power Manager to save more battery power. now i see 2ma and it's jump to 5ma and back... but it's depend on cell towers and running apps.
+    *Fixed the zram
+    *Added Ram tweaks for video driver, may improve speed.
+    *Added cache fixes, boosted the CPU some more! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+
+    *Updated kernel to 2.6.32.55 main line!
+    UPDATE from 50 to 55 from HERE
+
+    I have messed allot with power wakelocks, and looks like all cool now, no stuck with 60ma!
+    performance boosted!
+    And with my ROM and data to 2 ext ON, i get 3000+ on advanced quadrant [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+    *Added lots of tweaks to boost the sdcard I/O and CPU power
+    *Updated my kernel builder to GCC 4.5.1 SorceryCode 2010.09
+    *Faster sleep times and fixed incorrect kernel locking...
+    *Added VR scheduler!
+    *Added 96Mhz super low standby frequency with 975mV set to be stable!
+    *Added Tiny Preemptable RCU CPU scheduler! Now cpu power increased allot!
+    *Fixed Video driver, now scrolling in all apps and home launcher is much faster!
+    *Added extension of RAM page table from 2MB to 14MB! More ram for system operations! Greatly increase system performance!
+    *Added safe Overcharge for battery.
+    Now it's will be really fully charged and live for longer time.
+    *Added Power Management tweaks to reduce standby drain.
+    *Added I/O fix and Manager, now I/O of the sdcard is much faster!
+    *Added ICS to Kernel Menu! now all ICS users can use my kernel.
+    *Added lots of cpu governors to play with, most stable and strong is ondemand and smartassv2 all the rest should be tested for long time to see if they good or not..
+    *I have moved to new GITHAB! Now I host 4 kernels! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+
+    Lots of this great addons came from AmeriCanAndroid Kernel!
+    SO THANK YOU AmeriCanAndroid [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+    *Lots of updates from kernel .35 to .32!
+    *New Video and audio drivers!
+    *New decoding driver for movies!
+    *Lots of bug fix and cleanup
+    *Added new ZRAM module!
+    *Tweaked scheduling and wakeup times,
+    *Added new camera driver
+    *Tweaked the ondemand governor to have disk IO checks when working on heavy loads..
+    *Fixed stand alone zram activation script for 357MB! For ROMs that don.t have option in settings for compcache.
+
+    *Fixed Network Drivers,
+    Facebook and droid wall works now.
+
+    *Added zram from 2.6.38 kernel and removed old ramzswap
+    *Replace zram with faux123's files
+    *Compile zram as module
+    *Back ported vzalloc to better support zram (faux123)
+    *Removed obsolete code for msm_clocks
+    *Fixed remaining issues after getting rid of obsolete msm_clocks
+    *Fixed hard coded setting of REG_PLL_MULTIPLIER_LSB
+    *Fixed and cleaned the network drivers, no more delays in apps.
+    *Razed min voltage to 975mV
+    *Fixed WIFI bug
+    *Boosted Volume! in all speakers!
+    *Tweaked Disk Schedulers and CPU schedulers
+    *Tweaked System Cache and Ram management
+
+    Thanks to Marc1706 and to bananacakes!!! (Kernel Mega DEV)
+
+    *Added lots of updates from HERE and lots but not all from HERE
+    *kernel merged with 2.6.35.x [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+
+    *Added major fix for Dynamic Voltage MOD in kernel. now it's finally works
+    *Upgraded regulator core from Kernel 2.5.35.14 to be able to fix the AVS
+    as should! the 15voltage script is back to init.d!
+    But this time it's can control the dynamic voltage settings!
+
+    example:
+    echo "499200 1000 1075" > /sys/devices/system/cpu/cpu0/cpufreq/vdd_levels_havs
+    echo "537600 1000 1100" > /sys/devices/system/cpu/cpu0/cpufreq/vdd_levels_havs
+    echo "576000 1000 1100" > /sys/devices/system/cpu/cpu0/cpufreq/vdd_levels_havs
+
+    frequency min voltage max voltage > sent to sysfs interface.
+    new 15voltage will check if your kernel support vdd_levels_havs if yes activate dynamic settings if no activate static! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+
+    Fix was been made by Marc the great kernel DEV from .35 kernel.
+
+    *Added fix for auto button on in dark and off in light, now we can switch to old ways, 10 sec on then off till touched, or screen off/on this is the default in ROM if you need to have auto light on /off depend on light, edit the 13_modules script in init.d and look for #KEYBOARDAUTOLIGHTON
+
+    Remove the # save (remove the .bkp) and reboot or run this for imitate effect.
+    echo 1 > /sys/devices/platform/btn_backlight_manager/button_auto
+    but it will be cleared on next boot, so 13_modules script change is needed.
+
+    Fix was been made by Great Kernel Dev Munjeni by my request for you all [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+
+    *Added new Governor ondemanx it's more battery friendly but not super fast as original tweaked ondemand, best to use it on screen off!
+    *Added Vdd AVS ( Adaptive Voltage Scaling ) code files! (by Marc1706)
+    *Tweaked AVS code for HTC Leo (by Marc1706)
+    *Raise VOLTAGE_MIN_START of AVS to 950 (by Marc1706)
+    *Use a realtime priority thread for AVS. (by Marc1706)
+    *Tweaked the AVS to support 1.61Ghz and tweaked Voltage ranges to prevent SOD and over drain. (By dorimanx)
+    *Tweak camera (better picks in dark, less greeny) (by Marc1706)
+    *Added Light Sensos Fix (By Munjeni)
+    *Added Keyboard backligh !ON! in DARK, and !OFF! in LIGHT [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG](can be tweaked in ROM) (By Munjeni)
+    *Tweaked Settings and removed all king of stuff that not needed for normal operations. (By dorimanx)
+    *Added the Colored ADB in initrd.gz, but it's working only in LINUX or in SSH session! not via windows ADB!
+    Just type logcat -C
+    And see nice colurs!
+    *Tweaked kernel to reduce battery drain (removed not needed stuff that sit and eat battery [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG])
+    *Added updated interactiveX governor (by Marc1706)
+    *Added new Governors to play with: Lagfree, SavagedZen, scary, superbad, virtuous. (by Marc1706)
+    *Changed zram manual activation script to 375MB to reduce the cpu load.
+    *Reduced zram also in auto script to max of 375MB
+
+    *Tweaked the Deadline Scheduler to boost read/write i/o speed.
+    By request from NuttShell I have added to kernel Step that will allow installing custom mic gain file for MIUI ROM and initd.
+
+    Change log only for MIUI:
+    ***Added miui inird.gz
+    ***Added changed mic gain script
+    ***Added custom miui rom default.acdb and htcleo.acdc to reduce calls problems.
+    ***Added my tweaked modules script.
+
+    All thanks to NuttShell for supplying files for MIUI rom.
+    *I have added new NAND driver, + Network, CPU, and system patch by Munjeni Thanks allot for your hard work, and for looking for a way to mount EXT4 on NAND!
+
+    *I have patched from 2.6.32.39 to 2.6.32.50 main line!
+    *Added 6 disk schedulers deadline as default (AS,CFQ,SIO,DEADLINE,VR)
+    *Tweaked max cpu voltage from 1350 to 1375
+    *Added max CPU freq to 1.6 with 1375 voltage
+    *Fixed the CPU settings, so 998000 is really 1Ghz and 1.61 is MAX overclock! It.s slightly faster than Tytung 1.19Ghz because of more voltage!
+    So to get non overclocked device use 998000 this is also the default!
+    *Added minor stable tweaks for best kernel support and faster ROM!
+    see /system/etc/init.d/13_modules (my ROM users have them all in 2.9.9 ROM)
+
+    Patch to .50 was from HERE
+    And patch from .15 to .49 from HERE
+
+    *Patched Kernel from 2.6.32.15 to 2.6.32.39!
+
+    *Added new SQLB allocator, Thanks 3DAK!
+    ALSA drivers Disabled! they make Buzz sound, and not really needed for CM7!
+    only for LINUX ROMS (Ubuntu and others)
+
+    *Added new kernel modules:
+
+        Enable cleancache pseudo-RAM driver to cache clean pages
+        Run-time PM core functionality
+        ZRAM XVMALLOCATOR
+        Compressed in-memory swap device (zram) + activation scripts for CM7
+        Page cache compression support
+
+    All Run auto! Except the ZRAM swap!
+    All you need to know is HERE
+    To activate the ZRAM in CM7
+    At Kernel Install, choose from menu to install ZRAM SWAP
+
+    Go to settings > CyanogenMod > Performance > Compcache RAM usage
+    Use 26% for 110MB virtual ram swap (best choose)
+    Or lower, or you can disable it any time.
+    Reboot needed to apply the change.
+
+    After reboot!
+    You can check the swap load / stats
+    Here is how to:
+    Open terminal or connect by ADB SHELL
+
+    [CODE]su -
+    free
+    #This will show you that you have swap! and 0 used!
+
+    zram_stats
+
+    #this will show you the usage + statistics in KB
+    Also the compression rate
+    Short info:
+    Compression is with LZO algorithm. already in kernel [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+    ZRAM is RAM based SWAP, so it's take 357MB RAM and make them 700! or close to 720MB by compressing the data pages!
+    CPU will work slightly more, when compressing RAM, but when done, it's will be free as was.
+    This mod was lost for too long! time to activate it again! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+    Also the old mod was called ramzswap! This project is closed, now it's new 2011 project in mainline! Now it's ZRAM!
+
+
+    Thanks for all the donations! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]this is really help [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image002.gif[/IMG]09/11/11 Time:00:05
+
+    *Added menu to kernel! now there is only one kernel for all! [IMG]file:///C:/Users/lastman/AppData/Local/Temp/msohtmlclip1/01/clip_image001.gif[/IMG]
+    Navigate in menu with volume down.
+    Menu goes only forward. No back choose. (Just start over)
+
+    You can choose:
+    No-2way-REC / 2way-REC ability.
+    CM7 + others OR sense ROM or MIUI
+    MAG / CLK
+    With new busybox 1.19.4 STABLE! / Or without! (Stay with yours form ROM)
+
+    *Compressed kernel with LZMA compression! very small image.
+    *I have added the smartass V2 it's working ok most of the time!
+    *I have added and fixed the smartass governor!
+    *Added kernel optimization with new tool-chain 2010 for best compatibility.
+    *Added RiserFS partition support.
+    *Added all commits from TYTUNG R13! (new audio driver as module, loaded with script that i have included.)
+
+
+    The END
+
+
