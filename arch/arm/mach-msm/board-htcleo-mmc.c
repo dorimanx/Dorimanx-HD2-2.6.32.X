@@ -214,11 +214,11 @@ static unsigned int htcleo_wifi_status(struct device *dev)
 
 static struct mmc_platform_data htcleo_wifi_data = {
 	/* 
-	 * wifi vdd to 2450 for now, might test lower vdds later, lets see if more power = more signal power!
+	 * wifi vdd to 2750 for now, might test lower vdds later, lets see if more power = more signal power!
 	 * incredible uses 2050 and seems to work without issues
 	 * by dorimanx
 	 */
-	.ocr_mask		= MMC_VDD_27_28,
+	.ocr_mask		= MMC_VDD_20_21,
 	.status			= htcleo_wifi_status,
 	.register_status_notify	= htcleo_wifi_status_register,
 	.embedded_sdio		= &htcleo_wifi_emb_data,

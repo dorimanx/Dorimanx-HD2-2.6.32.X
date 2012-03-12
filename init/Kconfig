@@ -624,6 +624,15 @@ config CGROUP_MEM_RES_CTLR_SWAP
           Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
           size is 4096bytes, 512k per 1Gbytes of swap.
 
+config CGROUP_SCHED
+        bool "Control groups"
+        help
+          This option allows you to create arbitrary task groups
+          using the "cgroup" pseudo filesystem and control
+          the cpu bandwidth allocated to each such task group.
+          Refer to Documentation/cgroups/cgroups.txt for more
+          information on "cgroup" pseudo filesystem.
+
 menuconfig CGROUP_SCHED
         bool "Group CPU scheduler"
         depends on EXPERIMENTAL && CGROUPS

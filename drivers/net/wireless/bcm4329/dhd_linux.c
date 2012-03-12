@@ -145,9 +145,9 @@ static int wifi_probe(struct platform_device *pdev)
 	struct wifi_platform_data *wifi_ctrl =
 		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
+	wifi_control_data = wifi_ctrl;
 	DHD_TRACE(("## %s\n", __FUNCTION__));
 	wifi_irqres = platform_get_resource_byname(pdev, IORESOURCE_IRQ, "bcm4329_wlan_irq");
-	wifi_control_data = wifi_ctrl;
 
 	wifi_set_power(1, 0);	/* Power On */
 	wifi_set_carddetect(1);	/* CardDetect (0->1) */
@@ -161,8 +161,8 @@ static int wifi_remove(struct platform_device *pdev)
 	struct wifi_platform_data *wifi_ctrl =
 		(struct wifi_platform_data *)(pdev->dev.platform_data);
 
-	DHD_TRACE(("## %s\n", __FUNCTION__));
 	wifi_control_data = wifi_ctrl;
+	DHD_TRACE(("## %s\n", __FUNCTION__));
 
 	wifi_set_power(0, 0);	/* Power Off */
 	wifi_set_carddetect(0);	/* CardDetect (1->0) */
@@ -338,7 +338,7 @@ struct semaphore dhd_registration_sem;
 #define DHD_REGISTRATION_TIMEOUT  12000  /* msec : allowed time to finished dhd registration */
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) */
 /* load firmware and/or nvram values from the filesystem */
-module_param_string(firmware_path, firmware_path, MOD_PARAM_PATHLEN, 0);
+module_param_string(firmware_path, firmware_path, MOD_PARAM_PATHLEN, 0660);
 module_param_string(nvram_path, nvram_path, MOD_PARAM_PATHLEN, 0);
 
 /* Error bits */
@@ -511,13 +511,13 @@ static int dhd_sleep_pm_callback(struct notifier_block *nfb, unsigned long actio
 	case PM_HIBERNATION_PREPARE:
 	case PM_SUSPEND_PREPARE:
 		dhd_mmc_suspend = TRUE;
-		ret = NOTIFY_OK;
-		break;
+	ret = NOTIFY_OK;
+	break;
 	case PM_POST_HIBERNATION:
 	case PM_POST_SUSPEND:
 		dhd_mmc_suspend = FALSE;
-		ret = NOTIFY_OK;
-		break;
+	ret = NOTIFY_OK;
+	break;
 	}
 	smp_mb();
 	return ret;
@@ -1932,6 +1932,15 @@ dhd_open(struct net_device *net)
 	uint32 toe_ol;
 #endif
 	int ifidx;
+	int32 ret = 0;
+	dhd_os_wake_lock(&dhd->pub);
+	/* Update FW path if it was changed */
+	if ((firmware_path != NULL) && (firmware_path[0] != '\0')) {
+		if (firmware_path[strlen(firmware_path)-1] == '\n')
+			firmware_path[strlen(firmware_path)-1] = '\0';
+		strcpy(fw_path, firmware_path);
+		firmware_path[0] = '\0';
+	}
 
 	/*  Force start if ifconfig_up gets called before START command */
 	wl_control_wl_start(net);
@@ -1939,12 +1948,15 @@ dhd_open(struct net_device *net)
 	ifidx = dhd_net2idx(dhd, net);
 	DHD_TRACE(("%s: ifidx %d\n", __FUNCTION__, ifidx));
 
-	if (ifidx == DHD_BAD_IF)
-		return -1;
+	if (ifidx == DHD_BAD_IF) {
+		ret = -1;
+		goto exit;
+	}
 
 	if ((dhd->iflist[ifidx]) && (dhd->iflist[ifidx]->state == WLC_E_IF_DEL)) {
 		DHD_ERROR(("%s: Error: called when IF already deleted\n", __FUNCTION__));
-		return -1;
+		ret = -1;
+		goto exit;
 	}
 
 	if (ifidx == 0) { /* do it only for primary eth0 */
@@ -1966,7 +1978,9 @@ dhd_open(struct net_device *net)
 	dhd->pub.up = 1;
 
 	OLD_MOD_INC_USE_COUNT;
-	return 0;
+exit:
+	dhd_os_wake_unlock(&dhd->pub);
+	return ret;
 }
 
 osl_t *

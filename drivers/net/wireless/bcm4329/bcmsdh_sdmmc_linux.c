@@ -62,7 +62,6 @@
 
 extern void sdioh_sdmmc_devintr_off(sdioh_info_t *sd);
 extern void sdioh_sdmmc_devintr_on(sdioh_info_t *sd);
-extern void *bcmsdh_get_drvdata(void);
 
 int sdio_function_init(void);
 void sdio_function_cleanup(void);
