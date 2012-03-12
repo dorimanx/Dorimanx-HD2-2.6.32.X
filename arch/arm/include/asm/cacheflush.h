@@ -427,12 +427,12 @@ static inline void __flush_icache_all(void)
 	    : "r" (0));
 #endif
 }
-static inline void flush_kernel_vmap_range(void *addr, int size)
+static inline void flush_kernel_vmap_range(void *addr)
 {
 	if ((cache_is_vivt() || cache_is_vipt_aliasing()))
 	  __cpuc_flush_dcache_page(addr);
 }
-static inline void invalidate_kernel_vmap_range(void *addr, int size)
+static inline void invalidate_kernel_vmap_range(void *addr)
 {
 	if ((cache_is_vivt() || cache_is_vipt_aliasing()))
 	  __cpuc_flush_dcache_page(addr);
