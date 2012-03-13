@@ -2267,6 +2267,7 @@ static int kswapd(void *p)
 			if (!freezing(current))
 				schedule();
 
+			set_user_nice(tsk, 0);
 			order = pgdat->kswapd_max_order;
 		}
 		finish_wait(&pgdat->kswapd_wait, &wait);
@@ -2287,6 +2288,7 @@ static int kswapd(void *p)
 void wakeup_kswapd(struct zone *zone, int order)
 {
 	pg_data_t *pgdat;
+	int active;
 
 	if (!populated_zone(zone))
 		return;
@@ -2299,6 +2301,9 @@ void wakeup_kswapd(struct zone *zone, int order)
 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
 		return;
 	if (!waitqueue_active(&pgdat->kswapd_wait))
+		active = waitqueue_active(&pgdat->kswapd_wait);
+		set_kswapd_nice(pgdat->kswapd, active);
+	if (!active)
 		return;
 	wake_up_interruptible(&pgdat->kswapd_wait);
 }
