@@ -2650,6 +2650,25 @@ int wake_up_state(struct task_struct *p, unsigned int state)
 	return try_to_wake_up(p, state, 0);
 }
 
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+
+/*
+ * Fetch the preempt count of some cpu's current task.  Must be called
+ * with interrupts blocked.  Stale return value.
+ *
+ * No locking needed as this always wins the race with context-switch-out
+ * + task destruction, since that is so heavyweight.  The smp_rmb() is
+ * to protect the pointers in that race, not the data being pointed to
+ * (which, being guaranteed stale, can stand a bit of fuzziness).
+ */
+int preempt_count_cpu(int cpu)
+{
+        smp_rmb(); /* stop data prefetch until program ctr gets here */
+        return task_thread_info(cpu_curr(cpu))->preempt_count;
+}
+#endif
+
+
 /*
  * Perform scheduler related setup for a newly forked process p.
  * p is forked by current.
@@ -5693,6 +5712,9 @@ static void put_prev_task(struct rq *rq, struct task_struct *p)
 	} else {
 		update_avg(&p->se.avg_running, 0);
 	}
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+                smp_wmb();
+#endif
 	p->sched_class->put_prev_task(rq, p);
 }
 
@@ -9914,6 +9936,9 @@ void __might_sleep(char *file, int line, int preempt_offset)
 
 	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
 	    system_state != SYSTEM_RUNNING || oops_in_progress)
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+		smp_wmb();
+#endif
 		return;
 	if (time_before(jiffies, prev_jiffy + HZ) && prev_jiffy)
 		return;
