@@ -32,6 +32,7 @@
 
 struct notifier_block;
 
+extern void rcu_init(void);
 extern void rcu_sched_qs(int cpu);
 extern void rcu_bh_qs(int cpu);
 extern int rcu_cpu_notify(struct notifier_block *self,
@@ -84,6 +85,8 @@ static inline void synchronize_rcu_bh_expedited(void)
 }
 
 extern void __rcu_init(void);
+extern void rcu_barrier(void);
+
 extern void rcu_check_callbacks(int cpu, int user);
 
 extern long rcu_batches_completed(void);

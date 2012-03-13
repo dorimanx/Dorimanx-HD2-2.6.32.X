@@ -13,16 +13,22 @@
  *
  */
 
+#define pr_fmt(fmt) "%s: " fmt, __func__
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/device.h>
+#include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/suspend.h>
+#include <linux/delay.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 
+#include "dummy.h"
 #define REGULATOR_VERSION "0.5"
 
 static DEFINE_MUTEX(regulator_list_mutex);
@@ -65,6 +71,16 @@ static int _regulator_get_current_limit(struct regulator_dev *rdev);
 static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
 static void _notifier_call_chain(struct regulator_dev *rdev,
 				  unsigned long event, void *data);
+
+static const char *rdev_get_name(struct regulator_dev *rdev)
+{
+	if (rdev->constraints && rdev->constraints->name)
+		return rdev->constraints->name;
+	else if (rdev->desc->name)
+		return rdev->desc->name;
+	else
+		return "";
+}
 
 /* gets the regulator for a given consumer device */
 static struct regulator *get_device_regulator(struct device *dev)
@@ -534,6 +550,80 @@ static struct class regulator_class = {
 	.dev_release = regulator_dev_release,
 	.dev_attrs = regulator_dev_attrs,
 };
+
+static int regulator_check_voltage_update(struct regulator_dev *rdev)
+{
+	if (!rdev->constraints)
+		return -ENODEV;
+	if (!(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE))
+		return -EPERM;
+	if (!rdev->desc->ops->set_voltage)
+		return -EINVAL;
+
+	return 0;
+}
+
+static int update_voltage(struct regulator *regulator, int min_uV, int max_uV)
+{
+	struct regulator_dev *rdev = regulator->rdev;
+	struct regulator *sibling;
+	int ret = 0;
+
+	list_for_each_entry(sibling, &rdev->consumer_list, list) {
+		if (regulator == sibling || (_regulator_is_enabled(sibling->rdev) <= 0))
+			continue;
+		if (max_uV < sibling->min_uV || min_uV > sibling->max_uV) {
+			printk(KERN_ERR "%s: requested voltage range [%d, %d] "
+				"for %s does not fit within previously voted "
+				"range: [%d, %d]\n",
+				__func__, min_uV, max_uV,
+				rdev_get_name(regulator->rdev),
+				sibling->min_uV,
+				sibling->max_uV);
+			ret = -EINVAL;
+			goto out;
+		}
+		if (sibling->max_uV < max_uV)
+			max_uV = sibling->max_uV;
+		if (sibling->min_uV > min_uV)
+			min_uV = sibling->min_uV;
+	}
+
+	ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV);
+	if (!ret)
+		goto out;
+
+	_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE, NULL);
+
+out:
+	return ret;
+}
+
+static int update_voltage_prev(struct regulator_dev *rdev)
+{
+	int ret, min_uV = INT_MIN, max_uV = INT_MAX;
+	struct regulator *consumer;
+
+	list_for_each_entry(consumer, &rdev->consumer_list, list) {
+		if (_regulator_is_enabled(consumer->rdev) <= 0)
+			continue;
+		if (consumer->max_uV < max_uV)
+			max_uV = consumer->max_uV;
+		if (consumer->min_uV > min_uV)
+			min_uV = consumer->min_uV;
+	}
+
+	if (min_uV == INT_MIN)
+		return 0;
+
+	ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV);
+	if (!ret)
+		return ret;
+
+	_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE, NULL);
+
+	return ret;
+}
 
 /* Calculate the new optimum regulator operating mode based on the new total
  * consumer load. All locks held by caller */
@@ -1069,6 +1159,21 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
 			goto found;
 		}
 	}
+#ifdef CONFIG_REGULATOR_DUMMY
+	if (!devname)
+		devname = "deviceless";
+
+	/* If the board didn't flag that it was fully constrained then
+	 * substitute in a dummy regulator so consumers can continue.
+	 */
+	if (!has_full_constraints) {
+		pr_warning("%s supply %s not found, using dummy regulator\n",
+			   devname, id);
+		rdev = dummy_regulator_rdev;
+		goto found;
+	}
+#endif
+
 	mutex_unlock(&regulator_list_mutex);
 	return regulator;
 
@@ -1266,7 +1371,31 @@ int regulator_enable(struct regulator *regulator)
 	int ret = 0;
 
 	mutex_lock(&rdev->mutex);
+
+	if (!regulator_check_voltage_update(rdev)) {
+		if (regulator->min_uV < rdev->constraints->min_uV ||
+		    regulator->max_uV > rdev->constraints->max_uV) {
+			pr_err("invalid input - constraint: [%d, %d], "
+			       "set point: [%d, %d]\n",
+			       rdev->constraints->min_uV,
+			       rdev->constraints->max_uV,
+			       regulator->min_uV,
+			       regulator->max_uV);
+			ret = -EINVAL;
+			goto out;
+		}
+
+		ret = update_voltage(regulator, regulator->min_uV,
+				regulator->max_uV);
+		if (ret)
+			goto out;
+	}
+
 	ret = _regulator_enable(rdev);
+	if (ret)
+		goto out;
+
+out:
 	mutex_unlock(&rdev->mutex);
 	return ret;
 }
@@ -1332,7 +1461,15 @@ int regulator_disable(struct regulator *regulator)
 	int ret = 0;
 
 	mutex_lock(&rdev->mutex);
+
 	ret = _regulator_disable(rdev);
+	if (ret)
+		goto out;
+
+	if (!regulator_check_voltage_update(rdev))
+		update_voltage_prev(rdev);
+
+out:
 	mutex_unlock(&rdev->mutex);
 	return ret;
 }
@@ -1532,6 +1669,9 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
 	/* constraints check */
 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
 	if (ret < 0)
+		goto out;
+	ret = update_voltage(regulator, min_uV, max_uV);
+	if (ret)
 		goto out;
 	regulator->min_uV = min_uV;
 	regulator->max_uV = max_uV;

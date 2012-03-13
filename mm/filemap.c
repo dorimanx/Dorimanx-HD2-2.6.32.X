@@ -306,7 +306,7 @@ int wait_on_page_writeback_range(struct address_space *mapping,
 				continue;
 
 			wait_on_page_writeback(page);
-			if (PageError(page))
+			if (TestClearPageError(page))
 				ret = -EIO;
 		}
 		pagevec_release(&pvec);

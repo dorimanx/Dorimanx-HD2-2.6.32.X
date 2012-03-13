@@ -2751,6 +2751,7 @@ static int s5k3e2fx_probe_init_lens_correction(
 		const struct msm_camera_sensor_info *data)
 {
 	int rc = 0;
+
 	/* LC setting */
 	s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr,
 			     S5K3E2FX_REG_SOFTWARE_RESET,
@@ -2759,7 +2760,6 @@ static int s5k3e2fx_probe_init_lens_correction(
 	s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr,
 			     S5K3E2FX_REG_MODE_SELECT,
 			     S5K3E2FX_MODE_SELECT_SW_STANDBY);
-
 	/*20090811  separates the EVT4/EVT5 sensor init and LC setting start */
 	if (g_usModuleVersion == 0)
 		s5k3e2fx_i2c_write_table(

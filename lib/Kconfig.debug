@@ -775,6 +775,7 @@ config KPROBES_SANITY_TEST
 config BACKTRACE_SELF_TEST
 	tristate "Self test for the backtrace code"
 	depends on DEBUG_KERNEL
+	depends on !JRCU
 	default n
 	help
 	  This option provides a kernel module that can be used to test

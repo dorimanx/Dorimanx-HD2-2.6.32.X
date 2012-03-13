@@ -112,14 +112,14 @@ struct clkctl_acpu_speed acpu_vdd_tbl[] = {
  	{ 422400, VOLTAGE_MIN_START, 975 },
 	{ 460800, VOLTAGE_MIN_START, 1000 },
 	{ 499200, MAX(VOLTAGE_MIN_START,1000), 1075 },
-	{ 537600, MAX(VOLTAGE_MIN_START,1000), 1100 },
-	{ 576000, MAX(VOLTAGE_MIN_START,1000), 1100 },
-	{ 614400, MAX(VOLTAGE_MIN_START,1000), 1125 },
-	{ 652800, MAX(VOLTAGE_MIN_START,1000), 1150 },
-	{ 691200, MAX(VOLTAGE_MIN_START,1000), 1175 },
-	{ 729600, MAX(VOLTAGE_MIN_START,1000), 1200 },
-	{ 768000, MAX(VOLTAGE_MIN_START,1000), 1200 },
-	{ 806400, 1220, 1225 },
+	{ 537600, MAX(VOLTAGE_MIN_START,1050), 1100 },
+	{ 576000, MAX(VOLTAGE_MIN_START,1050), 1100 },
+	{ 614400, MAX(VOLTAGE_MIN_START,1075), 1125 },
+	{ 652800, MAX(VOLTAGE_MIN_START,1100), 1150 },
+	{ 691200, MAX(VOLTAGE_MIN_START,1125), 1175 },
+	{ 729600, MAX(VOLTAGE_MIN_START,1150), 1200 },
+	{ 768000, MAX(VOLTAGE_MIN_START,1175), 1200 },
+	{ 806400, 1200, 1225 },
 	{ 844800, 1225, 1250 },
 	{ 883200, 1250, 1275 },
 	{ 921600, 1250, 1275 },
@@ -450,7 +450,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	avs_state.avs_v = kmalloc(TEMPRS * avs_state.freq_cnt *
 		sizeof(avs_state.avs_v[0]), GFP_KERNEL);
 
-	if (avs_state.avs_v == 0)
+	if (avs_state.avs_v == NULL)
 		return -ENOMEM;
 
 	for (i = 0; i < TEMPRS*avs_state.freq_cnt; i++)
@@ -470,7 +470,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	return 0;
 }
 
-void __exit avs_exit()
+void __exit avs_exit(void)
 {
 	avs_work_exit();
 

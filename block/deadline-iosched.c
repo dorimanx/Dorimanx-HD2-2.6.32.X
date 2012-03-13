@@ -17,10 +17,10 @@
 /*
  * See Documentation/block/deadline-iosched.txt
  */
-static const int read_expire = 100;  /* max time before a read is submitted. */
-static const int write_expire = 10 * HZ; /* ditto for writes, these limits are SOFT! */
-static const int writes_starved = 100;    /* max times reads can starve a write */
-static const int fifo_batch = 2;       /* # of sequential requests treated as one
+static const int read_expire = 10;  /* max time before a read is submitted. */
+static const int write_expire = 1500; /* ditto for writes, these limits are SOFT! */
+static const int writes_starved = 200;    /* max times reads can starve a write */
+static const int fifo_batch = 1;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
 struct deadline_data {

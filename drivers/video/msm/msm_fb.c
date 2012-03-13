@@ -73,6 +73,8 @@ module_param_named(msmfb_debug_mask, msmfb_debug_mask, int,
 
 struct mdp_device *mdp;
 
+#define BITS_PER_PIXEL_DEF 16
+
 struct msmfb_info {
 	struct fb_info *fb;
 	struct msm_panel_data *panel;
@@ -838,7 +840,7 @@ static struct fb_ops msmfb_ops = {
 	.fb_ioctl = msmfb_ioctl,
 };
 
-static unsigned PP[16];
+static unsigned PP[BITS_PER_PIXEL_DEF];
 
 
 #if MSMFB_DEBUG
@@ -880,7 +882,6 @@ static struct file_operations debug_fops = {
 };
 #endif
 
-#define BITS_PER_PIXEL 16
 
 static void setup_fb_info(struct msmfb_info *msmfb)
 {
@@ -904,7 +905,7 @@ static void setup_fb_info(struct msmfb_info *msmfb)
 	fb_info->var.height = msmfb->panel->fb_data->height;
 	fb_info->var.xres_virtual = msmfb->xres;
 	fb_info->var.yres_virtual = msmfb->yres * 2;
-	fb_info->var.bits_per_pixel = BITS_PER_PIXEL;
+	fb_info->var.bits_per_pixel = BITS_PER_PIXEL_DEF;
 	fb_info->var.accel_flags = 0;
 
 	fb_info->var.yoffset = 0;
@@ -927,23 +928,23 @@ static void setup_fb_info(struct msmfb_info *msmfb)
 					   ((uint32_t)msmfb->yres << 16);
 	}
 
-	fb_info->var.red.offset = 11;
-	fb_info->var.red.length = 5;
+	fb_info->var.red.offset = 0;
+	fb_info->var.red.length = 8;
 	fb_info->var.red.msb_right = 0;
-	fb_info->var.green.offset = 5;
-	fb_info->var.green.length = 6;
+	fb_info->var.green.offset = 8;
+	fb_info->var.green.length = 8;
 	fb_info->var.green.msb_right = 0;
-	fb_info->var.blue.offset = 0;
-	fb_info->var.blue.length = 5;
+	fb_info->var.blue.offset = 16;
+	fb_info->var.blue.length = 8;
 	fb_info->var.blue.msb_right = 0;
 
 	mdp->set_output_format(mdp, fb_info->var.bits_per_pixel);
 
-	r = fb_alloc_cmap(&fb_info->cmap, 16, 0);
+	r = fb_alloc_cmap(&fb_info->cmap, BITS_PER_PIXEL_DEF, 0);
 	fb_info->pseudo_palette = PP;
 
 	PP[0] = 0;
-	for (r = 1; r < 16; r++)
+	for (r = 1; r < BITS_PER_PIXEL_DEF; r++)
 		PP[r] = 0xffffffff;
 
 	/* Jay add, 7/1/09' */

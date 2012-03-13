@@ -127,7 +127,7 @@ void msm_pm_flush_console(void);
 /* call when SMSM_RESET flag is set in the A9's smsm_state */
 static void handle_modem_crash(void)
 {
-	pr_err("ARM9 has CRASHED\n");
+	pr_err("MODEM/AMSS has CRASHED\n");
 	smd_diag();
 	msm_pm_flush_console();
 

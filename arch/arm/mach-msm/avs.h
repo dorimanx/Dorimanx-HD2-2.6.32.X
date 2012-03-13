@@ -40,7 +40,7 @@
 
 #define VOLTAGE_MIN  HTCLEO_TPS65023_MIN_UV_MV /* mV */
 #define VOLTAGE_MAX  HTCLEO_TPS65023_MAX_UV_MV
-#define	VOLTAGE_MIN_START	950	// Minimum value to start off with
+#define	VOLTAGE_MIN_START	925	// Minimum value to start off with
 #define VOLTAGE_STEP 25
 
 int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx);
@@ -54,6 +54,11 @@ u32 avs_test_delays(void);
 #else
 static inline u32 avs_test_delays(void)
 { return 0; }
+#endif
+
+#if defined(CONFIG_CPU_FREQ_VDD_LEVELS) && defined(CONFIG_MSM_CPU_AVS)
+ssize_t acpuclk_get_vdd_levels_havs_str(char *buf);
+void acpuclk_set_vdd_havs(unsigned acpu_khz, int min_vdd, int max_vdd);
 #endif
 
 #ifdef CONFIG_MSM_AVS_HW

@@ -267,6 +267,10 @@ struct task_group {
 	struct task_group *parent;
 	struct list_head siblings;
 	struct list_head children;
+
+#ifdef CONFIG_SCHED_AUTOGROUP
+	struct autogroup *autogroup;
+#endif
 };
 
 #define root_task_group init_task_group
@@ -1192,6 +1196,16 @@ static void resched_cpu(int cpu)
 	spin_unlock_irqrestore(&rq->lock, flags);
 }
 
+void force_cpu_resched(int cpu)
+{
+        struct rq *rq = cpu_rq(cpu);
+        unsigned long flags;
+
+        raw_spin_lock_irqsave(&rq->lock, flags);
+        resched_task(cpu_curr(cpu));
+        raw_spin_unlock_irqrestore(&rq->lock, flags);
+}
+
 #ifdef CONFIG_NO_HZ
 /*
  * When add_timer_on() enqueues a timer into the timer wheel of an
@@ -1275,6 +1289,12 @@ static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 static void sched_avg_update(struct rq *rq)
 {
 }
+
+void force_cpu_resched(int cpu)
+{
+        set_need_resched();
+}
+
 #endif /* CONFIG_SMP */
 
 #if BITS_PER_LONG == 32
@@ -2689,6 +2709,24 @@ static void __sched_fork(struct task_struct *p)
 	INIT_HLIST_HEAD(&p->preempt_notifiers);
 #endif
 }
+
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+
+ /*
+  * Fetch the preempt count of some cpu's current task.  Must be called
+  * with interrupts blocked.  Stale return value.
+  *
+  * No locking needed as this always wins the race with context-switch-out
+  * + task destruction, since that is so heavyweight.  The smp_rmb() is
+  * to protect the pointers in that race, not the data being pointed to
+  * (which, being guaranteed stale, can stand a bit of fuzziness).
+  */
+int preempt_count_cpu(int cpu)
+{
+        smp_rmb(); /* stop data prefetch until program ctr gets here */
+        return task_thread_info(cpu_curr(cpu))->preempt_count;
+}
+#endif
 
 /*
  * fork()/clone()-time setup:
@@ -5568,7 +5606,7 @@ void __kprobes add_preempt_count(int val)
 	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0)))
 		return;
 #endif
-	preempt_count() += val;
+	__add_preempt_count(val);
 #ifdef CONFIG_DEBUG_PREEMPT
 	/*
 	 * Spinlock count overflowing soon?
@@ -5599,7 +5637,7 @@ void __kprobes sub_preempt_count(int val)
 
 	if (preempt_count() == val)
 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-	preempt_count() -= val;
+	__sub_preempt_count(val);	
 }
 EXPORT_SYMBOL(sub_preempt_count);
 
@@ -5671,6 +5709,9 @@ static void put_prev_task(struct rq *rq, struct task_struct *p)
 	} else {
 		update_avg(&p->se.avg_running, 0);
 	}
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+                smp_wmb();
+#endif
 	p->sched_class->put_prev_task(rq, p);
 }
 
@@ -9887,6 +9928,9 @@ void __might_sleep(char *file, int line, int preempt_offset)
 		return;
 	if (system_state != SYSTEM_RUNNING &&
 	    (!__might_sleep_init_called || system_state != SYSTEM_BOOTING))
+#ifdef CONFIG_PREEMPT_COUNT_CPU
+        smp_wmb();
+#endif
 		return;
 	if (time_before(jiffies, prev_jiffy + HZ) && prev_jiffy)
 		return;

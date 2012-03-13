@@ -239,6 +239,10 @@ int control_set_grp_clk;
 
 static void set_grp_clk( int on )
 {
+   int i = 0;
+   int status = 0;
+   int control;
+
 	if ( on != 0 )
 	{
 		//axi_reset
@@ -925,8 +929,8 @@ static int pc_clk_enable(uint32_t id)
 static void pc_clk_disable(uint32_t id)
 {
 	struct msm_clock_params params;
-	params = msm_clk_get_params(id);
 	int r;
+	params = msm_clk_get_params(id);
 
     r = new_clk_disable(id);
     if (r != -1) return;
@@ -955,9 +959,8 @@ static void pc_clk_disable(uint32_t id)
 
 static int pc_clk_set_rate(uint32_t id, unsigned long rate)
 {
-	int retval;
+	int retval, r;
 	retval = 0;
-	int r;
 
     r = new_clk_set_rate(id, rate);
 	if (r != -1) return r;

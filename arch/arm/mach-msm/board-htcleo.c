@@ -60,9 +60,9 @@
 #include <mach/htc_headset_gpio.h>
 
 #include <mach/board-htcleo-microp.h>
+#include <mach/board-htcleo-ts.h>
 
 #include "board-htcleo.h"
-#include "board-htcleo-ts.h"
 #include "devices.h"
 #include "proc_comm.h"
 #include "dex_comm.h"
@@ -173,8 +173,8 @@ static struct htc_headset_gpio_platform_data htc_headset_gpio_data = {
 	.hpin_gpio		= HTCLEO_GPIO_HDS_DET,
 	.mic_detect_gpio	= HTCLEO_GPIO_HDS_MIC,
 	.microp_channel		= 1,
-	.key_enable_gpio	= NULL,
-	.mic_select_gpio	= NULL,
+	.key_enable_gpio	= 0,
+	.mic_select_gpio	= 0,
 };
 
 static struct platform_device htc_headset_gpio = {
@@ -391,10 +391,9 @@ static uint32_t flashlight_gpio_table[] =
 	PCOM_GPIO_CFG(HTCLEO_GPIO_FLASHLIGHT_FLASH, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),
 };
 
-static int config_htcleo_flashlight_gpios(void)
+static void config_htcleo_flashlight_gpios(void)
 {
 	config_gpio_table(flashlight_gpio_table, ARRAY_SIZE(flashlight_gpio_table));
-	return 0;
 }
 
 static struct flashlight_platform_data htcleo_flashlight_data =
@@ -501,7 +500,7 @@ static struct camera_flash_cfg msm_camera_sensor_flash_cfg = {
 	.camera_flash		= flashlight_control,
 	.num_flash_levels	= FLASHLIGHT_NUM,
 	.low_temp_limit		= 5,
-	.low_cap_limit		= 15,
+	.low_cap_limit		= 10,
 };
 
 static struct msm_camera_sensor_info msm_camera_sensor_s5k3e2fx_data =
@@ -779,7 +778,7 @@ static int htcleo_kgsl_power(bool on)
 	int rail_id = 0;
 
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
-    	return msm_proc_comm(cmd, &rail_id, 0);
+    	return msm_proc_comm(cmd, &rail_id, NULL);
 }
 
 static struct platform_device msm_kgsl_device =
@@ -999,9 +998,9 @@ static void __init msm_device_i2c_init(void)
 ///////////////////////////////////////////////////////////////////////
 
 static struct msm_acpu_clock_platform_data htcleo_clock_data = {
-	.acpu_switch_time_us	= 20,
+	.acpu_switch_time_us	= 20/4,
 	.max_speed_delta_khz	= 256000,
-	.vdd_switch_time_us	= 62,
+	.vdd_switch_time_us	= 62/4,
 	.power_collapse_khz	= 245000,
 	.wait_for_irq_khz	= 245000,
 //	.wait_for_irq_khz	= 19200,   // TCXO
