@@ -294,9 +294,6 @@ static void __init init_gbpages(void)
 static inline void init_gbpages(void)
 {
 }
-static void __init cleanup_highmap(void)
-{
-}
 #endif
 
 static void __init reserve_brk(void)
@@ -915,28 +912,6 @@ void __init setup_arch(char **cmdline_p)
 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
 #endif
 
-	/*
-	* Find and reserve possible boot-time SMP configuration:
-	*/
-	find_smp_config();
-
-	reserve_ibft_region();
-
-	/*
-	* Need to conclude brk, before memblock_x86_fill()
-	* it could use memblock_find_in_range, could overlap with
-	* brk area.
-	*/
-	reserve_brk();
-
-	cleanup_highmap();
-
-	memblock.current_limit = get_max_mapped();
-	memblock_x86_fill();
-
-	/* preallocate 4k for mptable mpc */
-	early_reserve_e820_mpc_new();
-
 #ifdef CONFIG_X86_CHECK_BIOS_CORRUPTION
 	setup_bios_corruption_check();
 #endif
@@ -944,15 +919,7 @@ void __init setup_arch(char **cmdline_p)
 	printk(KERN_DEBUG "initial memory mapped : 0 - %08lx\n",
 			max_pfn_mapped<<PAGE_SHIFT);
 
-	reserve_trampoline_memory();
-
-#ifdef CONFIG_ACPI_SLEEP
-	/*
-	* Reserve low memory region for sleep support.
-	* even before init_memory_mapping
-	*/
-	acpi_reserve_wakeup_memory();
-#endif
+	reserve_brk();
 
 	init_gbpages();
 

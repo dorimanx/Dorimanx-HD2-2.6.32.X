@@ -57,32 +57,32 @@ static struct stacktrace_ops backtrace_ops = {
 static unsigned long
 copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
 {
-       unsigned long offset, addr = (unsigned long)from;
-       unsigned long size, len = 0;
-       struct page *page;
-       void *map;
-       int ret;
+	unsigned long offset, addr = (unsigned long)from;
+	unsigned long size, len = 0;
+	struct page *page;
+	void *map;
+	int ret;
 
-       do {
-               ret = __get_user_pages_fast(addr, 1, 0, &page);
-               if (!ret)
-                       break;
+	do {
+		ret = __get_user_pages_fast(addr, 1, 0, &page);
+		if (!ret)
+			break;
 
-               offset = addr & (PAGE_SIZE - 1);
-               size = min(PAGE_SIZE - offset, n - len);
+		offset = addr & (PAGE_SIZE - 1);
+		size = min(PAGE_SIZE - offset, n - len);
 
-               map = kmap_atomic(page, KM_USER0);
-               memcpy(to, map+offset, size);
-               kunmap_atomic(map, KM_USER0);
-               put_page(page);
+		map = kmap_atomic(page, KM_USER0);
+		memcpy(to, map+offset, size);
+		kunmap_atomic(map, KM_USER0);
+		put_page(page);
 
-               len  += size;
-               to   += size;
-               addr += size;
+		len  += size;
+		to   += size;
+		addr += size;
 
-       } while (len < n);
+	} while (len < n);
 
-       return len;
+	return len;
 }
 
 struct frame_head {
@@ -92,13 +92,13 @@ struct frame_head {
 
 static struct frame_head *dump_user_backtrace(struct frame_head *head)
 {
-       /* Also check accessibility of one struct frame_head beyond: */
-       struct frame_head bufhead[2];
-       unsigned long bytes;
+	/* Also check accessibility of one struct frame_head beyond: */
+	struct frame_head bufhead[2];
+	unsigned long bytes;
 
-       bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-       if (bytes != sizeof(bufhead))
-               return NULL;
+	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
+	if (bytes != sizeof(bufhead))
+		return NULL;
 
 	oprofile_add_trace(bufhead[0].ret);
 

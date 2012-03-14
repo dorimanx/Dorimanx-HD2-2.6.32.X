@@ -627,7 +627,7 @@ config GART_IOMMU
 	bool "GART IOMMU support" if EMBEDDED
 	default y
 	select SWIOTLB
-	depends on X86_64 && PCI
+	depends on X86_64 && PCI && K8_NB
 	---help---
 	  Support for full DMA access of devices with 32bit memory access only
 	  on systems with more than 3GB. This is usually needed for USB,
@@ -1062,7 +1062,7 @@ endchoice
 
 choice
 	depends on EXPERIMENTAL
-	prompt "Memory split"
+	prompt "Memory split" if EMBEDDED
 	default VMSPLIT_3G
 	depends on X86_32
 	---help---
@@ -1082,17 +1082,17 @@ choice
 	  option alone!
 
 	config VMSPLIT_3G
-		bool "Default 896MB lowmem (3G/1G user/kernel split)"
+		bool "3G/1G user/kernel split"
 	config VMSPLIT_3G_OPT
 		depends on !X86_PAE
-		bool "1GB lowmem (3G/1G user/kernel split)"
+		bool "3G/1G user/kernel split (for full 1G low memory)"
 	config VMSPLIT_2G
-		bool "2GB lowmem (2G/2G user/kernel split)"
+		bool "2G/2G user/kernel split"
 	config VMSPLIT_2G_OPT
 		depends on !X86_PAE
-		bool "2GB lowmem (2G/2G user/kernel split)"
+		bool "2G/2G user/kernel split (for full 2G low memory)"
 	config VMSPLIT_1G
-		bool "3GB lowmem (1G/3G user/kernel split)"
+		bool "1G/3G user/kernel split"
 endchoice
 
 config PAGE_OFFSET
@@ -1251,6 +1251,11 @@ config ARCH_SELECT_MEMORY_MODEL
 config ARCH_MEMORY_PROBE
 	def_bool X86_64
 	depends on MEMORY_HOTPLUG
+
+config ILLEGAL_POINTER_VALUE
+       hex
+       default 0 if X86_32
+       default 0xdead000000000000 if X86_64
 
 source "mm/Kconfig"
 
@@ -2038,7 +2043,7 @@ endif # X86_32
 
 config K8_NB
 	def_bool y
-	depends on AGP_AMD64 || (X86_64 && (GART_IOMMU || (PCI && NUMA)))
+	depends on CPU_SUP_AMD && PCI
 
 source "drivers/pcmcia/Kconfig"
 

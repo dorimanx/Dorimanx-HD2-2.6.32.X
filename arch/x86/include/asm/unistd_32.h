@@ -342,7 +342,6 @@
 #define __NR_pwritev		334
 #define __NR_rt_tgsigqueueinfo	335
 #define __NR_perf_event_open	336
-//#define __NR_membarrier     	338
 
 #ifdef __KERNEL__
 
