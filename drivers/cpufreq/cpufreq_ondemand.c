@@ -87,7 +87,11 @@ static struct notifier_block idle_notifier_block = {
 };
 
 #define MIN_LATENCY_MULTIPLIER			(100)
-#define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+#if defined(CONFIG_ARCH_MSM_SCORPION)
+#define TRANSITION_LATENCY_LIMIT 8000000
+#else
+#define TRANSITION_LATENCY_LIMIT 9000000
+#endif
 
 static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,

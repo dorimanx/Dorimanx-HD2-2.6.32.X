@@ -50,7 +50,11 @@ static unsigned int min_sampling_rate;
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(10)
-#define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+#if defined(CONFIG_ARCH_MSM_SCORPION)
+#define TRANSITION_LATENCY_LIMIT 8000000
+#else
+#define TRANSITION_LATENCY_LIMIT 9000000
+#endif
 
 static void do_dbs_timer(struct work_struct *work);
 
