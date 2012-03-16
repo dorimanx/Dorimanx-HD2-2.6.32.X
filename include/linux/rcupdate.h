@@ -57,9 +57,7 @@ extern void synchronize_rcu(void);
 #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
 #define synchronize_rcu synchronize_sched
 #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
-extern void synchronize_rcu_bh(void);
 extern void synchronize_sched(void);
-extern void rcu_barrier(void);
 extern void rcu_barrier_bh(void);
 extern void rcu_barrier_sched(void);
 extern void synchronize_sched_expedited(void);
@@ -67,17 +65,16 @@ extern int sched_expedited_torture_stats(char *page);
 
 /* Internal to kernel */
 extern void rcu_init(void);
-extern void rcu_scheduler_starting(void);
 #ifndef CONFIG_TINY_RCU
-extern int rcu_needs_cpu(int cpu);
 #else
 static inline int rcu_needs_cpu(int cpu) { return 0; }
 #endif
+extern void rcu_scheduler_starting(void);
 extern int rcu_scheduler_active;
 
 #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
 #include <linux/rcutree.h>
-#elif CONFIG_TINY_RCU
+#elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
 #include <linux/rcutiny.h>
 #else
 #error "Unknown RCU implementation specified to kernel configuration"
@@ -88,6 +85,14 @@ extern int rcu_scheduler_active;
 #define INIT_RCU_HEAD(ptr) do { \
        (ptr)->next = NULL; (ptr)->func = NULL; \
 } while (0)
+
+static inline void init_rcu_head_on_stack(struct rcu_head *head)
+{
+}
+ 
+static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+{
+}
 
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
 extern struct lockdep_map rcu_lock_map;
@@ -444,6 +449,44 @@ extern void call_rcu(struct rcu_head *head,
  */
 extern void call_rcu_bh(struct rcu_head *head,
 			void (*func)(struct rcu_head *head));
+
+/*
+ * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
+ * by call_rcu() and rcu callback execution, and are therefore not part of the
+ * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
+ */
+
+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+# define STATE_RCU_HEAD_READY  0
+# define STATE_RCU_HEAD_QUEUED  1
+
+extern struct debug_obj_descr rcuhead_debug_descr;
+
+static inline void debug_rcu_head_queue(struct rcu_head *head)
+
+{
+	debug_object_activate(head, &rcuhead_debug_descr);
+	debug_object_active_state(head, &rcuhead_debug_descr,
+		STATE_RCU_HEAD_READY,
+		STATE_RCU_HEAD_QUEUED);
+}
+
+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+{
+	debug_object_active_state(head, &rcuhead_debug_descr,
+		STATE_RCU_HEAD_QUEUED,
+		STATE_RCU_HEAD_READY);
+	debug_object_deactivate(head, &rcuhead_debug_descr);
+}
+#else  /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+static inline void debug_rcu_head_queue(struct rcu_head *head)
+{
+}
+
+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+{
+}
+#endif  /* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
 
 #endif /* __LINUX_RCUPDATE_H */
 

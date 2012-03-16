@@ -83,6 +83,8 @@ static inline void synchronize_rcu_bh_expedited(void)
 	synchronize_sched_expedited();
 }
 
+extern void rcu_barrier(void);
+
 extern void __rcu_init(void);
 extern void rcu_check_callbacks(int cpu, int user);
 
@@ -109,3 +111,4 @@ static inline int rcu_blocking_is_gp(void)
 }
 
 #endif /* __LINUX_RCUTREE_H */
+

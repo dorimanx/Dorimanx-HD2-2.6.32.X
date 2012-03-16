@@ -56,6 +56,19 @@ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
 	.curtail = &rcu_bh_ctrlblk.rcucblist,
 };
 
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+int rcu_scheduler_active __read_mostly;
+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+
+/* Forward declarations for rcutiny_plugin.h. */
+static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp);
+static void __call_rcu(struct rcu_head *head,
+void (*func)(struct rcu_head *rcu),
+struct rcu_ctrlblk *rcp);
+
+#include "rcutiny_plugin.h"
+
 #ifdef CONFIG_NO_HZ
 
 static long rcu_dynticks_nesting = 1;
@@ -135,6 +148,7 @@ void rcu_check_callbacks(int cpu, int user)
 		rcu_sched_qs(cpu);
 	else if (!in_softirq())
 		rcu_bh_qs(cpu);
+	rcu_preempt_check_callbacks();
 }
 
 /*
@@ -157,6 +171,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	*rcp->donetail = NULL;
 	if (rcp->curtail == rcp->donetail)
 		rcp->curtail = &rcp->rcucblist;
+	rcu_preempt_remove_callbacks(rcp);
 	rcp->donetail = &rcp->rcucblist;
 	local_irq_restore(flags);
 
@@ -176,6 +191,7 @@ static void rcu_process_callbacks(struct softirq_action *unused)
 {
 	__rcu_process_callbacks(&rcu_ctrlblk);
 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
+	rcu_preempt_process_callbacks();
 }
 
 /*
@@ -200,17 +216,6 @@ int rcu_cpu_notify(struct notifier_block *self,
  *
  * But we want to make this a static inline later.
  */
-void synchronize_sched(void)
-{
-	cond_resched();
-}
-EXPORT_SYMBOL_GPL(synchronize_sched);
-
-void synchronize_rcu_bh(void)
-{
-	synchronize_sched();
-}
-EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
 
 /*
  * Helper function for call_rcu() and call_rcu_bh().
@@ -230,18 +235,6 @@ static void __call_rcu(struct rcu_head *head,
 }
 
 /*
- * Post an RCU callback to be invoked after the end of an RCU grace
- * period.  But since we have but one CPU, that would be after any
- * quiescent state.
- */
-void call_rcu(struct rcu_head *head,
-	      void (*func)(struct rcu_head *rcu))
-{
-	__call_rcu(head, func, &rcu_ctrlblk);
-}
-EXPORT_SYMBOL_GPL(call_rcu);
-
-/*
  * Post an RCU bottom-half callback to be invoked after any subsequent
  * quiescent state.
  */
@@ -251,18 +244,6 @@ void call_rcu_bh(struct rcu_head *head,
 	__call_rcu(head, func, &rcu_bh_ctrlblk);
 }
 EXPORT_SYMBOL_GPL(call_rcu_bh);
-
-void rcu_barrier(void)
-{
-	struct rcu_synchronize rcu;
-
-	init_completion(&rcu.completion);
-	/* Will wake me after RCU finished. */
-	call_rcu(&rcu.head, wakeme_after_rcu);
-	/* Wait for it. */
-	wait_for_completion(&rcu.completion);
-}
-EXPORT_SYMBOL_GPL(rcu_barrier);
 
 void rcu_barrier_bh(void)
 {
@@ -275,18 +256,6 @@ void rcu_barrier_bh(void)
 	wait_for_completion(&rcu.completion);
 }
 EXPORT_SYMBOL_GPL(rcu_barrier_bh);
-
-void rcu_barrier_sched(void)
-{
-	struct rcu_synchronize rcu;
-
-	init_completion(&rcu.completion);
-	/* Will wake me after RCU finished. */
-	call_rcu_sched(&rcu.head, wakeme_after_rcu);
-	/* Wait for it. */
-	wait_for_completion(&rcu.completion);
-}
-EXPORT_SYMBOL_GPL(rcu_barrier_sched);
 
 void __rcu_init(void)
 {
