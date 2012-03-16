@@ -415,9 +415,6 @@ static int device_resume(struct device *dev, pm_message_t state)
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
 
-	if ((dev->parent && dev->parent->power.status >= DPM_OFF) ||
-		(dev->parent->power.status == DPM_RESUMING))
-
 	down(&dev->sem);
 
 	if (dev->bus) {
