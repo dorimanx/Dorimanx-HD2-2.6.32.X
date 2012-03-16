@@ -30,6 +30,7 @@
 #include <linux/utsname.h>
 #include <linux/uaccess.h>
 
+#include <asm/cacheflush.h>
 #include <asm/processor.h>
 #include <asm/system.h>
 #include <asm/thread_notify.h>
