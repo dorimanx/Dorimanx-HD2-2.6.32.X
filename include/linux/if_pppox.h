@@ -219,3 +219,4 @@ enum {
 #endif /* __KERNEL__ */
 
 #endif /* !(__LINUX_IF_PPPOX_H) */
+
