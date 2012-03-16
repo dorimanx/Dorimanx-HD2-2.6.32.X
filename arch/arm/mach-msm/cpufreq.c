@@ -69,8 +69,7 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 	}
 
 	if (policy->cur == table[index].frequency) {
-	  	ret = 0;
-
+		ret = 0;
 	}
 
 #ifdef CONFIG_CPU_FREQ_DEBUG
@@ -84,6 +83,7 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 	acpuclk_set_rate(table[index].frequency * 1000, 0);
 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 	return 0;
+
 }
 
 static int msm_cpufreq_verify(struct cpufreq_policy *policy)
@@ -104,7 +104,7 @@ static int __init msm_cpufreq_init(struct cpufreq_policy *policy)
 	policy->max = 1190400;
 #endif
 #ifdef	CONFIG_HTCLEO_EXOVERCLOCK
-	  policy->max = 1497600;
+	  policy->max = 1612800;
 #endif
 	policy->cpuinfo.transition_latency =
 		acpuclk_get_switch_time() * NSEC_PER_USEC;
