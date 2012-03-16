@@ -493,7 +493,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	unsigned int cpu = policy->cpu;
 	struct cpu_dbs_info_s *this_dbs_info;
 	unsigned int j;
-	int rc;
 
 	this_dbs_info = &per_cpu(cs_cpu_dbs_info, cpu);
 
