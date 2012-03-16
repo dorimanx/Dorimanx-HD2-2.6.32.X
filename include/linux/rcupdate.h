@@ -69,10 +69,10 @@ extern void rcu_init(void);
 #else
 static inline int rcu_needs_cpu(int cpu) { return 0; }
 #endif
-extern void rcu_scheduler_starting(void);
 extern int rcu_scheduler_active;
 
 #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+extern void rcu_scheduler_starting(void);
 #include <linux/rcutree.h>
 #elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
 #include <linux/rcutiny.h>

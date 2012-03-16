@@ -307,30 +307,44 @@ static int init_task_group_load = INIT_TASK_GROUP_LOAD;
 struct task_group init_task_group;
 
 /* return group to which a task belongs */
-static inline struct task_group *task_group(struct task_struct *p)
+static inline struct task_group *cgroup_task_group(struct task_struct *p)
 {
 	struct task_group *tg;
 
 #ifdef CONFIG_CGROUP_SCHED
-	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
-				struct task_group, css);
+	struct cgroup_subsys_state *css;
+
+	css = task_subsys_state(p, cpu_cgroup_subsys_id);
+
+	tg = container_of(css, struct task_group, css);
 #else
 	tg = &init_task_group;
 #endif
 	return tg;
 }
 
+static inline struct task_group *task_group(struct task_struct *p)
+{
+	struct task_group *tg;
+
+	tg = cgroup_task_group(p);
+	return tg;
+}
+
 /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
 static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
 {
+#if defined(CONFIG_FAIR_GROUP_SCHED) || defined(CONFIG_RT_GROUP_SCHED)
+	struct task_group *tg = task_group(p);
+#endif
 #ifdef CONFIG_FAIR_GROUP_SCHED
-	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
-	p->se.parent = task_group(p)->se[cpu];
+	p->se.cfs_rq = tg->cfs_rq[cpu];
+	p->se.parent = tg->se[cpu];
 #endif
 
 #ifdef CONFIG_RT_GROUP_SCHED
-	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
-	p->rt.parent = task_group(p)->rt_se[cpu];
+	p->rt.rt_rq  = tg->rt_rq[cpu];
+	p->rt.parent = tg->rt_se[cpu];
 #endif
 }
 
