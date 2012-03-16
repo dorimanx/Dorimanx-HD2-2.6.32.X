@@ -831,8 +831,8 @@ static long wb_writeback(struct bdi_writeback *wb,
 		wbc.nr_to_write = write_chunk;
 		wbc.pages_skipped = 0;
 		writeback_inodes_wb(wb, &wbc);
-		args->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
-		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+		args->nr_pages -= write_chunk - wbc.nr_to_write;
+		wrote += write_chunk - wbc.nr_to_write;
 
 		/*
 		 * If we consumed everything, see if we have more
