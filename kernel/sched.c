@@ -512,6 +512,8 @@ struct rq {
 	unsigned char in_nohz_recently;
 #endif
 
+	unsigned int skip_clock_update;
+
 	/* capture load from *all* tasks on this cpu: */
 	struct load_weight load;
 	unsigned long nr_load_updates;
@@ -646,8 +648,10 @@ inline void update_rq_clock(struct rq *rq)
 {
 	int cpu = cpu_of(rq);
 	u64 irq_time;
+	if (rq->skip_clock_update)
+		return;
 
-	rq->clock = sched_clock_cpu(cpu_of(rq));
+	rq->clock = sched_clock_cpu(cpu);
 	irq_time = irq_time_cpu(cpu);
 	if (rq->clock - irq_time > rq->clock_task)
 		rq->clock_task = rq->clock - irq_time;
