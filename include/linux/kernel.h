@@ -411,14 +411,14 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
  * no local ratelimit_state used in the !PRINTK case
  */
 #ifdef CONFIG_PRINTK
-#define printk_ratelimited(fmt, ...)  ({                               \
+#define printk_ratelimited(fmt, ...)  ({                                \
         static DEFINE_RATELIMIT_STATE(_rs,                              \
                                       DEFAULT_RATELIMIT_INTERVAL,       \
                                       DEFAULT_RATELIMIT_BURST);         \
                                                                         \
         if (__ratelimit(&_rs))                                          \
-                printk(fmt, ##__VA_ARGS__); 
-})
+                printk(fmt, ##__VA_ARGS__);                             \
+ })
 #else
 /* No effect, but we still get type checking even in the !PRINTK case: */
 #define printk_ratelimited printk

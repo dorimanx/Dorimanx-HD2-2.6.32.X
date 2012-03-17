@@ -133,11 +133,6 @@
 	disable_irq
 	.endm
 
-	.macro  save_and_disable_irqs_notrace, oldcpsr
-	mrs  \oldcpsr, cpsr
-	disable_irq_notrace
-	.endm
-
         .macro  save_and_disable_irqs_notrace, oldcpsr
         mrs     \oldcpsr, cpsr
         disable_irq_notrace
