@@ -22,7 +22,7 @@ static void yaffs_handle_rd_data_error(struct yaffs_dev *dev, int nand_chunk);
 
 /********** Tags ECC calculations  *********/
 
-void yaffs_calc_ecc(const u8 *data, struct yaffs_spare *spare)
+void yaffs_calc_ecc(const u8 * data, struct yaffs_spare *spare)
 {
 	yaffs_ecc_cacl(data, spare->ecc1);
 	yaffs_ecc_cacl(&data[256], spare->ecc2);
@@ -31,6 +31,7 @@ void yaffs_calc_ecc(const u8 *data, struct yaffs_spare *spare)
 void yaffs_calc_tags_ecc(struct yaffs_tags *tags)
 {
 	/* Calculate an ecc */
+
 	unsigned char *b = ((union yaffs_tags_union *)tags)->as_bytes;
 	unsigned i, j;
 	unsigned ecc = 0;
@@ -45,7 +46,9 @@ void yaffs_calc_tags_ecc(struct yaffs_tags *tags)
 				ecc ^= bit;
 		}
 	}
+
 	tags->ecc = ecc;
+
 }
 
 int yaffs_check_tags_ecc(struct yaffs_tags *tags)
@@ -73,6 +76,7 @@ int yaffs_check_tags_ecc(struct yaffs_tags *tags)
 		/* TODO Need to do somethiong here */
 		return -1;	/* unrecovered error */
 	}
+
 	return 0;
 }
 
@@ -124,7 +128,7 @@ static void yaffs_spare_init(struct yaffs_spare *spare)
 }
 
 static int yaffs_wr_nand(struct yaffs_dev *dev,
-			 int nand_chunk, const u8 *data,
+			 int nand_chunk, const u8 * data,
 			 struct yaffs_spare *spare)
 {
 	if (nand_chunk < dev->param.start_block * dev->param.chunks_per_block) {
@@ -139,7 +143,7 @@ static int yaffs_wr_nand(struct yaffs_dev *dev,
 
 static int yaffs_rd_chunk_nand(struct yaffs_dev *dev,
 			       int nand_chunk,
-			       u8 *data,
+			       u8 * data,
 			       struct yaffs_spare *spare,
 			       enum yaffs_ecc_result *ecc_result,
 			       int correct_errors)
@@ -147,7 +151,7 @@ static int yaffs_rd_chunk_nand(struct yaffs_dev *dev,
 	int ret_val;
 	struct yaffs_spare local_spare;
 
-	if (!spare) {
+	if (!spare && data) {
 		/* If we don't have a real spare, then we use a local one. */
 		/* Need this for the calculation of the ecc */
 		spare = &local_spare;
@@ -264,8 +268,9 @@ static void yaffs_handle_rd_data_error(struct yaffs_dev *dev, int nand_chunk)
 	int flash_block = nand_chunk / dev->param.chunks_per_block;
 
 	/* Mark the block for retirement */
-	yaffs_get_block_info(dev, flash_block + dev->block_offset)->
-		needs_retiring = 1;
+	yaffs_get_block_info(dev,
+			     flash_block + dev->block_offset)->needs_retiring =
+	    1;
 	yaffs_trace(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
 		"**>>Block %d marked for retirement",
 		flash_block);
@@ -279,7 +284,7 @@ static void yaffs_handle_rd_data_error(struct yaffs_dev *dev, int nand_chunk)
 
 int yaffs_tags_compat_wr(struct yaffs_dev *dev,
 			 int nand_chunk,
-			 const u8 *data, const struct yaffs_ext_tags *ext_tags)
+			 const u8 * data, const struct yaffs_ext_tags *ext_tags)
 {
 	struct yaffs_spare spare;
 	struct yaffs_tags tags;
@@ -313,11 +318,13 @@ int yaffs_tags_compat_wr(struct yaffs_dev *dev,
 
 int yaffs_tags_compat_rd(struct yaffs_dev *dev,
 			 int nand_chunk,
-			 u8 *data, struct yaffs_ext_tags *ext_tags)
+			 u8 * data, struct yaffs_ext_tags *ext_tags)
 {
+
 	struct yaffs_spare spare;
 	struct yaffs_tags tags;
 	enum yaffs_ecc_result ecc_result = YAFFS_ECC_RESULT_UNKNOWN;
+
 	static struct yaffs_spare spare_ff;
 	static int init;
 
@@ -326,8 +333,7 @@ int yaffs_tags_compat_rd(struct yaffs_dev *dev,
 		init = 1;
 	}
 
-	if (yaffs_rd_chunk_nand(dev, nand_chunk,
-					data, &spare, &ecc_result, 1)) {
+	if (yaffs_rd_chunk_nand(dev, nand_chunk, data, &spare, &ecc_result, 1)) {
 		/* ext_tags may be NULL */
 		if (ext_tags) {
 
@@ -366,6 +372,7 @@ int yaffs_tags_compat_rd(struct yaffs_dev *dev,
 
 int yaffs_tags_compat_mark_bad(struct yaffs_dev *dev, int flash_block)
 {
+
 	struct yaffs_spare spare;
 
 	memset(&spare, 0xff, sizeof(struct yaffs_spare));
@@ -378,13 +385,15 @@ int yaffs_tags_compat_mark_bad(struct yaffs_dev *dev, int flash_block)
 		      NULL, &spare);
 
 	return YAFFS_OK;
+
 }
 
 int yaffs_tags_compat_query_block(struct yaffs_dev *dev,
 				  int block_no,
 				  enum yaffs_block_state *state,
-				  u32 *seq_number)
+				  u32 * seq_number)
 {
+
 	struct yaffs_spare spare0, spare1;
 	static struct yaffs_spare spare_ff;
 	static int init;
