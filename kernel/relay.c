@@ -171,9 +171,14 @@ depopulate:
  */
 static struct rchan_buf *relay_create_buf(struct rchan *chan)
 {
-	struct rchan_buf *buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
-	if (!buf)
+        struct rchan_buf *buf;
+
+        if (chan->n_subbufs > UINT_MAX / sizeof(size_t *))
 		return NULL;
+
+        buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
+        if (!buf)
+                return NULL;
 
 	buf->padding = kmalloc(chan->n_subbufs * sizeof(size_t *), GFP_KERNEL);
 	if (!buf->padding)
@@ -581,6 +586,9 @@ struct rchan *relay_open(const char *base_filename,
 
 	if (!(subbuf_size && n_subbufs))
 		return NULL;
+
+        if (subbuf_size > UINT_MAX / n_subbufs)
+                return NULL;
 
 	chan = kzalloc(sizeof(struct rchan), GFP_KERNEL);
 	if (!chan)
