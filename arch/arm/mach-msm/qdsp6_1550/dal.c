@@ -603,8 +603,8 @@ int dal_call_f1(struct dal_client *client, uint32_t ddi, uint32_t arg1, uint32_t
 
 int dal_call_f5(struct dal_client *client, uint32_t ddi, void *ibuf, uint32_t ilen)
 {
-//	uint32_t tmp[128];
-	uint32_t tmp[DAL_DATA_MAX];
+	uint32_t tmp[128];
+//	uint32_t tmp[DAL_DATA_MAX];
 	int res;
 	int param_idx = 0;
 
@@ -626,11 +626,13 @@ int dal_call_f5(struct dal_client *client, uint32_t ddi, void *ibuf, uint32_t il
 
 int dal_call_f6(struct dal_client *client, uint32_t ddi, uint32_t cmd, void *ibuf, uint32_t ilen)
 {
-	uint32_t tmp[DAL_DATA_MAX];
+	uint32_t tmp[128];
+//	uint32_t tmp[DAL_DATA_MAX];
 	int res;
 	int param_idx = 0;
 
-	if (ilen + 4 > DAL_DATA_MAX)
+//	if (ilen + 4 > DAL_DATA_MAX)
+	if (ilen + 8 > DAL_DATA_MAX)
 		return -EINVAL;
 
 	tmp[param_idx] = cmd;

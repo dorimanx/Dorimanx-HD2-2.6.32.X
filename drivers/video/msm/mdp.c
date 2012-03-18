@@ -790,37 +790,6 @@ end:
 	return ret;
 }
 
-int mdp_fb_mirror(struct mdp_device *mdp_dev,
-		struct fb_info *src_fb, struct fb_info *dst_fb,
-		struct mdp_blit_req *req)
-{
-	int ret;
-	struct mdp_info *mdp = container_of(mdp_dev, struct mdp_info, mdp_dev);
-
-	if (!src_fb || !dst_fb)
-		return -EINVAL;
-
-	enable_mdp_irq(mdp, DL0_ROI_DONE);
-	ret = mdp_ppp_blit(mdp, req,
-			-1, src_fb->fix.smem_start, src_fb->fix.smem_len,
-			-1, dst_fb->fix.smem_start, dst_fb->fix.smem_len);
-	if (ret)
-		goto err_bad_blit;
-
-	ret = mdp_ppp_wait(mdp);
-	if (ret) {
-		pr_err("mdp_ppp_wait error\n");
-		goto err_wait_failed;
-	}
-	return 0;
-
-err_bad_blit:
-	disable_mdp_irq(mdp, DL0_ROI_DONE);
-
-err_wait_failed:
-	return ret;
-}
-
 void mdp_set_grp_disp(struct mdp_device *mdp_dev, unsigned disp_id)
 {
 	struct mdp_info *mdp = container_of(mdp_dev, struct mdp_info, mdp_dev);

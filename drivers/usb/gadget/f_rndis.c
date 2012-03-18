@@ -87,6 +87,8 @@ struct f_rndis {
 	struct gether			port;
 	u8				ctrl_id, data_id;
 	u8				ethaddr[ETH_ALEN];
+        u32                             vendorID;
+        const char                      *manufacturer;
 	int				config;
 
 	struct rndis_ep_descs		fs;
@@ -99,6 +101,7 @@ struct f_rndis {
 };
 
 static char		manufacturer [10] = "HTC";
+static u32		vendorID = 0x0bb4;
 static inline struct f_rndis *func_to_rndis(struct usb_function *f)
 {
 	return container_of(f, struct f_rndis, port.func);
@@ -596,7 +599,6 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 	struct f_rndis		*rndis = func_to_rndis(f);
 	int			status;
 	struct usb_ep		*ep;
-	u32	vendorID = 0x0bb4;
 
 	/* allocate instance-specific interface IDs */
 	status = usb_interface_id(c, f);
@@ -824,6 +826,8 @@ int __init rndis_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
 		goto fail;
 
 	memcpy(rndis->ethaddr, ethaddr, ETH_ALEN);
+        rndis->vendorID = vendorID;
+        rndis->manufacturer = manufacturer;
 
 	/* RNDIS activates when the host changes this filter */
 	rndis->port.cdc_filter = 0;

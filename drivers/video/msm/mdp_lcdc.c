@@ -103,7 +103,7 @@ static int lcdc_blank(struct msm_panel_data *fb_panel)
 
 static int lcdc_suspend(struct msm_panel_data *fb_panel)
 {
-	int status;
+//	int status;
 	struct mdp_lcdc_info *lcdc = panel_to_lcdc(fb_panel);
 	struct msm_lcdc_panel_ops *panel_ops = lcdc->pdata->panel_ops;
 
@@ -126,7 +126,7 @@ static int lcdc_suspend(struct msm_panel_data *fb_panel)
 
 static int lcdc_resume(struct msm_panel_data *fb_panel)
 {
-	unsigned int status;
+//	unsigned int status;
 	struct mdp_lcdc_info *lcdc = panel_to_lcdc(fb_panel);
 	struct msm_lcdc_panel_ops *panel_ops = lcdc->pdata->panel_ops;
 
