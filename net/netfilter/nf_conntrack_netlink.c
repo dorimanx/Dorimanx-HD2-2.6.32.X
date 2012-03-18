@@ -708,17 +708,22 @@ ctnetlink_parse_tuple_proto(struct nlattr *attr,
 	return ret;
 }
 
+static const struct nla_policy tuple_nla_policy[CTA_TUPLE_MAX+1] = {
+        [CTA_TUPLE_IP]          = { .type = NLA_NESTED },
+        [CTA_TUPLE_PROTO]       = { .type = NLA_NESTED },
+};
+
 static int
 ctnetlink_parse_tuple(const struct nlattr * const cda[],
 		      struct nf_conntrack_tuple *tuple,
-		      enum ctattr_tuple type, u_int8_t l3num)
+		      enum ctattr_type type, u_int8_t l3num)
 {
 	struct nlattr *tb[CTA_TUPLE_MAX+1];
 	int err;
 
 	memset(tuple, 0, sizeof(*tuple));
 
-	nla_parse_nested(tb, CTA_TUPLE_MAX, cda[type], NULL);
+	nla_parse_nested(tb, CTA_TUPLE_MAX, cda[type], tuple_nla_policy);
 
 	if (!tb[CTA_TUPLE_IP])
 		return -EINVAL;
