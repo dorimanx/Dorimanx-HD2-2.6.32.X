@@ -23,6 +23,15 @@ obj-$(CONFIG_ARCH_OMAP2420)		+= sram242x.o
 obj-$(CONFIG_ARCH_OMAP2430)		+= sram243x.o
 obj-$(CONFIG_ARCH_OMAP3)		+= sram34xx.o
 
+AFLAGS_sram242x.o                       :=-Wa,-march=armv6
+AFLAGS_sram243x.o                       :=-Wa,-march=armv6
+plus_sec 				:= $(call as-instr,.arch_extension sec,+sec)
+AFLAGS_omap-headsmp.o                  	:=-Wa,-march=armv7-a$(plus_sec)
+AFLAGS_omap44xx-smc.o                  	:=-Wa,-march=armv7-a$(plus_sec)
+
+# Pin multiplexing
+obj-$(CONFIG_ARCH_OMAP3)                += mux34xx.o
+
 # SMS/SDRC
 obj-$(CONFIG_ARCH_OMAP2)		+= sdrc2xxx.o
 # obj-$(CONFIG_ARCH_OMAP3)		+= sdrc3xxx.o
@@ -32,6 +41,7 @@ ifeq ($(CONFIG_PM),y)
 obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
 obj-$(CONFIG_ARCH_OMAP24XX)		+= sleep24xx.o
 obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o
+AFLAGS_sleep44xx.o                  	:=-Wa,-march=armv7-a$(plus_sec)
 obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
 endif
 
