@@ -64,7 +64,6 @@ extern void synchronize_sched_expedited(void);
 extern int sched_expedited_torture_stats(char *page);
 
 /* Internal to kernel */
-extern void rcu_init(void);
 #ifndef CONFIG_TINY_RCU
 #else
 static inline int rcu_needs_cpu(int cpu) { return 0; }
