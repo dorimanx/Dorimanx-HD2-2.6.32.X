@@ -6,6 +6,7 @@
 #include <linux/init.h>
 #include <linux/bitmap.h>
 #include <linux/bio.h>
+#include <linux/bitmap.h>
 #include <linux/blkdev.h>
 #include <linux/bootmem.h>	/* for max_pfn/max_low_pfn */
 
@@ -94,7 +95,7 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
 		atomic_long_set(&ret->refcount, 1);
 		atomic_set(&ret->nr_tasks, 1);
 		spin_lock_init(&ret->lock);
-//		ret->ioprio_changed = 0;
+		bitmap_zero(ret->ioprio_changed, IOC_IOPRIO_CHANGED_BITS);
 		ret->ioprio = 0;
 		ret->last_waited = jiffies; /* doesn't matter... */
 		ret->nr_batch_requests = 0; /* because this is 0 */
