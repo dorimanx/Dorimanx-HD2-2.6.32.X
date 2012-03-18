@@ -48,10 +48,10 @@ static struct rcu_ctrlblk rcu_ctrlblk = {
 static struct task_struct *rcu_kthread_task;
 static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
 static unsigned long have_rcu_kthread_work;
-static void invoke_rcu_kthread(void);
 
 /* Forward declarations for rcutiny_plugin.h. */
 struct rcu_ctrlblk;
+static void invoke_rcu_kthread(void);
 static void rcu_process_callbacks(struct rcu_ctrlblk *rcp);
 static int rcu_kthread(void *arg);
 static void __call_rcu(struct rcu_head *head,
@@ -87,22 +87,17 @@ void rcu_exit_nohz(void)
 #endif /* #ifdef CONFIG_NO_HZ */
 
 /*
- * Helper function for rcu_qsctr_inc() and rcu_bh_qsctr_inc().
- * Also disable irqs to avoid confusion due to interrupt handlers invoking
+ * Helper function for rcu_sched_qs() and rcu_bh_qs().
+ * Also irqs are disabled to avoid confusion due to interrupt handlers
  * call_rcu().
  */
 static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
 {
-	unsigned long flags;
-
-	local_irq_save(flags);
 	if (rcp->rcucblist != NULL &&
 	    rcp->donetail != rcp->curtail) {
 		rcp->donetail = rcp->curtail;
-		local_irq_restore(flags);
 		return 1;
 	}
-	local_irq_restore(flags);
 	return 0;
 }
 
@@ -113,8 +108,12 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
  */
 void rcu_sched_qs(int cpu)
 {
+	unsigned long flags;
+
+	local_irq_save(flags);
 	if (rcu_qsctr_help(&rcu_ctrlblk) + rcu_qsctr_help(&rcu_bh_ctrlblk))
 		invoke_rcu_kthread();
+	local_irq_restore(flags);
 }
 
 /*
