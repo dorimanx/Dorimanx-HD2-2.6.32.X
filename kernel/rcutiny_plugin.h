@@ -32,6 +32,12 @@ struct rcu_ctrlblk {
 };
 
 /* Definition for rcupdate control block. */
+static struct rcu_ctrlblk rcu_ctrlblk = {
+        .rcucblist = NULL,
+        .donetail = &rcu_ctrlblk.rcucblist,
+        .curtail = &rcu_ctrlblk.rcucblist,
+};
+
 static struct rcu_ctrlblk rcu_sched_ctrlblk = {
 	.rcucblist = NULL,
 	.donetail  = &rcu_sched_ctrlblk.rcucblist,

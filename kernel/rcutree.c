@@ -1793,4 +1793,26 @@ void __init __rcu_init(void)
 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
 }
 
+static int __cpuinit rcu_barrier_cpu_hotplug(struct notifier_block *self,
+                unsigned long action, void *hcpu)
+{
+        return rcu_cpu_notify(self, action, hcpu);
+}
+
+void __init rcu_init(void)
+{
+        int i;
+
+        __rcu_init();
+        cpu_notifier(rcu_barrier_cpu_hotplug, 0);
+
+        /*
+         * We don't need protection against CPU-hotplug here because
+         * this is called early in boot, before either interrupts
+         * or the scheduler are operational.
+         */
+        for_each_online_cpu(i)
+                rcu_barrier_cpu_hotplug(NULL, CPU_UP_PREPARE, (void *)(long)i);
+}
+
 #include "rcutree_plugin.h"

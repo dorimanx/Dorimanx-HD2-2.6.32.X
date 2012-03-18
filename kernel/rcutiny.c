@@ -37,13 +37,6 @@
 #include <linux/mutex.h>
 #include <linux/time.h>
 
-/* Definition for rcupdate control block. */
-static struct rcu_ctrlblk rcu_ctrlblk = {
-	.rcucblist = NULL,
-	.donetail = &rcu_ctrlblk.rcucblist,
-	.curtail = &rcu_ctrlblk.rcucblist,
-};
-
 /* Controls for rcu_kthread() kthread, replacing RCU_SOFTIRQ used previously. */
 static struct task_struct *rcu_kthread_task;
 static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
