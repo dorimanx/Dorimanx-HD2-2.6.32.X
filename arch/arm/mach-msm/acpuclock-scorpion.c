@@ -86,7 +86,7 @@ struct regulator {
 
 /* core sources */
 #define SRC_RAW		0 /* clock from SPSS_CLK_CNTL */
-#define SRC_SCPLL	1 /* output of scpll 128-998 MHZ */
+#define SRC_SCPLL	1 /* output of scpll 96-1612 MHZ */
 #define SRC_AXI		2 /* 128 MHz */
 #define SRC_PLL1	3 /* 768 MHz */
 
@@ -567,15 +567,15 @@ static void __init acpuclk_init(void)
 		BUG();
 	}
 
-	/* Move to 768MHz for boot, which is a safe frequency
+	/* Move to 806MHz for boot, which is a safe frequency
 	 * for all versions of Scorpion at the moment.
 	 */
 	speed = acpu_freq_tbl;
 	for (;;) {
-		if (speed->acpu_khz == 768000)
+		if (speed->acpu_khz == 806400)
 			break;
 		if (speed->acpu_khz == 0) {
-			pr_err("acpuclk_init: cannot find 768MHz\n");
+			pr_err("acpuclk_init: cannot find 806MHz\n");
 		BUG();
 		}
 		speed++;
@@ -626,21 +626,23 @@ unsigned long acpuclk_power_collapse(int from_idle)
 {
 	int ret = acpuclk_get_rate();
 	enum setrate_reason reason = (from_idle) ? SETRATE_PC_IDLE : SETRATE_PC;
+	ret *= 1000;
 	if (ret > drv_state.power_collapse_khz)
-		acpuclk_set_rate(drv_state.power_collapse_khz * 1000, reason);
-	return ret * 1000;
+		acpuclk_set_rate(drv_state.power_collapse_khz, reason);
+	return ret;
 }
 unsigned long acpuclk_get_wfi_rate(void)
 {
-	return drv_state.wait_for_irq_khz * 1000;
+	return drv_state.wait_for_irq_khz;
 }
 
 unsigned long acpuclk_wait_for_irq(void)
 {
 	int ret = acpuclk_get_rate();
+	ret *= 1000;
 	if (ret > drv_state.wait_for_irq_khz)
-		acpuclk_set_rate(drv_state.wait_for_irq_khz * 1000, 1);
-	return ret * 1000;
+		acpuclk_set_rate(drv_state.wait_for_irq_khz, 1);	
+	return ret;
 }
 
 #ifdef CONFIG_MSM_CPU_AVS
