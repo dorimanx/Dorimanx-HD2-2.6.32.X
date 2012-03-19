@@ -915,3 +915,52 @@ struct timespec get_monotonic_coarse(void)
 				now.tv_nsec + mono.tv_nsec);
 	return now;
 }
+
+/**
+ * get_xtime_and_monotonic_and_sleep_offset() - get xtime, wall_to_monotonic,
+ *    and sleep offsets.
+ * @xtim:       pointer to timespec to be set with xtime
+ * @wtom:       pointer to timespec to be set with wall_to_monotonic
+ * @sleep:      pointer to timespec to be set with time in suspend
+ */
+void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+                                struct timespec *wtom, struct timespec *sleep)
+{
+        unsigned long seq;
+
+        do {
+                seq = read_seqbegin(&xtime_lock);
+                *xtim = xtime;
+                *wtom = wall_to_monotonic;
+                *sleep = total_sleep_time;
+        } while (read_seqretry(&xtime_lock, seq));
+}
+ 
+/**
+  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+  */
+ktime_t ktime_get_monotonic_offset(void)
+{
+        unsigned long seq;
+        struct timespec wtom;
+
+        do {
+                seq = read_seqbegin(&xtime_lock);
+                wtom = wall_to_monotonic;
+        } while (read_seqretry(&xtime_lock, seq));
+        return timespec_to_ktime(wtom);
+}
+ 
+/**
+  * xtime_update() - advances the timekeeping infrastructure
+  * @ticks:      number of ticks, that have elapsed since the last call.
+  *
+  * Must be called with interrupts disabled.
+  */
+void xtime_update(unsigned long ticks)
+{
+        write_seqlock(&xtime_lock);
+        do_timer(ticks);
+        write_sequnlock(&xtime_lock);
+}
+ 

@@ -27,6 +27,14 @@ config PM_DEBUG
 	code. This is helpful when debugging and reporting PM bugs, like
 	suspend support.
 
+config PM_ADVANCED_DEBUG
+	bool "Extra PM attributes in sysfs for low-level debugging/testing"
+	depends on PM_DEBUG
+	---help---
+	Add extra sysfs attributes allowing one to access some Power Management
+	fields of device objects from user space.  If you are not a kernel
+	developer interested in debugging/testing Power Management, say "no".
+
 config PM_VERBOSE
 	bool "Verbose Power Management debugging"
 	depends on PM_DEBUG
@@ -126,6 +134,10 @@ config HAS_WAKELOCK
 config HAS_EARLYSUSPEND
 	bool
 
+config CPU_PM
+	def_bool y
+	depends on SUSPEND || CPU_IDLE
+
 config WAKELOCK
 	bool "Wake lock"
 	depends on PM && RTC_CLASS
@@ -186,6 +198,9 @@ choice
 		  user-space through sysfs when user-space should stop drawing
 		  to the screen and notifies user-space when it should resume.
 endchoice
+
+config HIBERNATE_CALLBACKS
+	bool
 
 config HIBERNATION
 	bool "Hibernation (aka 'suspend to disk')"
@@ -276,6 +291,34 @@ config APM_EMULATION
 	  random kernel OOPSes or reboots that don't seem to be related to
 	  anything, try disabling/enabling this option (or disabling/enabling
 	  APM in your BIOS).
+
+config ARCH_HAS_OPP
+	bool
+
+config PM_OPP
+	bool "Operating Performance Point (OPP) Layer library"
+	depends on ARCH_HAS_OPP
+	---help---
+	  SOCs have a standard set of tuples consisting of frequency and
+	  voltage pairs that the device will support per voltage domain. This
+	  is called Operating Performance Point or OPP. The actual definitions
+	  of OPP varies over silicon within the same family of devices.
+
+	  OPP layer organizes the data internally using device pointers
+	  representing individual voltage domains and provides SOC
+	  implementations a ready to use framework to manage OPPs.
+	  For more information, read <file:Documentation/power/opp.txt>
+
+config PM_RUNTIME_CLK
+	def_bool y
+	depends on PM_RUNTIME && HAVE_CLK
+
+config SUSPEND_TIME
+	bool "Log time spent in suspend"
+	---help---
+	  Prints the time spent in suspend in the kernel log, and
+	  keeps statistics on the time spent in suspend in
+	  /sys/kernel/debug/suspend_time
 
 config PM_RUNTIME
 	bool "Run-time PM core functionality"
