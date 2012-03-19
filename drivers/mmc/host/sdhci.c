@@ -1594,8 +1594,10 @@ int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state)
 	sdhci_disable_card_detection(host);
 
 	ret = mmc_suspend_host(host->mmc, state);
-	if (ret)
+	if (ret) {
+		sdhci_enable_card_detection(host);
 		return ret;
+	}
 
 	free_irq(host->irq, host);
 
