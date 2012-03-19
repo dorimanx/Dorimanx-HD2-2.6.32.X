@@ -34,24 +34,24 @@ avs_test_delays:
 		isb
 
 /*      Read r3=FPEXC and or in FP enable, VFP/ASE enable = FPEXC[30]; */
-/*		fmrx r3, fpexc */
+		fmrx r3, fpexc
 		orr  r12, r3, #1, 2
-/*		fmxr fpexc, r12 */
+		fmxr fpexc, r12
 
 /*
  *      Do floating-point operations to prime the VFP pipeline.   Use
  *      fcpyd d0, d0 as a floating point nop.  This avoids changing VFP
  *      state.
-/*
+
 		fcpyd d0, d0
 		fcpyd d0, d0
 		fcpyd d0, d0
- */
+
 /*      Read r0=AVSCSR to get status from CPU, VFP, and L2 ring oscillators */
 		mrc p15, 7, r0, c15, c1, 7
 
 /*      Restore FPEXC */
-/*		fmxr fpexc, r3 */
+		fmxr fpexc, r3
 
 /*      Restore CPACR */
                 MCR p15, 0, r2, c1, c0, 2
