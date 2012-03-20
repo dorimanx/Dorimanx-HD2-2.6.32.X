@@ -193,7 +193,10 @@ static unsigned int cpufreq_interactive_calc_freq(unsigned int cpu)
 	idle_time = (unsigned int) current_idle_time - freq_change_time_in_idle;
 	delta_time = (unsigned int) current_wall_time - freq_change_time;
 
-	cpu_load = 100 * (delta_time - idle_time) / delta_time;
+	if (idle_time > delta_time)
+		cpu_load = 0;
+	else
+		cpu_load = 100 * (delta_time - idle_time) / delta_time;
 
 	newfreq = policy->cur * cpu_load / 100;	
 
