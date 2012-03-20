@@ -63,8 +63,8 @@ static unsigned int samples = 0;
 #define DEFAULT_MIN_SAMPLE_TIME 50000;
 static unsigned long min_sample_time;
 
-static unsigned int freq_threshold = 1800000;
-static unsigned int resume_speed = 1408000;
+static unsigned int freq_threshold = 1574400;
+static unsigned int resume_speed = 998400;
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event);
@@ -107,7 +107,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 		if (nr_running() < 1)
 			return;
 
-		// imoseyon - when over 1.8Ghz jump less
+		// imoseyon - when over 1.5Ghz jump less
 		if (policy->max > freq_threshold) {
 			if (samples > 0) {
 			  target_freq = policy->max;
