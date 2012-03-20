@@ -59,9 +59,12 @@
 
 static unsigned int min_sampling_rate;
 
-#define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
-#define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+#if defined(CONFIG_ARCH_MSM_SCORPION)
+#define TRANSITION_LATENCY_LIMIT 8000000
+#else
+#define TRANSITION_LATENCY_LIMIT 9000000
+#endif
 
 static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
@@ -1367,7 +1370,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			if (!dbs_tuners_ins.sampling_rate)
 				dbs_tuners_ins.sampling_rate =
 					max(min_sampling_rate,
-					    latency * LATENCY_MULTIPLIER);
+					    latency * CONFIG_LATENCY_MULTIPLIER);
 			dbs_tuners_ins.io_is_busy = should_io_be_busy();
 		}
 		if (!cpu)
