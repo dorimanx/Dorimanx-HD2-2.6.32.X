@@ -86,18 +86,18 @@ struct regulator {
 
 /* core sources */
 #define SRC_RAW		0 /* clock from SPSS_CLK_CNTL */
-#define SRC_SCPLL	1 /* output of scpll 96-1612 MHZ */
+#define SRC_SCPLL	1 /* output of scpll 384-1612 MHZ */
 #define SRC_AXI		2 /* 128 MHz */
 #define SRC_PLL1	3 /* 768 MHz */
 
 struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{  19200, CCTL(CLK_TCXO, 1),    	SRC_RAW, 0, 0, 925, 14000},
-	{  96000, CCTL(CLK_TCXO, 1),		SRC_AXI, 0, 0, 975, 14000 },
-	{ 128000, CCTL(CLK_TCXO, 1),		SRC_AXI, 0, 0, 975, 14000 },
-	{ 245000, CCTL(CLK_MODEM_PLL, 1),	SRC_RAW, 0, 0, 975, 29000 },
+	{  96000, CCTL(CLK_TCXO, 1),		SRC_AXI, 0, 0, 925, 14000 },
+	{ 128000, CCTL(CLK_TCXO, 1),		SRC_AXI, 0, 0, 925, 14000 },
+	{ 245000, CCTL(CLK_MODEM_PLL, 1),	SRC_RAW, 0, 0, 950, 29000 },
         /* Work arround for acpu resume hung, GPLL is turn off by arm9 */
         /*{ 256000, CCTL(CLK_GLOBAL_PLL, 3),    SRC_RAW, 0, 0, 1050, 29000 },*/
-        { 384000, CCTL(CLK_TCXO, 1),            SRC_SCPLL, 0x0A, 0, 975, 58000 },
+        { 384000, CCTL(CLK_TCXO, 1),            SRC_SCPLL, 0x0A, 0, 950, 58000 },
         { 422400, CCTL(CLK_TCXO, 1),            SRC_SCPLL, 0x0B, 0, 975, 117000 },
         { 460800, CCTL(CLK_TCXO, 1),            SRC_SCPLL, 0x0C, 0, 975, 117000 },
         { 499200, CCTL(CLK_TCXO, 1),            SRC_SCPLL, 0x0D, 0, 1000, 117000 },
@@ -117,27 +117,27 @@ struct clkctl_acpu_speed acpu_freq_tbl[] = {
 #ifdef  CONFIG_HTCLEO_OVERCLOCK
         { 1036800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1B, 0, 1300, 128000 },
         { 1075200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1C, 0, 1300, 128000 },
-        { 1113600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1152000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-        { 1190400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1F, 0, 1375, 128000 },
+        { 1113600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1152000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+        { 1190400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1F, 0, 1325, 128000 },
 #endif
 #ifdef CONFIG_HTCLEO_EXOVERCLOCK
         { 1036800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1B, 0, 1300, 128000 },
         { 1075200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1C, 0, 1300, 128000 },
-        { 1113600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1152000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1190400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1228800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1267200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1305600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1344000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1382400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1325, 128000 },
-        { 1420800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-        { 1459200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-        { 1497600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-        { 1536000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-	{ 1574400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1350, 128000 },
-        { 1612800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1F, 0, 1375, 128000 },
+        { 1113600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1152000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1190400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1228800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1267200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1305600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1344000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1382400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+        { 1420800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+        { 1459200, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+        { 1497600, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+        { 1536000, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+	{ 1574400, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1E, 0, 1300, 128000 },
+        { 1612800, CCTL(CLK_TCXO, 1),           SRC_SCPLL, 0x1F, 0, 1325, 128000 },
 #endif
 	{ 0 },
 };
@@ -278,8 +278,7 @@ static void scpll_set_freq(uint32_t lval)
 		dmb();
 
 		/* wait for frequency switch to finish */
-		while (readl(SCPLL_STATUS_ADDR) & 0x1)
-			;
+		while (readl(SCPLL_STATUS_ADDR) & 0x1);
 
 		/* completion bit is not reliable for SHOT switch */
 		udelay(15);
@@ -296,8 +295,7 @@ static void scpll_set_freq(uint32_t lval)
 	dmb();
 
 	/* wait for frequency switch to finish */
-	while (readl(SCPLL_STATUS_ADDR) & 0x1)
-		;
+	while (readl(SCPLL_STATUS_ADDR) & 0x1);
 }
 
 /* this is still a bit weird... */
@@ -464,7 +462,6 @@ int acpuclk_set_rate(unsigned long rate, enum setrate_reason reason)
 		}
 		mutex_unlock(&drv_state.lock);
 	}
-
 	return 0;
 }
 
