@@ -159,4 +159,3 @@ Use this to release an existing lock. This is useful if you wish to attach a
 different lock to the same handle. You do not need to call this under normal
 circumstances; when the handle is closed the reference to the lock is released.
 No data is passed from the user for this ioctl.
-
