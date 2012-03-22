@@ -35,12 +35,12 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_UP_THRESHOLD				(65)
-#define DEF_FREQUENCY_DOWN_THRESHOLD				(20)
+#define DEF_FREQUENCY_UP_THRESHOLD			(50)
+#define DEF_FREQUENCY_DOWN_THRESHOLD		(15)
 #define FREQ_STEP_DOWN 						(160000)
-#define FREQ_SLEEP_MAX 						(230400)
-#define FREQ_AWAKE_MIN 						(499200)
-#define FREQ_STEP_UP_SLEEP_PERCENT				(20)
+#define FREQ_SLEEP_MAX 						(320000)
+#define FREQ_AWAKE_MIN 						(480000)
+#define FREQ_STEP_UP_SLEEP_PERCENT 			(20)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -62,7 +62,7 @@ unsigned int suspended = 0;
 			(def_sampling_rate / MIN_SAMPLING_RATE_RATIO)
 #define MAX_SAMPLING_RATE			(500 * def_sampling_rate)
 #define DEF_SAMPLING_DOWN_FACTOR		(4)
-#define MAX_SAMPLING_DOWN_FACTOR		(11)
+#define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
 static void do_dbs_timer(struct work_struct *work);
@@ -647,7 +647,7 @@ static void __exit cpufreq_gov_dbs_exit(void)
 }
 
 
-MODULE_AUTHOR ("Emilio López <turl@tuxfamily.org>");
+MODULE_AUTHOR ("Emilio L.pez <turl@tuxfamily.org>");
 MODULE_DESCRIPTION ("'cpufreq_lagfree' - A dynamic cpufreq governor for "
 		"Low Latency Frequency Transition capable processors "
 		"optimised for use in a battery environment"
@@ -659,4 +659,5 @@ fs_initcall(cpufreq_gov_dbs_init);
 #else
 module_init(cpufreq_gov_dbs_init);
 #endif
-module_exit(cpufreq_gov_dbs_exit);
+module_exit(cpufreq_gov_dbs_exit); 
+

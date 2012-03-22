@@ -119,7 +119,7 @@ static void rcu_report_exp_done(void);
 /*
  * Return true if the CPU has not yet responded to the current grace period.
  */
-static int rcu_cpu_cur_gp(void)
+static int rcu_cpu_blocking_cur_gp(void)
 {
 	return rcu_preempt_ctrlblk.gpcpu != rcu_preempt_ctrlblk.gpnum;
 }
@@ -406,7 +406,7 @@ void rcu_preempt_note_context_switch(void)
 		 * cannot end.
 		 */
 		list_add(&t->rcu_node_entry, &rcu_preempt_ctrlblk.blkd_tasks);
-		if (rcu_cpu_cur_gp()) {
+		if (rcu_cpu_blocking_cur_gp()) {
 			rcu_preempt_ctrlblk.gp_tasks = &t->rcu_node_entry;
 		}
 	}
@@ -555,12 +555,16 @@ static void rcu_preempt_check_callbacks(void)
 {
 	struct task_struct *t = current;
 
-	if (!rcu_preempt_running_reader() && rcu_preempt_gp_in_progress())
+	if (rcu_preempt_gp_in_progress() &&
+		(!rcu_preempt_running_reader() ||
+	 	 !rcu_cpu_blocking_cur_gp()))
 		rcu_preempt_cpu_qs();
 	if (&rcu_preempt_ctrlblk.rcb.rcucblist !=
 	    rcu_preempt_ctrlblk.rcb.donetail)
-		invoke_rcu_kthread();	
-	if (rcu_preempt_gp_in_progress() && rcu_preempt_running_reader())
+		invoke_rcu_kthread();
+	if (rcu_preempt_gp_in_progress() &&
+		rcu_cpu_blocking_cur_gp() &&
+		rcu_preempt_running_reader())
 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_NEED_QS;
 }
 

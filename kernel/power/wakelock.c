@@ -213,7 +213,7 @@ static void expire_wake_lock(struct wake_lock *lock)
 }
 
 /* Caller must acquire the list_lock spinlock */
-void print_active_locks(int type)
+static void print_active_locks_locked(int type)
 {
 	struct wake_lock *lock;
 	bool print_expired = true;
@@ -233,6 +233,14 @@ void print_active_locks(int type)
 				print_expired = false;
 		}
 	}
+}
+
+void print_active_locks(int type)
+{
+	unsigned long irqflags;
+	spin_lock_irqsave(&list_lock, irqflags);
+	print_active_locks_locked(type);
+	spin_unlock_irqrestore(&list_lock, irqflags);
 }
 
 static long has_wake_lock_locked(int type)
@@ -393,7 +401,7 @@ static void expire_wake_locks(unsigned long data)
 		pr_info("expire_wake_locks: start\n");
 	spin_lock_irqsave(&list_lock, irqflags);
 	if (debug_mask & DEBUG_SUSPEND)
-		print_active_locks(WAKE_LOCK_SUSPEND);
+		print_active_locks_locked(WAKE_LOCK_SUSPEND);
 	has_lock = has_wake_lock_locked(WAKE_LOCK_SUSPEND);
 	if (debug_mask & DEBUG_EXPIRE)
 		pr_info("expire_wake_locks: done, has_lock %ld\n", has_lock);
@@ -599,7 +607,7 @@ void wake_unlock(struct wake_lock *lock)
 		}
 		if (lock == &main_wake_lock) {
 			if (debug_mask & DEBUG_SUSPEND)
-				print_active_locks(WAKE_LOCK_SUSPEND);
+				print_active_locks_locked(WAKE_LOCK_SUSPEND);
 #ifdef CONFIG_WAKELOCK_STAT
 			update_sleep_wait_stats_locked(0);
 #endif

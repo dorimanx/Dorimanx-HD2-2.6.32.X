@@ -83,7 +83,7 @@ static inline void wake_unlock(struct wake_lock *lock) {}
 
 static inline int wake_lock_active(struct wake_lock *lock) { return 0; }
 static inline long has_wake_lock(int type) { return 0; }
-void print_active_locks(int type) {}
+static void print_active_locks(int type) {}
 
 #endif
 

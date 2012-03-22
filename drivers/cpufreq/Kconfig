@@ -138,6 +138,13 @@ config CPU_FREQ_DEFAULT_GOV_SMARTASS2
         help
           Use the CPUFreq governor 'smartassV2' as default.
 
+config CPU_FREQ_DEFAULT_GOV_INTELLIDEMAND
+	bool "intellidemand"
+	select CPU_FREQ_GOV_INTELLIDEMAND
+	select CPU_FREQ_GOV_PERFORMANCE
+	help
+	  Intelligent OnDemand Govneror based on Samsung Patched OnDemand
+
 config CPU_FREQ_DEFAULT_GOV_HYPER
 	bool "hyper"
 	select CPU_FREQ_GOV_HYPER
@@ -388,6 +395,12 @@ config CPU_FREQ_GOV_SAVAGEDZEN
           'savagedzen' - test governor
  
           If in doubt, say N.
+
+config CPU_FREQ_GOV_INTELLIDEMAND
+        tristate "'intellidemand' cpufreq governor"
+        depends on CPU_FREQ
+        help
+          'intellidemand' - an intelligent ondemand governor
 
 config CPU_FREQ_MIN_TICKS
 	int "Ticks between governor polling interval."
