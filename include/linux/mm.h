@@ -881,7 +881,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
  * querying the cache size, so a fastpath for that case is appropriate.
  */
 struct shrinker {
-	int (*shrink)(int nr_to_scan, gfp_t gfp_mask);
+	int (*shrink)(struct shrinker *, int nr_to_scan, gfp_t gfp_mask);
 	int seeks;	/* seeks to recreate an obj */
 
 	/* These are for internal use */
