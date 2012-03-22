@@ -91,7 +91,7 @@ static struct notifier_block idle_notifier_block = {
 
 #define MIN_LATENCY_MULTIPLIER			(100)
 #if defined(CONFIG_ARCH_MSM_SCORPION)
-#define TRANSITION_LATENCY_LIMIT 8000000
+#define TRANSITION_LATENCY_LIMIT 6000000
 #else
 #define TRANSITION_LATENCY_LIMIT 9000000
 #endif
