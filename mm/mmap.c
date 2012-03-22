@@ -259,9 +259,9 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
 	 * to be arbitrarily shifted
 	 */
 	if (mm->start_brk > PAGE_ALIGN(mm->end_data))
-	min_brk = mm->start_brk;
+		min_brk = mm->start_brk;
 	else
-	min_brk = mm->end_data;
+		min_brk = mm->end_data;
 #else
 	min_brk = mm->start_brk;
 #endif
