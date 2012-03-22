@@ -154,7 +154,7 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long addr, pte_t pte)
 	page = pfn_to_page(pfn);
 	mapping = page_mapping(page);
 #ifndef CONFIG_SMP
-	if (test_and_clear_bit(PG_dcache_dirty, &page->flags))
+	if (!test_and_set_bit(PG_dcache_dirty, &page->flags))
 		__flush_dcache_page(mapping, page);
 #endif
 	if (mapping) {
