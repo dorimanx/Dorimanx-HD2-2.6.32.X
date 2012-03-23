@@ -1289,6 +1289,7 @@ static ssize_t show_USB_ID_status(struct device *dev,
 static DEVICE_ATTR(USB_ID_status, 0444,
         show_USB_ID_status, NULL);
 
+#ifdef CONFIG_USB_ACCESSORY_DETECT
 static ssize_t show_usb_car_kit_enable(struct device *dev,
                         struct device_attribute *attr,
                         char *buf)
@@ -1309,6 +1310,7 @@ static ssize_t show_usb_car_kit_enable(struct device *dev,
 
 static DEVICE_ATTR(usb_car_kit_enable, 0444,
         show_usb_car_kit_enable, NULL);/*for kar kit AP check if car kit enable*/
+#endif
 
 static ssize_t show_usb_phy_setting(struct device *dev,
                                 struct device_attribute *attr, char *buf)
