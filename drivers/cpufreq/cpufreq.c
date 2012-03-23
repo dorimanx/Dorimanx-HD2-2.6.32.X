@@ -1149,6 +1149,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	unsigned long flags;
 	unsigned int j;
 #ifdef CONFIG_HOTPLUG_CPU
+	struct cpufreq_policy *cp;
 	int sibling;
 #endif
 
@@ -1198,17 +1199,31 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 
 	/* Set governor before ->init, so that driver could check it */
 #ifdef CONFIG_HOTPLUG_CPU
-	for_each_online_cpu(sibling) {
-		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
-		if (cp && cp->governor &&
-		    (cpumask_test_cpu(cpu, cp->related_cpus))) {
-			policy->governor = cp->governor;
-			found = 1;
-			break;
-		}
-	}
+ 	for_each_online_cpu(sibling) {
+		cp = per_cpu(cpufreq_cpu_data, sibling);
+ 		if (cp && cp->governor &&
+ 		    (cpumask_test_cpu(cpu, cp->related_cpus))) {
+			dprintk("found sibling CPU, copying policy\n");
+ 			policy->governor = cp->governor;
+			policy->min = cp->min;
+			policy->max = cp->max;
+			policy->user_policy.min = cp->user_policy.min;
+			policy->user_policy.max = cp->user_policy.max;
+
+			/* update sibling's saved policy as well due to PowerCollapse */
+			/* faux123 */
+			strncpy(per_cpu(cpufreq_policy_save, sibling).gov, cp->governor->name,
+				CPUFREQ_NAME_LEN);
+			per_cpu(cpufreq_policy_save, sibling).min = cp->user_policy.min;
+			per_cpu(cpufreq_policy_save, sibling).max = cp->user_policy.min;
+
+ 			found = 1;
+ 			break;
+ 		}
+ 	}
 #endif
 	if (!found)
+		dprintk("failed to find sibling CPU, falling back to defaults\n");
 		policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
 	/* call driver. From then on the cpufreq must be able
 	 * to accept all calls to ->verify and ->setpolicy for this CPU
@@ -1221,6 +1236,24 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	policy->user_policy.min = CONFIG_MSM_CPU_FREQ_ONDEMAND_MIN;
 	policy->user_policy.max = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
 
+	if (found)
+	{
+
+		/* Calling the driver can overwrite policy frequencies again */
+		dprintk("Overriding policy max and min with sibling settings\n");
+		policy->user_policy.min = CONFIG_MSM_CPU_FREQ_ONDEMAND_MIN;
+		policy->user_policy.max = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
+
+#ifdef CONFIG_HOTPLUG_CPU
+		/* update sibling's saved policy as well due to PowerCollapse */
+		/* faux123 */
+		strncpy(per_cpu(cpufreq_policy_save, sibling).gov, cp->governor->name,
+				CPUFREQ_NAME_LEN);
+		per_cpu(cpufreq_policy_save, sibling).min = cp->user_policy.min;
+		per_cpu(cpufreq_policy_save, sibling).max = cp->user_policy.min;
+#endif
+	}
+	
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 				     CPUFREQ_START, policy);
 
