@@ -62,10 +62,6 @@
 #define DEFINE_EVENT_CONDITION(template, name, proto, args, cond) \
 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
 
-#undef DECLARE_TRACE
-#define DECLARE_TRACE(name, proto, args)	\
-	DEFINE_TRACE(name)
-
 #undef TRACE_INCLUDE
 #undef __TRACE_INCLUDE
 

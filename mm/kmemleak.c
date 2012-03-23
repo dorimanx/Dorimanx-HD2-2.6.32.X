@@ -931,10 +931,10 @@ void __ref kmemleak_scan_area(const void *ptr, unsigned long offset,
 {
 	pr_debug("%s(0x%p)\n", __func__, ptr);
 
-	if (atomic_read(&kmemleak_enabled) && ptr && size && !IS_ERR(ptr))
+	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
 		add_scan_area((unsigned long)ptr, offset, length, gfp);
 	else if (atomic_read(&kmemleak_early_log))
-		log_early(KMEMLEAK_SCAN_AREA, ptr, size, 0, offset, length);
+		log_early(KMEMLEAK_SCAN_AREA, ptr, 0, 0, offset, length);
 }
 EXPORT_SYMBOL(kmemleak_scan_area);
 

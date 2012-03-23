@@ -63,8 +63,15 @@ struct lockdep_map rcu_sched_lock_map =
 EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
 #endif
 
+#ifdef CONFIG_TREE_RCU
 int rcu_scheduler_active __read_mostly;
 EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+#endif
+
+#ifdef CONFIG_TREE_PREEMPT_RCU
+int rcu_scheduler_active __read_mostly;
+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+#endif
 
 /*
  * Awaken the corresponding synchronize_rcu() instance now that a

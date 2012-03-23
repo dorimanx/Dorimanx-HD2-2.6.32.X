@@ -43,7 +43,7 @@
 
 /* Tuned for MID performance and GOOD battery save */
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
-#define DEF_FREQUENCY_UP_THRESHOLD		(90)
+#define DEF_FREQUENCY_UP_THRESHOLD		(80)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
@@ -92,7 +92,7 @@ static struct notifier_block idle_notifier_block = {
 
 #define MIN_LATENCY_MULTIPLIER			(100)
 #if defined(CONFIG_ARCH_MSM_SCORPION)
-#define TRANSITION_LATENCY_LIMIT 8000000
+#define TRANSITION_LATENCY_LIMIT 10000000
 #else
 #define TRANSITION_LATENCY_LIMIT 9000000
 #endif
@@ -177,9 +177,9 @@ static struct dbs_tuners {
 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
 	.down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
 	.ignore_nice = 0,
-	.powersave_bias = 1,
+	.powersave_bias = 0,
 	.deep_sleep = 1,
-	.fast_start = 0,
+	.fast_start = 1,
 	.suspend_freq = DEF_SUSPEND_FREQ,
 };
 
