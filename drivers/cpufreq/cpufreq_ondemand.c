@@ -1153,11 +1153,11 @@ static void do_dbs_timer(struct work_struct *work)
 
 			if (!active_state)
 			{
-				/* set freq to 1.49GHz */
-				printk("LMF: CPU0 set max freq to 1.5GHz\n");
+				/* set freq to 1.0GHz */
+				printk("LMF: CPU0 set max freq to 1.0GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
-				printk("LMF: CPU1 set max freq to 1.49GHz\n");
+				printk("LMF: CPU1 set max freq to 1.0GHz\n");
 				if (cpu_online(NON_BOOT_CPU))
 					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				else

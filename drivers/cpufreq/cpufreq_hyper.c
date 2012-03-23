@@ -43,10 +43,10 @@
 /* Tuned for MAX performance and MID battery save */
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_SAMPLING_DOWN_FACTOR		(15)
-#define MAX_SAMPLING_DOWN_FACTOR		(100000)
+#define DEF_SAMPLING_DOWN_FACTOR		(5)
+#define MAX_SAMPLING_DOWN_FACTOR		(95000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(60)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(80)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(10)
 #define MAX_FREQUENCY_UP_THRESHOLD		(99)
@@ -943,8 +943,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 #ifdef _LIMIT_LCD_OFF_CPU_MAX_FREQ_
 		if(!cpufreq_gov_lcd_status) {
 			if (policy->cur < policy->max) {
-				if (policy->cur < 245000) dbs_freq_increase(policy, 1497600);
-				else if (policy->cur < 499200) dbs_freq_increase(policy, 1497600);
+				if (policy->cur < 245000) dbs_freq_increase(policy, 998000);
+				else if (policy->cur < 499200) dbs_freq_increase(policy, 998000);
 				else {
 					this_dbs_info->rate_mult = dbs_tuners_ins.sampling_down_factor;
 					dbs_freq_increase(policy, policy->max);
@@ -1037,9 +1037,9 @@ enum {
 #define MAX_ACTIVE_FREQ_LIMIT	65 // %
 #define MAX_INACTIVE_FREQ_LIMIT	45 // %
 #ifdef CONFIG_BOOST_L2_BANDWIDTH
-#define ACTIVE_MAX_FREQ			1497600 // 1.49GHz
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
 #else
-#define ACTIVE_MAX_FREQ			1497600 // 1.49GHz
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
 #endif
 #define INACTIVE_MAX_FREQ		998000	// 1.0GHZ
 
@@ -1150,11 +1150,11 @@ static void do_dbs_timer(struct work_struct *work)
 
 			if (!active_state)
 			{
-				/* set freq to 1.49GHz */
-				printk("LMF: CPU0 set max freq to 1.5GHz\n");
+				/* set freq to 1.0GHz */
+				printk("LMF: CPU0 set max freq to 1.0GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
-				printk("LMF: CPU1 set max freq to 1.49GHz\n");
+				printk("LMF: CPU1 set max freq to 1.0GHz\n");
 				if (cpu_online(NON_BOOT_CPU))
 					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				else
