@@ -62,7 +62,7 @@
 #include <mach/htc_headset_gpio.h>
 
 #include <mach/board-htcleo-microp.h>
-#include <mach/board-htcleo-ts.h>
+#include "board-htcleo-ts.h"
 
 #include "board-htcleo.h"
 #include "devices.h"

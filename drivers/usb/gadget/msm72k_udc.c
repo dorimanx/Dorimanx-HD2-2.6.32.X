@@ -100,9 +100,6 @@ static struct switch_dev dock_switch = {
 #include <linux/wakelock.h>
 #include <mach/perflock.h>
 
-static struct wake_lock vbus_idle_wake_lock;
-static struct perf_lock usb_perf_lock;
-
 struct msm_request {
         struct usb_request req;
 
@@ -1103,8 +1100,6 @@ static irqreturn_t usb_interrupt(int irq, void *data)
                 if (ui->connect_type != CONNECT_TYPE_USB) {
                         ui->connect_type = CONNECT_TYPE_USB;
                         queue_work(ui->usb_wq, &ui->notifier_work);
-                        ui->ac_detect_count = 0;
-                        del_timer_sync(&ui->ac_detect_timer);
                 }
         }
 
@@ -1489,12 +1484,13 @@ static void usb_prepare(struct usb_info *ui)
                 &dev_attr_usb_mfg_carkit_enable);
         if (ret != 0)
                 printk(KERN_WARNING "dev_attr_usb_mfg_carkit_enable failed\n");
-#endif
+
         ret = device_create_file(&ui->pdev->dev,
                 &dev_attr_usb_car_kit_enable);/*for kar kit AP check if car kit enable*/
         if (ret != 0)
                 printk(KERN_WARNING "dev_attr_usb_car_kit_enable failed\n");
 
+#endif
 }
 
 static int usb_wakeup_phy(struct usb_info *ui)
@@ -1706,10 +1702,8 @@ static void usb_do_work_check_vbus(struct usb_info *ui)
 static void usb_lpm_enter(struct usb_info *ui)
 {
         unsigned long iflags;
-
         if (ui->in_lpm)
                 return;
-
         printk(KERN_INFO "usb: lpm enter\n");
         spin_lock_irqsave(&ui->lock, iflags);
         usb_suspend_phy(ui);
@@ -1723,12 +1717,6 @@ static void usb_lpm_enter(struct usb_info *ui)
         ui->in_lpm = 1;
         spin_unlock_irqrestore(&ui->lock, iflags);
 
-        if (board_mfg_mode() == 1) {/*for MFG adb unstable in FROYO ROM*/
-                printk(KERN_INFO "usb: idle_wake_unlock and perf unlock\n");
-                wake_unlock(&vbus_idle_wake_lock);
-                if (is_perf_lock_active(&usb_perf_lock))
-                        perf_unlock(&usb_perf_lock);
-        }
 }
 
 static void usb_lpm_exit(struct usb_info *ui)
@@ -1740,7 +1728,7 @@ static void usb_lpm_exit(struct usb_info *ui)
 
         printk(KERN_INFO "usb: lpm exit\n");
         spin_lock_irqsave(&ui->lock, iflags);
-        clk_set_rate(ui->ebi1clk, acpuclk_get_max_axi_rate());
+	clk_set_rate(ui->ebi1clk, 128000000);
         udelay(10);
         if (ui->coreclk)
                 clk_enable(ui->coreclk);
@@ -1751,13 +1739,6 @@ static void usb_lpm_exit(struct usb_info *ui)
         usb_wakeup_phy(ui);
         ui->in_lpm = 0;
         spin_unlock_irqrestore(&ui->lock, iflags);
-
-        if (board_mfg_mode() == 1) {/*for MFG adb unstable in FROYO ROM*/
-                printk(KERN_INFO "usb: idle_wake_lock and perf lock\n");
-                wake_lock(&vbus_idle_wake_lock);
-                if (!is_perf_lock_active(&usb_perf_lock))
-                        perf_lock(&usb_perf_lock);
-        }
 }
 
 static void do_usb_hub_disable(struct work_struct *w)
@@ -2007,15 +1988,13 @@ static void charger_detect(struct usb_info *ui)
                 ui->connect_type = CONNECT_TYPE_UNKNOWN;
                 queue_delayed_work(ui->usb_wq, &ui->chg_work,
                         DELAY_FOR_CHECK_CHG);
-		mod_timer(&ui->ac_detect_timer, jiffies + (3 * HZ));
 	} else {
-                printk(KERN_INFO "usb: AC charger\n");
-                        ui->connect_type = CONNECT_TYPE_AC;
-                
-                queue_work(ui->usb_wq, &ui->notifier_work);
-                writel(0x00080000, USB_USBCMD);
-                msleep(10);
-                usb_lpm_enter(ui);
+		printk(KERN_INFO "usb: AC charger\n");
+		ui->connect_type = CONNECT_TYPE_AC;
+		queue_work(ui->usb_wq, &ui->notifier_work);
+		writel(0x00080000, USB_USBCMD);
+		msleep(10);
+		usb_lpm_enter(ui);
 	}
 }
 
@@ -2100,8 +2079,6 @@ static void usb_do_work(struct work_struct *w)
 
                                 /* power down phy, clock down usb */
                                 usb_lpm_enter(ui);
-                                ui->ac_detect_count = 0;
-                                del_timer_sync(&ui->ac_detect_timer);
 
                                 ui->state = USB_STATE_OFFLINE;
                                 usb_do_work_check_vbus(ui);
@@ -2128,7 +2105,6 @@ static void usb_do_work(struct work_struct *w)
                          */
                         if ((flags & USB_FLAG_VBUS_ONLINE) && _vbus) {
                                 pr_info("hsusb: OFFLINE -> ONLINE\n");
-
                                 usb_lpm_exit(ui);
                                 usb_reset(ui);
                                 charger_detect(ui);
@@ -2583,38 +2559,6 @@ static ssize_t usb_remote_wakeup(struct device *dev,
 }
 static DEVICE_ATTR(wakeup, S_IWUSR, 0, usb_remote_wakeup);
 
-static void ac_detect_expired(unsigned long _data)
-{
-        struct usb_info *ui = (struct usb_info *) _data;
-        u32 delay = 0;
-
-        printk(KERN_INFO "%s: count = %d, connect_type = 0x%04x\n", __func__,
-                        ui->ac_detect_count, ui->connect_type);
-
-        if (ui->connect_type == CONNECT_TYPE_USB || ui->ac_detect_count >= 3)
-                return;
-
-        /* detect shorted D+/D-, indicating AC power */
-        if ((readl(USB_PORTSC) & PORTSC_LS) != PORTSC_LS) {
-                ui->ac_detect_count++;
-                /* detect delay: 3 sec, 5 sec, 10 sec */
-                if (ui->ac_detect_count == 1)
-                        delay = 5 * HZ;
-                else if (ui->ac_detect_count == 2)
-                        delay = 10 * HZ;
-
-                mod_timer(&ui->ac_detect_timer, jiffies + delay);
-        } else {
-                printk(KERN_INFO "usb: AC charger\n");
-                        ui->connect_type = CONNECT_TYPE_AC;
-                
-                queue_work(ui->usb_wq, &ui->notifier_work);
-                writel(0x00080000, USB_USBCMD);
-                mdelay(10);
-                usb_lpm_enter(ui);
-        }
-}
-
 static int msm72k_probe(struct platform_device *pdev)
 {
         struct resource *res;
@@ -2636,6 +2580,7 @@ static int msm72k_probe(struct platform_device *pdev)
                 ui->phy_init_seq = pdata->phy_init_seq;
                 ui->usb_connected = pdata->usb_connected;
                 ui->usb_uart_switch = pdata->usb_uart_switch;
+
                 ui->serial_debug_gpios = pdata->serial_debug_gpios;
                 ui->usb_hub_enable = pdata->usb_hub_enable;
 
@@ -2742,16 +2687,10 @@ static int msm72k_probe(struct platform_device *pdev)
 
         if (board_mfg_mode() == 1) {
                 use_mfg_serialno = 1;
-                wake_lock_init(&vbus_idle_wake_lock, WAKE_LOCK_IDLE, "usb_idle_lock");
-                perf_lock_init(&usb_perf_lock, PERF_LOCK_HIGHEST, "usb");
         } else
                 use_mfg_serialno = 0;
         strncpy(mfg_df_serialno, "000000000000", strlen("000000000000"));
 
-        ui->ac_detect_count = 0;
-        ui->ac_detect_timer.data = (unsigned long) ui;
-        ui->ac_detect_timer.function = ac_detect_expired;
-        init_timer(&ui->ac_detect_timer);
         return 0;
 }
 

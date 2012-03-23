@@ -4,7 +4,7 @@ rm -f /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage
 rm -f  /home/root/kernel/dorimanx-tytyng/output_gb/boot/boot.img
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules/*
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/devs/*
-make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- zImage -j4
+make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- zImage -j8
 #make ARCH=arm CROSS_COMPILE=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi- zImage -j4
 if [ -f arch/arm/boot/zImage ]; then
 if [ ! -d /home/root/kernel/dorimanx-tytyng/output_gb ]; then
@@ -26,8 +26,8 @@ cp .config /home/root/kernel/dorimanx-tytyng/output_gb/devs/config
 cp .config arch/arm/configs/htcleo_defconfig
 cp arch/arm/configs/htcleo_defconfig /home/root/kernel/dorimanx-tytyng/output_gb/devs/htcleo_defconfig
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules/*
-make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- modules -j4
-make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- INSTALL_MOD_PATH=/home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules modules_install -j4
+make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- modules -j8
+make ARCH=arm CROSS_COMPILE=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi- INSTALL_MOD_PATH=/home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules modules_install -j8
 #make ARCH=arm CROSS_COMPILE=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi- modules
 #make ARCH=arm CROSS_COMPILE=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi- INSTALL_MOD_PATH=/home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules modules_install
 cd /home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules

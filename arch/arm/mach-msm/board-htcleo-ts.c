@@ -26,7 +26,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <asm/gpio.h>
-#include <mach/board-htcleo-ts.h>
+#include "board-htcleo-ts.h"
 #include "board-htcleo.h"
 #include "gpio_chip.h"
 #include "proc_comm.h"
