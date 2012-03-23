@@ -429,10 +429,7 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 	if (ret != 1)
 		return -EINVAL;
 
-	mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.sampling_rate = max(input, min_sampling_rate);
-	mutex_unlock(&dbs_mutex);
-
 	return count;
 }
 
@@ -446,10 +443,7 @@ static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
 	if (ret != 1)
 		return -EINVAL;
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.io_is_busy = !!input;
-        mutex_unlock(&dbs_mutex);
-
 	return count;
 }
 
@@ -463,9 +457,7 @@ static ssize_t store_fast_start(struct kobject *a, struct attribute *b,
 	if (ret != 1)
 		return -EINVAL;
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.fast_start = !!input;
-        mutex_unlock(&dbs_mutex);
 
 	return count;
 }
@@ -480,9 +472,7 @@ static ssize_t store_deep_sleep(struct kobject *a, struct attribute *b,
 	if (ret != 1)
 		return -EINVAL;
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.deep_sleep = !!input;
-        mutex_unlock(&dbs_mutex);
 
 	return count;
 }
@@ -499,10 +489,7 @@ static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
 		return -EINVAL;
 	}
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.up_threshold = input;
-        mutex_unlock(&dbs_mutex);
-
 	return count;
 }
 
@@ -518,9 +505,7 @@ static ssize_t store_down_differential(struct kobject *a, struct attribute *b,
 		return -EINVAL;
 	}
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.down_differential = input;
-        mutex_unlock(&dbs_mutex);
 
 	return count;
 }
@@ -534,8 +519,6 @@ static ssize_t store_sampling_down_factor(struct kobject *a,
 
 	if (ret != 1 || input > MAX_SAMPLING_DOWN_FACTOR || input < 1)
 		return -EINVAL;
-
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.sampling_down_factor = input;
 
 	/* Reset down sampling multiplier in case it was active */
@@ -544,7 +527,6 @@ static ssize_t store_sampling_down_factor(struct kobject *a,
 		dbs_info = &per_cpu(od_cpu_dbs_info, j);
 		dbs_info->rate_mult = 1;
 	}
-        mutex_unlock(&dbs_mutex);
 	return count;
 }
 
@@ -563,9 +545,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 	if (input > 1)
 		input = 1;
 
-	mutex_lock(&dbs_mutex);
 	if (input == dbs_tuners_ins.ignore_nice) { /* nothing to do */
-		mutex_unlock(&dbs_mutex);
 		return count;
 	}
 	dbs_tuners_ins.ignore_nice = input;
@@ -580,8 +560,6 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat.nice;
 
 	}
-	mutex_unlock(&dbs_mutex);
-
 	return count;
 }
 
@@ -616,7 +594,6 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 				(dbs_tuners_ins.powersave_bias ==
 				POWERSAVE_BIAS_MINLEVEL));
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.powersave_bias = input;
 	if (!bypass) {
 		if (reenable_timer) {
@@ -657,7 +634,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 			unlock_policy_rwsem_write(cpu);
 		}
 	}
-        mutex_unlock(&dbs_mutex);
+
 	return count;
 }
 
@@ -677,9 +654,7 @@ static ssize_t store_suspend_freq(struct kobject *a, struct attribute *b,
 	if (input < 100000)
 		input = 100000;
 
-        mutex_lock(&dbs_mutex);
 	dbs_tuners_ins.suspend_freq = input;
-        mutex_unlock(&dbs_mutex);
 
 	return count;
 }
@@ -1040,9 +1015,9 @@ enum {
 #define MAX_ACTIVE_FREQ_LIMIT	65 // %
 #define MAX_INACTIVE_FREQ_LIMIT	45 // %
 #ifdef CONFIG_BOOST_L2_BANDWIDTH
-#define ACTIVE_MAX_FREQ			998000 // 1.0GHz
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
 #else
-#define ACTIVE_MAX_FREQ			998000 // 1.0GHz
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
 #endif
 #define INACTIVE_MAX_FREQ		998000	// 1.0GHZ
 
@@ -1153,11 +1128,11 @@ static void do_dbs_timer(struct work_struct *work)
 
 			if (!active_state)
 			{
-				/* set freq to 1.0GHz */
-				printk("LMF: CPU0 set max freq to 1.0GHz\n");
+				/* set freq to 1.49GHz */
+				printk("LMF: CPU0 set max freq to 1.5GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
-				printk("LMF: CPU1 set max freq to 1.0GHz\n");
+				printk("LMF: CPU1 set max freq to 1.49GHz\n");
 				if (cpu_online(NON_BOOT_CPU))
 					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				else
@@ -1714,3 +1689,4 @@ fs_initcall(cpufreq_gov_dbs_init);
 module_init(cpufreq_gov_dbs_init);
 #endif
 module_exit(cpufreq_gov_dbs_exit);
+
