@@ -169,6 +169,51 @@ void device_pm_move_last(struct device *dev)
 	list_move_tail(&dev->power.entry, &dpm_list);
 }
 
+static ktime_t initcall_debug_start(struct device *dev)
+{
+	ktime_t calltime = ktime_set(0, 0);
+
+	if (initcall_debug) {
+		pr_info("calling  %s+ @ %i, parent: %s\n",
+			dev_name(dev), task_pid_nr(current),
+			dev->parent ? dev_name(dev->parent) : "none");
+		calltime = ktime_get();
+	}
+
+	return calltime;
+}
+
+static void initcall_debug_report(struct device *dev, ktime_t calltime,
+				  int error)
+{
+	ktime_t delta, rettime;
+
+	if (initcall_debug) {
+		rettime = ktime_get();
+		delta = ktime_sub(rettime, calltime);
+		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
+			error, (unsigned long long)ktime_to_ns(delta) >> 10);
+	}
+}
+
+static int dpm_run_callback(struct device *dev, int (*cb)(struct device *))
+{
+	ktime_t calltime;
+	int error;
+
+	if (!cb)
+		return 0;
+
+	calltime = initcall_debug_start(dev);
+
+	error = cb(dev);
+	suspend_report_result(cb, error);
+
+	initcall_debug_report(dev, calltime, error);
+
+	return error;
+}
+
 /**
  * pm_op - Execute the PM operation appropriate for given PM event.
  * @dev: Device to handle.
@@ -184,46 +229,26 @@ static int pm_op(struct device *dev,
 	switch (state.event) {
 #ifdef CONFIG_SUSPEND
 	case PM_EVENT_SUSPEND:
-		if (ops->suspend) {
-			pm_dev_trace(TRACE_DPM_SUSPEND, dev, state, "");
-			error = ops->suspend(dev);
-			suspend_report_result(ops->suspend, error);
-		}
+		error = dpm_run_callback(dev, ops->suspend);
 		break;
 	case PM_EVENT_RESUME:
-		if (ops->resume) {
-			pm_dev_trace(TRACE_DPM_RESUME, dev, state, "");
-			error = ops->resume(dev);
-			suspend_report_result(ops->resume, error);
-		}
+		error = dpm_run_callback(dev, ops->resume);
 		break;
 #endif /* CONFIG_SUSPEND */
 #ifdef CONFIG_HIBERNATION
 	case PM_EVENT_FREEZE:
 	case PM_EVENT_QUIESCE:
-		if (ops->freeze) {
-			error = ops->freeze(dev);
-			suspend_report_result(ops->freeze, error);
-		}
+		error = dpm_run_callback(dev, ops->freeze);
 		break;
 	case PM_EVENT_HIBERNATE:
-		if (ops->poweroff) {
-			error = ops->poweroff(dev);
-			suspend_report_result(ops->poweroff, error);
-		}
+		error = dpm_run_callback(dev, ops->poweroff);
 		break;
 	case PM_EVENT_THAW:
 	case PM_EVENT_RECOVER:
-		if (ops->thaw) {
-			error = ops->thaw(dev);
-			suspend_report_result(ops->thaw, error);
-		}
+		error = dpm_run_callback(dev, ops->thaw);
 		break;
 	case PM_EVENT_RESTORE:
-		if (ops->restore) {
-			error = ops->restore(dev);
-			suspend_report_result(ops->restore, error);
-		}
+		error = dpm_run_callback(dev, ops->restore);
 		break;
 #endif /* CONFIG_HIBERNATION */
 	default:
@@ -250,48 +275,26 @@ static int pm_noirq_op(struct device *dev,
 	switch (state.event) {
 #ifdef CONFIG_SUSPEND
 	case PM_EVENT_SUSPEND:
-		if (ops->suspend_noirq) {
-			pm_dev_trace(TRACE_DPM_SUSPEND_NOIRQ,
-				dev, state, "LATE ");
-			error = ops->suspend_noirq(dev);
-			suspend_report_result(ops->suspend_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->suspend_noirq);
 		break;
 	case PM_EVENT_RESUME:
-		if (ops->resume_noirq) {
-			pm_dev_trace(TRACE_DPM_RESUME_NOIRQ,
-				dev, state, "EARLY ");
-			error = ops->resume_noirq(dev);
-			suspend_report_result(ops->resume_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->resume_noirq);
 		break;
 #endif /* CONFIG_SUSPEND */
 #ifdef CONFIG_HIBERNATION
 	case PM_EVENT_FREEZE:
 	case PM_EVENT_QUIESCE:
-		if (ops->freeze_noirq) {
-			error = ops->freeze_noirq(dev);
-			suspend_report_result(ops->freeze_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->freeze_noirq);
 		break;
 	case PM_EVENT_HIBERNATE:
-		if (ops->poweroff_noirq) {
-			error = ops->poweroff_noirq(dev);
-			suspend_report_result(ops->poweroff_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->poweroff_noirq);
 		break;
 	case PM_EVENT_THAW:
 	case PM_EVENT_RECOVER:
-		if (ops->thaw_noirq) {
-			error = ops->thaw_noirq(dev);
-			suspend_report_result(ops->thaw_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->thaw_noirq);
 		break;
 	case PM_EVENT_RESTORE:
-		if (ops->restore_noirq) {
-			error = ops->restore_noirq(dev);
-			suspend_report_result(ops->restore_noirq, error);
-		}
+		error = dpm_run_callback(dev, ops->restore_noirq);
 		break;
 #endif /* CONFIG_HIBERNATION */
 	default:
@@ -424,7 +427,7 @@ static int device_resume(struct device *dev, pm_message_t state)
 		} else if (dev->bus->resume) {
 			pm_dev_dbg(dev, state, "legacy ");
 			pm_dev_trace(TRACE_DPM_RESUME, dev, state, "legacy ");
-			error = dev->bus->resume(dev);
+			error = dpm_run_callback(dev, dev->bus->resume);
 		}
 		if (error)
 			goto End;
@@ -447,7 +450,7 @@ static int device_resume(struct device *dev, pm_message_t state)
 			pm_dev_dbg(dev, state, "legacy class ");
 			pm_dev_trace(TRACE_DPM_RESUME,
 				dev, state, "legacy class ");
-			error = dev->class->resume(dev);
+			error = dpm_run_callback(dev, dev->class->resume);
 		}
 	}
  End:

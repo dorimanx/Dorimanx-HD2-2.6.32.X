@@ -15,6 +15,7 @@ static inline void pm_runtime_remove(struct device *dev) {}
 /*
  * main.c
  */
+extern int pm_async_enabled;
 
 extern struct list_head dpm_list;	/* The active device list */
 
