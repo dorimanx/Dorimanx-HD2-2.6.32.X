@@ -67,10 +67,10 @@ static int lowmem_minfree_size = 6;
 static size_t lowmem_minfile[6] = {
         3 * 512, /* 6MB */
         2 * 1024, /* 8MB */
-        3 * 1024, /* 12MB */
         4 * 1024, /* 16MB */
-        5 * 1024, /* 20MB */
-        6 * 1024, /* 25MB */
+        8 * 1024, /* 32MB */
+        12 * 1024, /* 45MB */
+        16 * 1024, /* 65MB */
 };
 static int lowmem_minfile_size = 6;
 

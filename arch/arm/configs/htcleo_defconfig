@@ -1,12 +1,7 @@
 #
 # Automatically generated make config: don't edit
-<<<<<<< HEAD
 # Linux kernel version: 2.6.32.58
-# Sat Mar 24 22:45:15 2012
-=======
-# Linux kernel version: 2.6.32.57
-# Fri Mar  9 21:13:15 2012
->>>>>>> parent of 196549a... [PATCH] introduce sys_membarrier(): process-wide memory barrier (v11)
+# Sun Mar 25 00:19:23 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -56,16 +51,14 @@ CONFIG_SWAP=y
 #
 # RCU Subsystem
 #
-CONFIG_TREE_RCU=y
+# CONFIG_TREE_RCU is not set
 # CONFIG_TREE_PREEMPT_RCU is not set
 # CONFIG_TINY_RCU is not set
-# CONFIG_TINY_PREEMPT_RCU is not set
-# CONFIG_PREEMPT_RCU is not set
+CONFIG_TINY_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
 # CONFIG_PREEMPT_COUNT_CPU is not set
-# CONFIG_RCU_TRACE is not set
-CONFIG_RCU_FANOUT=32
-# CONFIG_RCU_FANOUT_EXACT is not set
 # CONFIG_TREE_RCU_TRACE is not set
+# CONFIG_RCU_BOOST is not set
 CONFIG_IKCONFIG=y
 CONFIG_IKCONFIG_PROC=y
 CONFIG_LOG_BUF_SHIFT=17
@@ -403,7 +396,7 @@ CONFIG_PAGE_OFFSET=0xC0000000
 # CONFIG_PREEMPT_NONE is not set
 # CONFIG_PREEMPT_VOLUNTARY is not set
 CONFIG_PREEMPT=y
-CONFIG_HZ=500
+CONFIG_HZ=300
 # CONFIG_THUMB2_KERNEL is not set
 CONFIG_AEABI=y
 # CONFIG_OABI_COMPAT is not set
@@ -1900,7 +1893,6 @@ CONFIG_STACKTRACE=y
 # CONFIG_DEBUG_BUGVERBOSE is not set
 # CONFIG_DEBUG_MEMORY_INIT is not set
 CONFIG_FRAME_POINTER=y
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
 # CONFIG_LATENCYTOP is not set
 CONFIG_HAVE_FUNCTION_TRACER=y
 CONFIG_RING_BUFFER=y
