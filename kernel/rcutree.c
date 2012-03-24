@@ -350,9 +350,9 @@ void rcu_irq_exit(void)
 	WARN_ON_ONCE(rdtp->dynticks & 0x1);
 
 	/* If the interrupt queued a callback, get out of dyntick mode. */
-	if (__get_cpu_var(rcu_sched_data).nxtlist ||
+/*	if (__get_cpu_var(rcu_sched_data).nxtlist ||
 	    __get_cpu_var(rcu_bh_data).nxtlist)
-		set_need_resched();
+		set_need_resched(); */  //Remove set_need_resched from rcutree.c (Thanks to drod2169)
 }
 
 #ifdef CONFIG_SMP

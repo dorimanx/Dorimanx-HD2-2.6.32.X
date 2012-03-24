@@ -2038,12 +2038,12 @@ bad_swap_2:
 	spin_unlock(&swap_lock);
 	vfree(swap_map);
 	if (swap_file) {
-	  if (did_down) {
-	    mutex_unlock(&inode->i_mutex);
-	    did_down = 0;
+	  	if (did_down) {
+	    		mutex_unlock(&inode->i_mutex);
+	    		did_down = 0;
 
-	   }
-	   filp_close(swap_file, NULL);
+	   	}
+	   	filp_close(swap_file, NULL);
 	}
 out:
 	if (page && !IS_ERR(page)) {

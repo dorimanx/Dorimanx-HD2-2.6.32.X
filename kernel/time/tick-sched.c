@@ -166,8 +166,8 @@ update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_upda
                 ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
                 if (nr_iowait_cpu(cpu) > 0)
                         ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-		else
-		  ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+	else
+		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
                 ts->idle_entrytime = now;
         }
 

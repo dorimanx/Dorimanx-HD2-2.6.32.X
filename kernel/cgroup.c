@@ -1593,7 +1593,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 	/* Update the css_set linked lists if we're using them */
 	write_lock(&css_set_lock);
 	if (!list_empty(&tsk->cg_list))
-	  list_move(&tsk->cg_list, &newcg->tasks);
+	  	list_move(&tsk->cg_list, &newcg->tasks);
 	write_unlock(&css_set_lock);
 
 	for_each_subsys(root, ss) {
@@ -3157,7 +3157,7 @@ again:
 
 	cgroup_lock_hierarchy(cgrp->root);
 	/* delete this cgroup from parent->children */
-	list_del_init(&cgrp->sibling);
+		list_del_init(&cgrp->sibling);
 	cgroup_unlock_hierarchy(cgrp->root);
 
 	spin_lock(&cgrp->dentry->d_lock);

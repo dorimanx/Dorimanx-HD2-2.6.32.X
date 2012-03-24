@@ -1898,9 +1898,9 @@ static void ext4_orphan_cleanup(struct super_block *sb,
 
 	/* Check if feature set would not allow a r/w mount */
 	if (!ext4_feature_set_ok(sb, 0)) {
-	  ext4_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
-	     "unknown ROCOMPAT features");
-	  return;
+	  	ext4_msg(sb, KERN_INFO, "Skipping orphan cleanup due to "
+	     		"unknown ROCOMPAT features");
+	  	return;
 
 	}
 

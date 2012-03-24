@@ -34,7 +34,6 @@ SECTIONS
 	.init : {			/* Init code and data		*/
 			INIT_TEXT
 		_einittext = .;
-		. = ALIGN(4);
 		__proc_info_begin = .;
 			*(.proc.info.init)
 		__proc_info_end = .;
