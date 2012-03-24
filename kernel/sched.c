@@ -71,13 +71,6 @@
 #include <linux/debugfs.h>
 #include <linux/ctype.h>
 #include <linux/ftrace.h>
-<<<<<<< HEAD
-#include <linux/membarrier.h>
-#include <linux/slab.h>
-#include <linux/init_task.h>
-#include <linux/kernel.h>
-=======
->>>>>>> parent of 196549a... [PATCH] introduce sys_membarrier(): process-wide memory barrier (v11)
 
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
