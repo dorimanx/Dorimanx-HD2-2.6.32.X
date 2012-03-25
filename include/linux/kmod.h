@@ -73,13 +73,16 @@ void call_usermodehelper_freeinfo(struct subprocess_info *info);
 static inline int
 call_usermodehelper(char *path, char **argv, char **envp, int wait)
 {
-	struct subprocess_info *info;
-	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+        struct subprocess_info *info;
+        gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
 
-	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
-	if (info == NULL)
-		return -ENOMEM;
-	return call_usermodehelper_exec(info, wait);
+        info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
+
+        if (info == NULL)
+                return -ENOMEM;
+
+        return call_usermodehelper_exec(info, wait);
+
 }
 
 static inline int
