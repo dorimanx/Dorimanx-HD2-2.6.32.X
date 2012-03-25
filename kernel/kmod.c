@@ -136,7 +136,7 @@ struct subprocess_info {
 	char *path;
 	char **argv;
 	char **envp;
-	enum umh_wait wait;
+	int wait;
 	int retval;
 	struct file *stdin;
 	void (*cleanup)(char **argv, char **envp);
@@ -193,7 +193,7 @@ static int ____call_usermodehelper(void *data)
 
 	/* Exec failed? */
 	sub_info->retval = retval;
-	do_exit(0);
+	return 0;	
 }
 
 void call_usermodehelper_freeinfo(struct subprocess_info *info)
@@ -268,11 +268,8 @@ static void __call_usermodehelper(struct work_struct *work)
 	struct subprocess_info *sub_info =
 		container_of(work, struct subprocess_info, work);
 
-	enum umh_wait wait = sub_info->wait;
+	int wait = sub_info->wait & ~UMH_KILLABLE;	
 	pid_t pid;
-
-	if (wait != UMH_NO_WAIT)
-		wait &= ~UMH_KILLABLE;
 
 	BUG_ON(atomic_read(&sub_info->cred->usage) != 1);
 
@@ -515,8 +512,7 @@ EXPORT_SYMBOL(call_usermodehelper_stdinpipe);
  * asynchronously if wait is not set, and runs as a child of keventd.
  * (ie. it runs with full root capabilities).
  */
-int call_usermodehelper_exec(struct subprocess_info *sub_info,
-			     enum umh_wait wait)
+int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
 {
 	DECLARE_COMPLETION_ONSTACK(done);
 	int retval = 0;
