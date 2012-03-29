@@ -948,6 +948,7 @@ static void handle_endpoint(struct usb_info *ui, unsigned bit)
 		}
 
 		/* clean speculative fetches on req->item->info */
+		dma_coherent_post_ops();
 		info = req->item->info;
 		/* if the transaction is still in-flight, stop here */
 		if (info & INFO_ACTIVE)
@@ -1040,6 +1041,9 @@ static void flush_endpoint_sw(struct msm_endpoint *ept)
 	/* put the queue head in a sane state */
 	ept->head->info = 0;
 	ept->head->next = TERMINATE;
+
+	/* flush buffers before priming ept */
+        dma_coherent_pre_ops();
 
 	/* cancel any pending requests */
 	spin_lock_irqsave(&ui->lock, flags);
@@ -2897,6 +2901,8 @@ static int msm72k_probe(struct platform_device *pdev)
 		ui->usb_uart_switch = pdata->usb_uart_switch;
 		ui->serial_debug_gpios = pdata->serial_debug_gpios;
 		ui->usb_hub_enable = pdata->usb_hub_enable;
+//		ui->china_ac_detect = pdata->china_ac_detect; // DISABLED
+		ui->disable_usb_charger = pdata->disable_usb_charger;
 		ui->change_phy_voltage = pdata->change_phy_voltage;
 		ui->ldo_init = pdata->ldo_init;
 		ui->ldo_enable = pdata->ldo_enable;
