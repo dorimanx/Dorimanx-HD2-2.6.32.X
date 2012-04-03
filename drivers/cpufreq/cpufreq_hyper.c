@@ -40,13 +40,14 @@
  * dbs is used in this file as a shortform for demandbased switching
  * It helps to keep variable names smaller, simpler
  */
+
 /* Tuned for MAX performance and MID battery save */
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_SAMPLING_DOWN_FACTOR		(5)
+#define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(95000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(80)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(60)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(10)
 #define MAX_FREQUENCY_UP_THRESHOLD		(99)
@@ -63,7 +64,7 @@
  * this governor will not work.
  * All times here are in uS.
  */
-#define MIN_SAMPLING_RATE_RATIO			(2)
+#define MIN_SAMPLING_RATE_RATIO			(1)
 
 static unsigned int min_sampling_rate;
 
@@ -212,6 +213,24 @@ static struct early_suspend hyper_power_suspend = {
         .suspend = hyper_early_suspend,
         .resume = hyper_late_resume,
         .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1,
+};
+
+//intellidemand mod
+static unsigned int cpufreq_gov_lcd_status=1;
+static void cpufreq_gov_suspend(struct early_suspend *h)
+{
+	cpufreq_gov_lcd_status = 0;
+}
+
+static void cpufreq_gov_resume(struct early_suspend *h)
+{
+	cpufreq_gov_lcd_status = 1;
+}
+
+static struct early_suspend cpufreq_gov_early_suspend = {
+         .suspend = cpufreq_gov_suspend,
+         .resume = cpufreq_gov_resume,
+         .level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1,
 };
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
@@ -769,6 +788,10 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
 	else if (p->cur == p->max)
 		return;
 
+	if (suspended && freq > dbs_tuners_ins.suspend_freq) {
+		freq = dbs_tuners_ins.suspend_freq;
+		__cpufreq_driver_target(p, freq, CPUFREQ_RELATION_H);
+	} else
 	__cpufreq_driver_target(p, freq, dbs_tuners_ins.powersave_bias ?
 			CPUFREQ_RELATION_L : CPUFREQ_RELATION_H);
 }
@@ -918,8 +941,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 #ifdef _LIMIT_LCD_OFF_CPU_MAX_FREQ_
 		if(!cpufreq_gov_lcd_status) {
 			if (policy->cur < policy->max) {
-				if (policy->cur < 245000) dbs_freq_increase(policy, 998000);
-				else if (policy->cur < 499200) dbs_freq_increase(policy, 998000);
+				if (policy->cur < 245000) dbs_freq_increase(policy, 998400);
+				else if (policy->cur < 499200) dbs_freq_increase(policy, 998400);
 				else {
 					this_dbs_info->rate_mult = dbs_tuners_ins.sampling_down_factor;
 					dbs_freq_increase(policy, policy->max);
@@ -1125,7 +1148,7 @@ static void do_dbs_timer(struct work_struct *work)
 
 			if (!active_state)
 			{
-				/* set freq to 1.00GHz */
+				/* set freq to 1.0GHz */
 				printk("LMF: CPU0 set max freq to 1.0GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
@@ -1416,7 +1439,6 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 	for_each_online_cpu(i) {
 		queue_work_on(i, input_wq, &per_cpu(dbs_refresh_work, i));
 	}
-
 }
 
 static int input_dev_filter(const char* input_dev_name)
@@ -1556,7 +1578,8 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					NULL,
 					dbs_tuners_ins.powersave_bias))
 			dbs_timer_init(this_dbs_info);
-		register_early_suspend(&hyper_power_suspend);
+                register_early_suspend(&cpufreq_gov_early_suspend);
+		              register_early_suspend(&hyper_power_suspend);
 		pr_info("[hyper] hyper active\n");
 		break;
 
@@ -1575,6 +1598,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		if (!dbs_enable)
 			sysfs_remove_group(cpufreq_global_kobject,
 					   &dbs_attr_group);
+                unregister_early_suspend(&cpufreq_gov_early_suspend);
 		unregister_early_suspend(&hyper_power_suspend);
 		pr_info("[hyper] hyper inactive\n");
 		break;
@@ -1598,23 +1622,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	return 0;
 }
 
-#ifdef _LIMIT_LCD_OFF_CPU_MAX_FREQ_
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void cpufreq_gov_suspend(struct early_suspend *h)
-{
-	cpufreq_gov_lcd_status = 0;
-
-	pr_info("%s : cpufreq_gov_lcd_status %d\n", __func__, cpufreq_gov_lcd_status);
-}
-
-static void cpufreq_gov_resume(struct early_suspend *h)
-{
-	cpufreq_gov_lcd_status = 1;
-
-	pr_info("%s : cpufreq_gov_lcd_status %d\n", __func__, cpufreq_gov_lcd_status);
-}
-#endif
-#endif
 static int __init cpufreq_gov_dbs_init(void)
 {
 	cputime64_t wall;
@@ -1638,7 +1645,7 @@ static int __init cpufreq_gov_dbs_init(void)
 	} else {
 		/* For correct statistics, we need 10 ticks for each measure */
 		min_sampling_rate =
-			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(8);
+			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(1);
 	}
 	input_wq = create_workqueue("iewq");
 	if (!input_wq) {
