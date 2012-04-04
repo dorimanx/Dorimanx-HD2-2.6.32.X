@@ -1635,6 +1635,11 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
 	if (unlikely(!node_match(c, node)))
 		goto another_slab;
 
+	/* must check again c->freelist in case of cpu migration or IRQ */
+	object = c->freelist;
+	if (object)
+		goto update_freelist;
+
 	stat(c, ALLOC_REFILL);
 
 load_freelist:
@@ -1644,6 +1649,7 @@ load_freelist:
 	if (unlikely(SLABDEBUG && PageSlubDebug(c->page)))
 		goto debug;
 
+update_freelist:
 	c->freelist = object[c->offset];
 	c->page->inuse = c->page->objects;
 	c->page->freelist = NULL;
@@ -1930,7 +1936,7 @@ static struct page *get_object_page(const void *x)
  * take the list_lock.
  */
 static int slub_min_order;
-static int slub_max_order = PAGE_ALLOC_COSTLY_ORDER;
+static int slub_max_order;
 static int slub_min_objects;
 
 /*
