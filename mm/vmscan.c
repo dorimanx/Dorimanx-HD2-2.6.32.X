@@ -2038,6 +2038,7 @@ loop_again:
 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
 		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
 		unsigned long lru_pages = 0;
+		int has_under_min_watermark_zone = 0;
 
 		/* The swap token gets in the way of swapout... */
 		if (!priority)
@@ -2067,7 +2068,7 @@ loop_again:
 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
 							&sc, priority, 0);
 
-			if (!zone_watermark_ok(zone, order,
+			if (!zone_watermark_ok_safe(zone, order,
 					high_wmark_pages(zone), 0, 0)) {
 				end_zone = i;
 				break;
@@ -2103,9 +2104,6 @@ loop_again:
 					priority != DEF_PRIORITY)
 				continue;
 
-			if (!zone_watermark_ok(zone, order,
-					high_wmark_pages(zone), end_zone, 0))
-				all_zones_ok = 0;
 			temp_priority[i] = priority;
 			sc.nr_scanned = 0;
 			note_zone_scanning_priority(zone, priority);
@@ -2122,7 +2120,7 @@ loop_again:
 			 * We put equal pressure on every zone, unless one
 			 * zone has way too many pages free already.
 			 */
-			if (!zone_watermark_ok(zone, order,
+			 if (!zone_watermark_ok_safe(zone, order,	
 					8*high_wmark_pages(zone), end_zone, 0))
 				shrink_zone(priority, zone, &sc);
 			reclaim_state->reclaimed_slab = 0;
@@ -2144,6 +2142,19 @@ loop_again:
 			if (total_scanned > SWAP_CLUSTER_MAX * 2 &&
 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
 				sc.may_writepage = 1;
+
+			if (!zone_watermark_ok_safe(zone, order,
+					high_wmark_pages(zone), end_zone, 0)) {
+				all_zones_ok = 0;
+			       /*
+				* We are still under min water mark. This
+				* means that we have a GFP_ATOMIC allocation
+				* failure risk. Hurry up!
+				*/
+				if (!zone_watermark_ok_safe(zone, order,
+						min_wmark_pages(zone), end_zone, 0))
+					has_under_min_watermark_zone = 1;
+			}
 		}
 		if (all_zones_ok)
 			break;		/* kswapd: all done */
@@ -2151,8 +2162,12 @@ loop_again:
 		 * OK, kswapd is getting into trouble.  Take a nap, then take
 		 * another pass across the zones.
 		 */
-		if (total_scanned && priority < DEF_PRIORITY - 2)
-			congestion_wait(BLK_RW_ASYNC, HZ/10);
+		if (total_scanned && (priority < DEF_PRIORITY - 2)) {
+			if (has_under_min_watermark_zone)
+				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+			else
+				congestion_wait(BLK_RW_ASYNC, HZ/10);
+		}
 
 		/*
 		 * We do this so kswapd doesn't build up large priorities for
@@ -2294,18 +2309,19 @@ void wakeup_kswapd(struct zone *zone, int order)
 	if (!populated_zone(zone))
 		return;
 
-	pgdat = zone->zone_pgdat;
-	if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
-		return;
-	if (pgdat->kswapd_max_order < order)
-		pgdat->kswapd_max_order = order;
 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
 		return;
+	pgdat = zone->zone_pgdat;
+	if (pgdat->kswapd_max_order < order)
+		pgdat->kswapd_max_order = order;
 	if (!waitqueue_active(&pgdat->kswapd_wait))
 		active = waitqueue_active(&pgdat->kswapd_wait);
 		set_kswapd_nice(pgdat->kswapd, active);
 	if (!active)
 		return;
+	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
+		return;
+
 	wake_up_interruptible(&pgdat->kswapd_wait);
 }
 

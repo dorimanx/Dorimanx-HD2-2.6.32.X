@@ -40,6 +40,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
 		PGSCAN_ZONE_RECLAIM_FAILED,
 #endif
 		PGINODESTEAL, SLABS_SCANNED, KSWAPD_STEAL, KSWAPD_INODESTEAL,
+		KSWAPD_SKIP_CONGESTION_WAIT,
 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
 #ifdef CONFIG_HUGETLB_PAGE
 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
@@ -250,6 +251,8 @@ extern void dec_zone_state(struct zone *, enum zone_stat_item);
 extern void __dec_zone_state(struct zone *, enum zone_stat_item);
 
 void refresh_cpu_vm_stats(int);
+void reduce_pgdat_percpu_threshold(pg_data_t *pgdat);
+void restore_pgdat_percpu_threshold(pg_data_t *pgdat);
 #else /* CONFIG_SMP */
 
 /*
@@ -293,6 +296,9 @@ static inline void __dec_zone_page_state(struct page *page,
 #define inc_zone_page_state __inc_zone_page_state
 #define dec_zone_page_state __dec_zone_page_state
 #define mod_zone_page_state __mod_zone_page_state
+
+static inline void reduce_pgdat_percpu_threshold(pg_data_t *pgdat) { }
+static inline void restore_pgdat_percpu_threshold(pg_data_t *pgdat) { }
 
 static inline void refresh_cpu_vm_stats(int cpu) { }
 #endif
