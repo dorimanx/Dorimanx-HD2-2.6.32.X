@@ -367,6 +367,7 @@ struct sk_buff {
 #endif
 
 	int			iif;
+	int			skb_iif;
 #ifdef CONFIG_NET_SCHED
 	__u16			tc_index;	/* traffic control index */
 #ifdef CONFIG_NET_CLS_ACT
