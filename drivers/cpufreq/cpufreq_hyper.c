@@ -43,16 +43,16 @@
 
 /* Tuned for MAX performance and MID battery save */
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
-#define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_SAMPLING_DOWN_FACTOR		(1)
-#define MAX_SAMPLING_DOWN_FACTOR		(95000)
-#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(60)
+#define DEF_FREQUENCY_UP_THRESHOLD		(70)
+#define DEF_SAMPLING_DOWN_FACTOR		(10)
+#define MAX_SAMPLING_DOWN_FACTOR		(10000)
+#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(2)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(70)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(10)
-#define MAX_FREQUENCY_UP_THRESHOLD		(99)
+#define MAX_FREQUENCY_UP_THRESHOLD		(100)
 #define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
-#define DEF_SUSPEND_FREQ			(384000)
+#define DEF_SUSPEND_FREQ			(245000)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -176,7 +176,7 @@ static struct dbs_tuners {
 	.ignore_nice = 0,
 	.powersave_bias = 0,
 	.deep_sleep = 1,
-	.fast_start = 0,
+	.fast_start = 1,
 	.suspend_freq = DEF_SUSPEND_FREQ,
 };
 
