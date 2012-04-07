@@ -162,23 +162,15 @@ ENTRY(v7_coherent_user_range)
 	dsb
  USER(	mcr	p15, 0, r0, c7, c5, 1  )	@ invalidate I line
 	add	r0, r0, r2
-2:
 	cmp	r0, r1
 	blo	1b
 	mov	r0, #0
 	mcr	p15, 0, r0, c7, c5, 6		@ invalidate BTB
-	dsb
+	dsb					@ Is a second data sync barrier really needed ?
 	isb
-	mov	pc, lr
-/*
- * Fault handling for the cache operation above. If the virtual address in r0
- * isn't mapped, just try the next page.
- */
-9001:
-        mov     r0, r0, lsr #12
-        mov     r0, r0, lsl #12
-        add     r0, r0, #4096
-        b       2b
+/* This patch was been introduced by zeusk shans95g@gmail.com */
+9001: 						@ tag defined, instead of looping through extra pages, it will return from the function.
+	mov	pc, lr				@ This statement returns the function by moving the return address from lr register to pc register (program counter)
 ENDPROC(v7_coherent_kern_range)
 ENDPROC(v7_coherent_user_range)
 

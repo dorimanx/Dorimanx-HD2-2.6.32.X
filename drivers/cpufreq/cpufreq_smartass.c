@@ -104,7 +104,7 @@ static unsigned int awake_min_freq;
 /*
  * Sampling rate, I highly recommend to leave it at 2.
  */
-#define DEFAULT_SAMPLE_RATE_JIFFIES 2
+#define DEFAULT_SAMPLE_RATE_JIFFIES 1
 static unsigned int sample_rate_jiffies;
 
 /*
@@ -123,13 +123,13 @@ static unsigned int max_ramp_down;
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 60
+#define DEFAULT_MAX_CPU_LOAD 70
 static unsigned long max_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 35
+#define DEFAULT_MIN_CPU_LOAD 20
 static unsigned long min_cpu_load;
 
 
@@ -142,7 +142,7 @@ static
 struct cpufreq_governor cpufreq_gov_smartass = {
         .name = "smartass",
         .governor = cpufreq_governor_smartass,
-        .max_transition_latency = 9000000,
+        .max_transition_latency = 8000000,
         .owner = THIS_MODULE,
 };
 
