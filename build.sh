@@ -1,4 +1,5 @@
 #!/bin/sh
+#This script made by Dorimanx and HIEROS.
 rm -f arch/arm/boot/zImage
 rm -f /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage
 rm -f  /home/root/kernel/dorimanx-tytyng/output_gb/boot/boot.img
