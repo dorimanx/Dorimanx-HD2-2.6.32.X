@@ -1403,6 +1403,8 @@ process_flags(struct event *event, struct print_arg *arg, char **tok)
 	arg->flags.field = field;
 
 	type = read_token_item(&token);
+	while (type == EVENT_OP)
+		type = process_op(event, field, &token);
 	if (event_item_type(type)) {
 		arg->flags.delim = token;
 		type = read_token_item(&token);
