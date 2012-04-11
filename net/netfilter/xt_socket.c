@@ -103,7 +103,7 @@ extract_icmp4_fields(const struct sk_buff *skb,
 }
 
 struct sock*
-xt_socket_get4_sk(const struct sk_buff *skb, const struct xt_action_param *par)
+xt_socket_get4_sk(const struct sk_buff *skb, struct xt_action_param *par)
 {
 	const struct iphdr *iph = ip_hdr(skb);
 	struct udphdr _hdr, *hp = NULL;
@@ -165,10 +165,10 @@ xt_socket_get4_sk(const struct sk_buff *skb, const struct xt_action_param *par)
 
 	return sk;
 }
-//EXPORT_SYMBOL(xt_socket_get4_sk);
+EXPORT_SYMBOL(xt_socket_get4_sk);
 
 static bool
-socket_match(const struct sk_buff *skb, const struct xt_action_param *par,
+socket_match(const struct sk_buff *skb, struct xt_action_param *par,
 	     const struct xt_socket_mtinfo1 *info)
 {
 	struct sock *sk;
@@ -200,13 +200,13 @@ socket_match(const struct sk_buff *skb, const struct xt_action_param *par,
 }
 
 static bool
-socket_mt4_v0(const struct sk_buff *skb, const struct xt_action_param *par)
+socket_mt4_v0(const struct sk_buff *skb, struct xt_action_param *par)
 {
 	return socket_match(skb, par, NULL);
 }
 
 static bool
-socket_mt4_v1(const struct sk_buff *skb, const struct xt_action_param *par)
+socket_mt4_v1(const struct sk_buff *skb, struct xt_action_param *par)
 {
 	return socket_match(skb, par, par->matchinfo);
 }
