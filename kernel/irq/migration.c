@@ -42,11 +42,15 @@ void move_masked_irq(int irq)
 	 * masking the irqs.
 	 */
 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
-		   < nr_cpu_ids))
-		if (!desc->chip->set_affinity(irq, desc->pending_mask)) {
+		   < nr_cpu_ids)) {
+		int ret = chip->irq_set_affinity(irq, desc->pending_mask);
+		switch (ret) {
+		case IRQ_SET_MASK_OK:
 			cpumask_copy(desc->affinity, desc->pending_mask);
+		case IRQ_SET_MASK_OK_NOCOPY:
 			irq_set_thread_affinity(desc);
 		}
+	}
 
 	cpumask_clear(desc->pending_mask);
 }
