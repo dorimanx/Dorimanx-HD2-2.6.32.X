@@ -27,14 +27,6 @@
 #include <linux/kernel_stat.h>
 
 #ifdef CONFIG_TREE_RCU
-void rcu_scheduler_starting(void)
-{
-        WARN_ON(num_online_cpus() != 1);
-        WARN_ON(nr_context_switches() > 0);
-        rcu_scheduler_active = 1;
-}
-extern void rcu_scheduler_starting(void);
-
 void synchronize_sched(void)
 {
         struct rcu_synchronize rcu;
