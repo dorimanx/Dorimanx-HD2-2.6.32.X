@@ -36,6 +36,7 @@ find -iname *.ko | xargs -i -t cp {} .
 rm -rf /home/root/kernel/dorimanx-tytyng/output_gb/system/lib/modules/lib
 stat /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage
 cd /home/root/kernel/dorimanx-tytyng/output_gb
+/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-strip --strip-debug system/lib/modules/*.ko
 zip -r Kernel_Dorimanx-V1.`date +"%H-%M-%d%m%y"`.zip .
 else
 echo "Kernel STUCK in BUILD! no zImage exist"
