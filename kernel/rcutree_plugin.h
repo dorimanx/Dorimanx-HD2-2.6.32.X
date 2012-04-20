@@ -24,26 +24,6 @@
  *	   Paul E. McKenney <paulmck@linux.vnet.ibm.com>
  */
 
-#include <linux/kernel_stat.h>
-
-#ifdef CONFIG_TREE_RCU
-void synchronize_sched(void)
-{
-        struct rcu_synchronize rcu;
- 
-        if (rcu_blocking_is_gp())
-                return;
- 
-        init_completion(&rcu.completion);
-        /* Will wake me after RCU finished. */
-        call_rcu_sched(&rcu.head, wakeme_after_rcu);
-        /* Wait for it. */
-        wait_for_completion(&rcu.completion);
-}
-EXPORT_SYMBOL_GPL(synchronize_sched);
-
-extern void synchronize_sched(void);
-#endif
 
 #ifdef CONFIG_TREE_PREEMPT_RCU
 

@@ -94,26 +94,12 @@ extern struct group_info init_groups;
 # define CAP_INIT_BSET  CAP_INIT_EFF_SET
 #endif
 
-#ifdef CONFIG_RCU_BOOST
-#define INIT_TASK_RCU_BOOST()            				\
-	.rcu_boost_mutex = NULL,
-#else
-#define INIT_TASK_RCU_BOOST()
-#endif
-
 #ifdef CONFIG_TREE_PREEMPT_RCU
-#define INIT_TASK_RCU_TREE_PREEMPT()          				\
-	.rcu_blocked_node = NULL,
-#else
-#define INIT_TASK_RCU_TREE_PREEMPT(tsk)
-#endif
-#ifdef CONFIG_PREEMPT_RCU
 #define INIT_TASK_RCU_PREEMPT(tsk)					\
 	.rcu_read_lock_nesting = 0,					\
 	.rcu_read_unlock_special = 0,					\
-	.rcu_node_entry = LIST_HEAD_INIT(tsk.rcu_node_entry),    	\
-	INIT_TASK_RCU_TREE_PREEMPT()          				\
-	INIT_TASK_RCU_BOOST()
+	.rcu_blocked_node = NULL,					\
+	.rcu_node_entry = LIST_HEAD_INIT(tsk.rcu_node_entry),
 #else
 #define INIT_TASK_RCU_PREEMPT(tsk)
 #endif
@@ -121,7 +107,7 @@ extern struct group_info init_groups;
 extern struct cred init_cred;
 
 #ifdef CONFIG_PERF_EVENTS
-# define INIT_PERF_EVENTS(tsk)						\
+# define INIT_PERF_EVENTS(tsk)					\
 	.perf_event_mutex = 						\
 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
@@ -129,13 +115,11 @@ extern struct cred init_cred;
 # define INIT_PERF_EVENTS(tsk)
 #endif
 
-#define TIMER_SLACK_NS_DEFAULT 50000
-
 /*
  *  INIT_TASK is used to set up the first task table, touch at
  * your own risk!. Base=0, limit=0x1fffff (=2MB)
  */
-#define INIT_TASK(tsk)							\
+#define INIT_TASK(tsk)	\
 {									\
 	.state		= 0,						\
 	.stack		= &init_thread_info,				\
@@ -186,7 +170,7 @@ extern struct cred init_cred;
 	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
 	.fs_excl	= ATOMIC_INIT(0),				\
 	.pi_lock	= __SPIN_LOCK_UNLOCKED(tsk.pi_lock),		\
-	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
+	.timer_slack_ns = 50000, /* 50 usec default slack */		\
 	.pids = {							\
 		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
 		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
@@ -215,4 +199,3 @@ extern struct cred init_cred;
 
 
 #endif
-
