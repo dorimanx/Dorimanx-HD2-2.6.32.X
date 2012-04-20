@@ -123,10 +123,13 @@ config HAVE_KERNEL_BZIP2
 config HAVE_KERNEL_LZMA
 	bool
 
+config HAVE_KERNEL_XZ
+        bool
+
 choice
 	prompt "Kernel compression mode"
 	default KERNEL_GZIP
-	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA
+	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_XZ || HAVE_KERNEL_LZMA 
 	help
 	  The linux kernel is a kind of self-extracting executable.
 	  Several compression algorithms are available, which differ
@@ -171,6 +174,21 @@ config KERNEL_LZMA
 	  Its ratio is best, decompression speed is between the other
 	  two. Compression is slowest.	The kernel size is about 33%
 	  smaller with LZMA in comparison to gzip.
+
+config KERNEL_XZ
+        bool "XZ"
+        depends on HAVE_KERNEL_XZ
+        help
+          XZ uses the LZMA2 algorithm and instruction set specific
+          BCJ filters which can improve compression ratio of executable
+          code. The size of the kernel is about 30% smaller with XZ in
+          comparison to gzip. On architectures for which there is a BCJ
+          filter (i386, x86_64, ARM, IA-64, PowerPC, and SPARC), XZ
+          will create a few percent smaller kernel than plain LZMA.
+
+          The speed is about the same as with LZMA: The decompression
+          speed of XZ is better than that of bzip2 but worse than gzip
+          and LZO. Compression is slow.
 
 endchoice
 
@@ -532,6 +550,16 @@ config CGROUP_FREEZER
           Provides a way to freeze and unfreeze all tasks in a
           cgroup.
 
+config CGROUP_TIMER_SLACK
+	tristate "Timer slack cgroup subsystem"
+	help
+	  Provides a way of tasks grouping by timer slack value.
+	  Introduces per cgroup timer slack value which will override
+	  the default timer slack value once a task is attached to a
+	  cgroup.
+	  It's useful in mobile devices where certain background apps
+	  are attached to a cgroup and combined wakeups are desired.
+
 config CGROUP_DEVICE
         bool "Device controller for cgroups"
         depends on CGROUPS && EXPERIMENTAL
@@ -609,15 +637,6 @@ config CGROUP_MEM_RES_CTLR_SWAP
           if boot option "noswapaccount" is set, swap will not be accounted.
           Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
           size is 4096bytes, 512k per 1Gbytes of swap.
-
-config CGROUP_SCHED
-        bool "Control groups"
-        help
-          This option allows you to create arbitrary task groups
-          using the "cgroup" pseudo filesystem and control
-          the cpu bandwidth allocated to each such task group.
-          Refer to Documentation/cgroups/cgroups.txt for more
-          information on "cgroup" pseudo filesystem.
 
 menuconfig CGROUP_SCHED
         bool "Group CPU scheduler"
