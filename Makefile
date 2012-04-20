@@ -328,8 +328,8 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL   =
-AFLAGS_KERNEL   =
+CFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning 
+AFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning
 CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 XX_A9           = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a
 XX_GRAPHITE     = -finline-functions -funswitch-loops -fpredictive-commoning \

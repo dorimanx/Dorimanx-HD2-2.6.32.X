@@ -997,7 +997,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 #endif
 
 	/* Check for frequency increase */
-	if (max_load_freq > up_threshold * policy->cur) {	
+	if (max_load_freq > dbs_tuners_ins.up_threshold * policy->cur) {	
 #ifdef _LIMIT_LCD_OFF_CPU_MAX_FREQ_
 		if(!cpufreq_gov_lcd_status) {
 			if (policy->cur < policy->max) {

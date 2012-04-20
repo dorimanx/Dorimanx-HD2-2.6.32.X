@@ -51,4 +51,3 @@ ENTRY(__aeabi_llsl)
 
 ENDPROC(__ashldi3)
 ENDPROC(__aeabi_llsl)
-
