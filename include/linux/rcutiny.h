@@ -49,7 +49,9 @@ extern void call_rcu_sched(struct rcu_head *head,
 
 #define rcu_init_sched()	do { } while (0)
 extern void __rcu_init(void);
+#ifndef CONFIG_TINY_RCU
 extern void synchronize_sched(void);
+#endif
 #ifdef CONFIG_TINY_RCU
 
 #define call_rcu    call_rcu_sched

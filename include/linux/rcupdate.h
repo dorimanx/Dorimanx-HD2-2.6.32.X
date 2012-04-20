@@ -57,14 +57,16 @@ extern void synchronize_rcu(void);
 #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
 #define synchronize_rcu synchronize_sched
 #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+#ifndef CONFIG_TINY_RCU
 extern void synchronize_sched(void);
+#endif
 extern void rcu_barrier_bh(void);
 extern void rcu_barrier_sched(void);
 extern void synchronize_sched_expedited(void);
 extern int sched_expedited_torture_stats(char *page);
 
 /* Internal to kernel */
-#ifndef CONFIG_TINY_RCU
+#ifdef CONFIG_TINY_RCU
 #else
 static inline int rcu_needs_cpu(int cpu) { return 0; }
 #endif
