@@ -325,11 +325,13 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
-AFLAGS_MODULE   =
-LDFLAGS_MODULE  =
-CFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning 
-AFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning
+
+MODFLAGS        = -DMODULE
+CFLAGS_MODULE   = $(MODFLAGS)
+AFLAGS_MODULE   = $(MODFLAGS)
+LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
+CFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone
+AFLAGS_KERNEL   = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone
 CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 XX_A9           = -marm -mtune=cortex-a9 -mfpu=neon -march=armv7-a
 XX_GRAPHITE     = -finline-functions -funswitch-loops -fpredictive-commoning \
@@ -351,12 +353,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
                    -fno-delete-null-pointer-checks \
                     $(XX_A9) $(XX_GRAPHITE) $(XX_MODULO)
-KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
-KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
 KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
@@ -537,7 +534,7 @@ endif
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O3
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
