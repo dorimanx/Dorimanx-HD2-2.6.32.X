@@ -175,7 +175,8 @@ static void wake_unlock_stat_locked(struct wake_lock *lock, int expired)
 static void update_sleep_wait_stats_locked(int done)
 {
 	struct wake_lock *lock;
-	ktime_t now, etime, elapsed, add;
+	ktime_t now, uninitialized_var(etime), elapsed, add;
+//	ktime_t now, etime, elapsed, add;
 	int expired;
 
 	now = ktime_get();
