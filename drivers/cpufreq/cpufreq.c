@@ -1122,6 +1122,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	if (cpu_is_offline(cpu))
 		return 0;
 
+	cpufreq_debug_disable_ratelimit();
 	pr_debug("adding CPU %u\n", cpu);
 
 #ifdef CONFIG_SMP
@@ -1130,6 +1131,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	policy = cpufreq_cpu_get(cpu);
 	if (unlikely(policy)) {
 		cpufreq_cpu_put(policy);
+		cpufreq_debug_enable_ratelimit();
 		return 0;
 	}
 #endif
@@ -1206,6 +1208,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 
 	kobject_uevent(&policy->kobj, KOBJ_ADD);
 	module_put(cpufreq_driver->owner);
+	cpufreq_debug_enable_ratelimit();
 	pr_debug("initialization complete\n");
 
 	return 0;
@@ -1230,9 +1233,9 @@ err_free_policy:
 nomem_out:
 	module_put(cpufreq_driver->owner);
 module_out:
+	cpufreq_debug_enable_ratelimit();
 	return ret;
 }
-
 
 /**
  * __cpufreq_remove_dev - remove a CPU device
@@ -1253,6 +1256,7 @@ static int __cpufreq_remove_dev(struct sys_device *sys_dev)
 	unsigned int j;
 #endif
 
+	cpufreq_debug_disable_ratelimit();
 	pr_debug("unregistering CPU %u\n", cpu);
 
 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
@@ -1260,6 +1264,7 @@ static int __cpufreq_remove_dev(struct sys_device *sys_dev)
 
 	if (!data) {
 		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+		cpufreq_debug_enable_ratelimit();
 		unlock_policy_rwsem_write(cpu);
 		return -EINVAL;
 	}
@@ -1276,6 +1281,7 @@ static int __cpufreq_remove_dev(struct sys_device *sys_dev)
 		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 		kobj = &sys_dev->kobj;
 		cpufreq_cpu_put(data);
+		cpufreq_debug_enable_ratelimit();
 		unlock_policy_rwsem_write(cpu);
 		sysfs_remove_link(kobj, "cpufreq");
 		return 0;
@@ -1345,6 +1351,8 @@ static int __cpufreq_remove_dev(struct sys_device *sys_dev)
 	if (cpufreq_driver->exit)
 		cpufreq_driver->exit(data);
 	unlock_policy_rwsem_write(cpu);
+
+	cpufreq_debug_enable_ratelimit();
 
 #ifdef CONFIG_HOTPLUG_CPU
 	/* when the CPU which is the parent of the kobj is hotplugged
@@ -1849,6 +1857,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 {
 	int ret = 0;
 
+	cpufreq_debug_disable_ratelimit();
 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", policy->cpu,
 		policy->min, policy->max);
 
@@ -1925,6 +1934,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 	}
 
 error_out:
+	cpufreq_debug_enable_ratelimit();
 	return ret;
 }
 
@@ -2078,6 +2088,7 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
 
 	register_hotcpu_notifier(&cpufreq_cpu_notifier);
 	pr_debug("driver %s up and running\n", driver_data->name);
+	cpufreq_debug_enable_ratelimit();
 
 	return 0;
 err_sysdev_unreg:
@@ -2104,7 +2115,9 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
 {
 	unsigned long flags;
 
+	cpufreq_debug_disable_ratelimit();
 	if (!cpufreq_driver || (driver != cpufreq_driver))
+		cpufreq_debug_enable_ratelimit();
 		return -EINVAL;
 
 	pr_debug("unregistering driver %s\n", driver->name);
