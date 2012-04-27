@@ -51,7 +51,7 @@ struct kgsl_file_private {
 
 static void kgsl_put_phys_file(struct file *file);
 
-#ifdef CONFIG_MSM_KGSL_MMU
+#ifdef CONFIG_GPU_MSM_KGSL_MMU
 static long flush_l1_cache_range(unsigned long addr, int size)
 {
 	struct page *page;
@@ -634,7 +634,7 @@ done:
 	return result;
 }
 
-#ifdef CONFIG_MSM_KGSL_MMU
+#ifdef CONFIG_GPU_MSM_KGSL_MMU
 static int kgsl_ioctl_sharedmem_from_vmalloc(struct kgsl_file_private *private,
 					     void __user *arg)
 {
@@ -880,7 +880,7 @@ error:
 	return result;
 }
 
-#ifdef CONFIG_MSM_KGSL_MMU
+#ifdef CONFIG_GPU_MSM_KGSL_MMU
 /*This function flushes a graphics memory allocation from CPU cache
  *when caching is enabled with MMU*/
 static int kgsl_ioctl_sharedmem_flush_cache(struct kgsl_file_private *private,

@@ -124,7 +124,7 @@ int kgsl_mmu_destroypagetableobject(struct kgsl_pagetable *pagetable);
 int kgsl_mmu_setstate(struct kgsl_device *device,
 			struct kgsl_pagetable *pagetable);
 
-#ifdef CONFIG_MSM_KGSL_MMU
+#ifdef CONFIG_GPU_MSM_KGSL_MMU
 int kgsl_mmu_map(struct kgsl_pagetable *pagetable,
 		 unsigned int address,
 		 int range,

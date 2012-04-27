@@ -319,7 +319,7 @@ int kgsl_mmu_init(struct kgsl_device *device)
 
 	mmu->device = device;
 
-#ifndef CONFIG_MSM_KGSL_MMU
+#ifndef CONFIG_GPU_MSM_KGSL_MMU
 	mmu->config = 0x00000000;
 #endif
 
@@ -425,7 +425,7 @@ int kgsl_mmu_init(struct kgsl_device *device)
 	return 0;
 }
 
-#ifdef CONFIG_MSM_KGSL_MMU
+#ifdef CONFIG_GPU_MSM_KGSL_MMU
 pte_t *kgsl_get_pte_from_vaddr(unsigned int vaddr)
 {
 	pgd_t *pgd_ptr = NULL;
