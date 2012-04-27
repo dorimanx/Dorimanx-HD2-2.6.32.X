@@ -92,7 +92,7 @@ static struct notifier_block idle_notifier_block = {
 
 #define MIN_LATENCY_MULTIPLIER			(100)
 #if defined(CONFIG_ARCH_MSM_SCORPION)
-#define TRANSITION_LATENCY_LIMIT (9500000)
+#define TRANSITION_LATENCY_LIMIT (8000000)
 #else
 #define TRANSITION_LATENCY_LIMIT (10000000)
 #endif
@@ -158,7 +158,6 @@ static DEFINE_MUTEX(dbs_mutex);
 static struct workqueue_struct *input_wq;
 
 static DEFINE_PER_CPU(struct work_struct, dbs_refresh_work);
-
 static struct dbs_tuners {
 	unsigned int sampling_rate;
 	unsigned int up_threshold;
@@ -1017,8 +1016,12 @@ enum {
 #define INACTIVE_DURATION_MSEC	(2*60*1000) // 2 mins
 #define MAX_ACTIVE_FREQ_LIMIT	65 // %
 #define MAX_INACTIVE_FREQ_LIMIT	45 // %
-#define ACTIVE_MAX_FREQ		1382400 // 1.38GHz
-#define INACTIVE_MAX_FREQ	998000 // 1.0GHZ
+#ifdef CONFIG_BOOST_L2_BANDWIDTH
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
+#else
+#define ACTIVE_MAX_FREQ			998000 // 1.00GHz
+#endif
+#define INACTIVE_MAX_FREQ		998000	// 1.0GHZ
 
 #define NUM_ACTIVE_LOAD_ARRAY	(ACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
 #define NUM_INACTIVE_LOAD_ARRAY	(INACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
@@ -1127,11 +1130,11 @@ static void do_dbs_timer(struct work_struct *work)
 
 			if (!active_state)
 			{
-				/* set freq to 1.38GHz */
-				printk("LMF: CPU0 set max freq to 1.38GHz\n");
+				/* set freq to 1.0GHz */
+				printk("LMF: CPU0 set max freq to 1.0GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
-				printk("LMF: CPU1 set max freq to 1.38GHz\n");
+				printk("LMF: CPU1 set max freq to 1.0GHz\n");
 				if (cpu_online(NON_BOOT_CPU))
 					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				else
@@ -1277,11 +1280,11 @@ static void do_dbs_timer(struct work_struct *work)
 								load_limit_index = 0;
 								active_state = true;
 
-								/* set freq to 1.38GHz */
-								printk("LMF: CPU0 set max freq to 1.38GHz\n");
+								/* set freq to 1.49GHz */
+								printk("LMF: CPU0 set max freq to 1.49GHz\n");
 								cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 								
-								printk("LMF: CPU1 set max freq to 1.38GHz\n");
+								printk("LMF: CPU1 set max freq to 1.49GHz\n");
 								if (cpu_online(NON_BOOT_CPU))
 									cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 								else
@@ -1632,3 +1635,4 @@ fs_initcall(cpufreq_gov_dbs_init);
 module_init(cpufreq_gov_dbs_init);
 #endif
 module_exit(cpufreq_gov_dbs_exit);
+
