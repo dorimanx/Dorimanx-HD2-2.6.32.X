@@ -1,3 +1,5 @@
 font.c
 piggy.gz
 vmlinux.lds
+ashldi3.S
+lib1funcs.S
