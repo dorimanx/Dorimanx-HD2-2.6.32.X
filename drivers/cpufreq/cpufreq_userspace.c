@@ -158,7 +158,7 @@ static int cpufreq_governor_userspace(struct cpufreq_policy *policy,
 		break;
 	case CPUFREQ_GOV_LIMITS:
 		mutex_lock(&userspace_mutex);
-		pr_debug("limit event for cpu %u: %u - %u kHz, "
+		pr_debug("limit event for cpu %u: %u - %u kHz, "	
 			"currently %u kHz, last set to %u kHz\n",
 			cpu, policy->min, policy->max,
 			per_cpu(cpu_cur_freq, cpu),

@@ -27,7 +27,7 @@
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include <linux/kernel.h>
+#include <linux/printk.h>
 
 #include <asm/cputime.h>
 
@@ -64,7 +64,7 @@ static struct mutex set_speed_lock;
 static u64 hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 85
+#define DEFAULT_GO_HISPEED_LOAD 95
 static unsigned long go_hispeed_load;
 
 /*
@@ -88,11 +88,7 @@ static
 struct cpufreq_governor cpufreq_gov_interactive = {
 	.name = "interactive",
 	.governor = cpufreq_governor_interactive,
-#if defined(CONFIG_ARCH_MSM_SCORPION)
-        .max_transition_latency = 9500000,
-#else
-	.max_transition_latency = 10000000,
-#endif
+	.max_transition_latency = 8000000,
 	.owner = THIS_MODULE,
 };
 
@@ -354,7 +350,6 @@ static int cpufreq_interactive_up_task(void *data)
 		}
 
 		set_current_state(TASK_RUNNING);
-
 		tmp_mask = up_cpumask;
 		cpumask_clear(&up_cpumask);
 		spin_unlock_irqrestore(&up_cpumask_lock, flags);
@@ -364,7 +359,6 @@ static int cpufreq_interactive_up_task(void *data)
 			unsigned int max_freq = 0;
 
 			pcpu = &per_cpu(cpuinfo, cpu);
-
 			smp_rmb();
 
 			if (!pcpu->governor_enabled)
@@ -541,6 +535,9 @@ static struct attribute_group interactive_attr_group = {
 	.name = "interactive",
 };
 
+void start_interactive(void);
+void stop_interactive(void);
+
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event)
 {
@@ -579,6 +576,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		if (atomic_inc_return(&active_count) > 1)
 			return 0;
 
+		start_interactive();
 		rc = sysfs_create_group(cpufreq_global_kobject,
 				&interactive_attr_group);
 		if (rc)
@@ -608,7 +606,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 		sysfs_remove_group(cpufreq_global_kobject,
 				&interactive_attr_group);
-
+		stop_interactive();
 		break;
 
 	case CPUFREQ_GOV_LIMITS:
@@ -643,11 +641,30 @@ static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
 
+void start_interactive(void)
+{
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+
+	up_task = kthread_create(cpufreq_interactive_up_task, NULL,
+				 "kinteractiveup");
+
+	sched_setscheduler_nocheck(up_task, SCHED_FIFO, &param);
+	get_task_struct(up_task);
+
+	idle_notifier_register(&cpufreq_interactive_idle_nb);
+}
+
+void stop_interactive(void)
+{
+	kthread_stop(up_task);
+	put_task_struct(up_task);
+	idle_notifier_unregister(&cpufreq_interactive_idle_nb);
+}
+
 static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
 	struct cpufreq_interactive_cpuinfo *pcpu;
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 	min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
@@ -661,17 +678,9 @@ static int __init cpufreq_interactive_init(void)
 		pcpu->cpu_timer.data = i;
 	}
 
-	up_task = kthread_create(cpufreq_interactive_up_task, NULL,
-				 "kinteractiveup");
-	if (IS_ERR(up_task))
-		return PTR_ERR(up_task);
-
-	sched_setscheduler_nocheck(up_task, SCHED_FIFO, &param);
-	get_task_struct(up_task);
-
 	/* No rescuer thread, bind to CPU queuing the work for possibly
 	   warm cache (probably doesn't matter much). */
-	down_wq = create_workqueue("knteractive_down");
+	down_wq = create_workqueue("knteractive_down");	
 
 	if (!down_wq)
 		goto err_freeuptask;
@@ -682,8 +691,6 @@ static int __init cpufreq_interactive_init(void)
 	spin_lock_init(&up_cpumask_lock);
 	spin_lock_init(&down_cpumask_lock);
 	mutex_init(&set_speed_lock);
-
-	idle_notifier_register(&cpufreq_interactive_idle_nb);
 
 	return cpufreq_register_governor(&cpufreq_gov_interactive);
 
@@ -712,3 +719,4 @@ MODULE_AUTHOR("Mike Chan <mike@android.com>");
 MODULE_DESCRIPTION("'cpufreq_interactive' - A cpufreq governor for "
 	"Latency sensitive workloads");
 MODULE_LICENSE("GPL");
+
