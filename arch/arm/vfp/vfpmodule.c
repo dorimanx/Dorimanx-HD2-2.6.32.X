@@ -392,7 +392,7 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
 	}
 
 	/* clear any information we had about last context state */
-	memset(last_VFP_context, 0, sizeof(last_VFP_context));
+	vfp_current_hw_state[ti->cpu] = NULL;	
 
 	return 0;
 }
