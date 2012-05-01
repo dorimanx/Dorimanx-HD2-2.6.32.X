@@ -13,9 +13,9 @@ rm -rf /home/root/kernel/dorimanx-ics/output_gb/devs/*
 make ARCH=arm CROSS_COMPILE=$COMPILER zImage -j8
 if [ -f arch/arm/boot/zImage ]; then
 if [ ! -d /home/root/kernel/dorimanx-dorimanx-ics/output_gb ]; then
-mkdir -p /home/root/kernel/dorimanx-ics/
-mkdir /home/root/kernel/dorimanx-ics/output_gb/
-mkdir /home/root/kernel/dorimanx-ics/output_gb/boot/
+mkdir -p /home/root/kernel/dorimanx-ics
+mkdir /home/root/kernel/dorimanx-ics/output_gb
+mkdir /home/root/kernel/dorimanx-ics/output_gb/boot
 mkdir /home/root/kernel/dorimanx-ics/output_gb/devs
 mkdir /home/root/kernel/dorimanx-ics/backup
 mkdir -p /home/root/kernel/dorimanx-ics/system/lib/modules
