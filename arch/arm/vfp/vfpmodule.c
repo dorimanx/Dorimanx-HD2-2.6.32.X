@@ -38,6 +38,30 @@ union vfp_state *last_VFP_context[NR_CPUS];
  */
 unsigned int VFP_arch;
 
+/*
+ * The pointer to the vfpstate structure of the thread which currently
+ * owns the context held in the VFP hardware, or NULL if the hardware
+ * context is invalid.
+ *
+ * For UP, this is sufficient to tell which thread owns the VFP context.
+ * However, for SMP, we also need to check the CPU number stored in the
+ * saved state too to catch migrations.
+ */
+ union vfp_state *vfp_current_hw_state[NR_CPUS];
+
+/*
+ * Is 'thread's most up to date state stored in this CPUs hardware?
+ * Must be called from non-preemptible context.
+ */
+static bool vfp_state_in_hw(unsigned int cpu, struct thread_info *thread)
+{
+#ifdef CONFIG_SMP
+        if (thread->vfpstate.hard.cpu != cpu)
+                return false;
+#endif
+        return vfp_current_hw_state[cpu] == &thread->vfpstate;
+}
+
 static int vfp_notifier(struct notifier_block *self, unsigned long cmd, void *v)
 {
 	struct thread_info *thread = v;
@@ -428,6 +452,28 @@ static void vfp_pm_init(void)
 #else
 static inline void vfp_pm_init(void) { }
 #endif /* CONFIG_PM */
+
+/*
+ * Ensure that the VFP state stored in 'thread->vfpstate' is up to date
+ * with the hardware state.
+ */
+void vfp_sync_hwstate(struct thread_info *thread)
+{
+        unsigned int cpu = get_cpu();
+
+        if (vfp_state_in_hw(cpu, thread)) {
+                u32 fpexc = fmrx(FPEXC);
+
+                /*
+                 * Save the last VFP state on this CPU.
+                 */
+                fmxr(FPEXC, fpexc | FPEXC_EN);
+                vfp_save_state(&thread->vfpstate, fpexc | FPEXC_EN);
+                fmxr(FPEXC, fpexc);
+        }
+
+        put_cpu();
+}
 
 /*
  * Synchronise the hardware VFP state of a thread other than current with the
