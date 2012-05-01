@@ -57,6 +57,10 @@ struct mem_sleep_stat_attr {
 
 struct kobject *sleep_stat_kobj;
 
+static ssize_t show_mem_sleep_stat_attr(struct device *dev,
+						struct mem_sleep_stat_attr *attr,
+						char *buf);
+
 struct smem_negate_client {
 	uint32_t htc_negate_tcxo_client[16];
 	uint32_t tcxo_cnt_during_suspend;
@@ -65,6 +69,116 @@ struct smem_negate_client {
 };
 
 struct mutex mem_sleep_stat_lock;
+static struct smem_sleep_stat *sleep_stat;
+static struct smem_sleep_stat *get_smem_sleep_stat(void)
+{
+#if CONFIG_SMD_OFFSET_TCXO_STAT
+	return (struct smem_sleep_stat *)
+		(MSM_SHARED_RAM_BASE + CONFIG_SMD_OFFSET_TCXO_STAT);
+#else
+	return 0;
+#endif
+}
+
+static void print_sleep_stat(int flag)
+{
+	struct timespec ts;
+	struct rtc_time tm;
+	getnstimeofday(&ts);
+	rtc_time_to_tm(ts.tv_sec, &tm);
+
+	if (!sleep_stat)
+		return;
+
+	pr_info("sleep_stat.%d: %dms %d %dms %d - "
+		"%d %d %d - %d %d - %d %d %d %d %d"
+		"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n",
+		flag, sleep_stat->tcxo_time, sleep_stat->tcxo_cnt,
+		sleep_stat->suspend_tcxo_time, sleep_stat->suspend_tcxo_cnt,
+		sleep_stat->garbage_pkt_cnt, sleep_stat->zone_based_reg_cnt,
+		sleep_stat->idle_hand_off_cnt, sleep_stat->mo_2g_probe_cnt,
+		sleep_stat->mo_3g_probe_cnt, sleep_stat->garbage_cnt,
+		sleep_stat->cell_swt_cnt, sleep_stat->reserved[0],
+		sleep_stat->reserved[1], sleep_stat->reserved[2],
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+
+}
+
+static struct smem_negate_client *negate_client_stat;
+static struct smem_negate_client *get_smem_negate_client_stat(void)
+{
+#if CONFIG_SMD_OFFSET_NEGATE_CLIENT_STAT
+	return (struct smem_negate_client *)
+		(MSM_SHARED_RAM_BASE + CONFIG_SMD_OFFSET_NEGATE_CLIENT_STAT);
+#else
+	return 0;
+#endif
+}
+
+static void print_negate_client_stat(void)
+{
+	if (!negate_client_stat)
+		return;
+
+	pr_info("negate_client_stat: %d - %d %d %d %d - %d %d %d %d - %d %d %d %d - %d %d %d %d - %d %d\n",
+		negate_client_stat->tcxo_cnt_during_suspend,
+		negate_client_stat->htc_negate_tcxo_client[0],
+		negate_client_stat->htc_negate_tcxo_client[1],
+		negate_client_stat->htc_negate_tcxo_client[2],
+		negate_client_stat->htc_negate_tcxo_client[3],
+		negate_client_stat->htc_negate_tcxo_client[4],
+		negate_client_stat->htc_negate_tcxo_client[5],
+		negate_client_stat->htc_negate_tcxo_client[6],
+		negate_client_stat->htc_negate_tcxo_client[7],
+		negate_client_stat->htc_negate_tcxo_client[8],
+		negate_client_stat->htc_negate_tcxo_client[9],
+		negate_client_stat->htc_negate_tcxo_client[10],
+		negate_client_stat->htc_negate_tcxo_client[11],
+		negate_client_stat->htc_negate_tcxo_client[12],
+		negate_client_stat->htc_negate_tcxo_client[13],
+		negate_client_stat->htc_negate_tcxo_client[14],
+		negate_client_stat->htc_negate_tcxo_client[15],
+		negate_client_stat->htc_total_sleep_clients,
+		negate_client_stat->htc_insuff_time_count);
+}
+
+static int sleep_stat_suspend_notifier(struct notifier_block *nb,
+	unsigned long event, void *dummy)
+{
+	switch (event) {
+	/* enter suspend */
+	case PM_SUSPEND_PREPARE:
+		print_sleep_stat(F_SUSPEND);
+		return NOTIFY_OK;
+	/* exit suspend */
+	case PM_POST_SUSPEND:
+		print_sleep_stat(F_RESUME);
+		print_negate_client_stat();
+		return NOTIFY_OK;
+	default:
+		return NOTIFY_DONE;
+	}
+}
+
+static struct notifier_block sleep_stat_notif_block = {
+	.notifier_call = sleep_stat_suspend_notifier,
+};
+
+static void sleep_stat_early_suspend(struct early_suspend *handler)
+{
+	print_sleep_stat(F_SCREEN_OFF);
+}
+
+static void sleep_stat_late_resume(struct early_suspend *handler)
+{
+	print_sleep_stat(F_SCREEN_ON);
+}
+
+static struct early_suspend sleep_stat_screen_hdl = {
+	.suspend = sleep_stat_early_suspend,
+	.resume = sleep_stat_late_resume,
+};
 
 #if defined(CONFIG_DEBUG_FS)
 
