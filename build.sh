@@ -1,9 +1,16 @@
 #!/bin/sh
 #This script made by Dorimanx and HIEROS.
 
+#GCC 4.5.2
+#COMPILER=/android-kernel/ICS/toolchain/bin/arm-none-eabi-
+
+#GCC 4.4.3
 COMPILER=/media/Source-Code/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
-OLDCOMPILER=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-
-VERYOLDCOMPILER=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi-
+
+#GCC 4.4.5
+#OLDCOMPILER=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-
+
+#VERYOLDCOMPILER=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi-
 
 rm -f arch/arm/boot/zImage
 rm -f /home/root/kernel/dorimanx-ics/output_gb/boot/zImage
