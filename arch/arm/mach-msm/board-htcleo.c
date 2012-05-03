@@ -746,7 +746,7 @@ static struct platform_device qsd_device_spi = {
 ///////////////////////////////////////////////////////////////////////
 // KGSL (HW3D support)#include <linux/android_pmem.h>
 ///////////////////////////////////////////////////////////////////////
-
+#ifndef CONFIG_MSM_KGSL
 static struct resource msm_kgsl_resources[] =
 {
 	{
@@ -767,7 +767,7 @@ static struct resource msm_kgsl_resources[] =
 		.flags	= IORESOURCE_IRQ,
 	},
 };
-
+#endif
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
@@ -784,16 +784,8 @@ static int htcleo_kgsl_power(bool on)
     	return msm_proc_comm(cmd, &rail_id, NULL);
 }
 
-static struct platform_device msm_kgsl_device =
-{
-	.name		= "kgsl",
-	.id		= -1,
-	.resource	= msm_kgsl_resources,
-	.num_resources	= ARRAY_SIZE(msm_kgsl_resources),
-};
-
 #ifdef CONFIG_MSM_KGSL
-/* start kgsl */
+/* start kgsl-3d0 */
 static struct resource kgsl_3d0_resources[] = {
 	{
 		.name  = KGSL_3D0_REG_MEMORY,
@@ -841,7 +833,15 @@ struct platform_device msm_kgsl_3d0 = {
 		.platform_data = &kgsl_3d0_pdata,
 	},
 };
-/* end kgsl */
+/* end kgsl-3d0 */
+#else
+static struct platform_device msm_kgsl_device =
+{
+	.name		= "kgsl",
+	.id		= -1,
+	.resource	= msm_kgsl_resources,
+	.num_resources	= ARRAY_SIZE(msm_kgsl_resources),
+};
 #endif
 ///////////////////////////////////////////////////////////////////////
 // Memory
@@ -894,7 +894,7 @@ static struct platform_device android_pmem_mdp_device = {
 
 static struct platform_device android_pmem_adsp_device = {
 	.name		= "android_pmem",
-	.id		= 4,
+	.id		= 1, /* 4 */
 	.dev		= {
 		.platform_data = &android_pmem_adsp_pdata,
 	},
@@ -902,7 +902,7 @@ static struct platform_device android_pmem_adsp_device = {
 
 static struct platform_device android_pmem_venc_device = {
 	.name		= "android_pmem",
-	.id		= 5,
+	.id		= 3, /* 5 */
 	.dev		= {
 		.platform_data = &android_pmem_venc_pdata,
 	},
