@@ -325,7 +325,9 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS        = -DMODULE -fmodulo-sched -fmodulo-sched-allow-regmoves
+MODFLAGS        = -DMODULE -march=armv7-a -mtune=cortex-a8 \
+		  -mfpu=neon -ftree-vectorize -ffast-math \
+		  -fsingle-precision-constant
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS) -pipe
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
