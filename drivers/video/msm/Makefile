@@ -35,5 +35,3 @@ obj-y += mddi_client_novb9f6_5582.o
 # MDP LCD controller driver
 obj-$(CONFIG_FB_MSM_LCDC) += mdp_lcdc.o
 
-# Yamato GL driver
-obj-$(CONFIG_GPU_MSM_KGSL) += gpu/kgsl/
