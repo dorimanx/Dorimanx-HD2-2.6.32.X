@@ -60,9 +60,11 @@
 #endif
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
+
 #ifdef CONFIG_MSM_KGSL
 #include <linux/msm_kgsl.h>
 #endif
+
 #include <mach/board-htcleo-microp.h>
 #include "board-htcleo-ts.h"
 
@@ -785,7 +787,7 @@ static int htcleo_kgsl_power(bool on)
 }
 
 #ifdef CONFIG_MSM_KGSL
-/* start kgsl-3d0 */
+/* start kgsl */
 static struct resource kgsl_3d0_resources[] = {
 	{
 		.name  = KGSL_3D0_REG_MEMORY,
@@ -833,16 +835,9 @@ struct platform_device msm_kgsl_3d0 = {
 		.platform_data = &kgsl_3d0_pdata,
 	},
 };
-/* end kgsl-3d0 */
-#else
-static struct platform_device msm_kgsl_device =
-{
-	.name		= "kgsl",
-	.id		= -1,
-	.resource	= msm_kgsl_resources,
-	.num_resources	= ARRAY_SIZE(msm_kgsl_resources),
-};
+/* end kgsl */
 #endif
+
 ///////////////////////////////////////////////////////////////////////
 // Memory
 ///////////////////////////////////////////////////////////////////////
