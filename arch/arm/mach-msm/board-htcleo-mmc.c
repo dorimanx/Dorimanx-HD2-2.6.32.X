@@ -395,7 +395,7 @@ static int __init htcleommc_dbg_init(void)
 {
 	struct dentry *dent;
 
-	if (!machine_is_htcleo() && !machine_is_htcleoc())
+	if (!machine_is_htcleo())
 		return 0;
 
 	dent = debugfs_create_dir("htcleo_mmc_dbg", 0);
