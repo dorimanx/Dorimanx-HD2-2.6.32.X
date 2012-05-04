@@ -19,7 +19,7 @@ rm -rf /home/root/kernel/dorimanx-ics/output_gb/system/lib/modules/*
 rm -rf /home/root/kernel/dorimanx-ics/output_gb/devs/*
 make ARCH=arm CROSS_COMPILE=$COMPILER zImage -j8
 if [ -f arch/arm/boot/zImage ]; then
-if [ ! -d /home/root/kernel/dorimanx-dorimanx-ics/output_gb ]; then
+if [ ! -d /home/root/kernel/dorimanx-ics/output_gb ]; then
 mkdir -p /home/root/kernel/dorimanx-ics
 mkdir /home/root/kernel/dorimanx-ics/output_gb
 mkdir /home/root/kernel/dorimanx-ics/output_gb/boot
@@ -33,6 +33,7 @@ cp arch/arm/boot/zImage /home/root/kernel/dorimanx-ics/output_gb/boot/zImage
 #mkbootimg --kernel /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage --ramdisk /home/root/kernel/dorimanx-tytyng/output_gb/boot/initrd.gz --cmdline "console=null" --base 0x11800000 -o /home/root/kernel/dorimanx-tytyng/output_gb/boot.img
 cp .config /home/root/kernel/dorimanx-ics/output_gb/devs/config
 cp .config arch/arm/configs/htcleo_defconfig
+cp .config .config.HWA
 cp arch/arm/configs/htcleo_defconfig /home/root/kernel/dorimanx-dorimanx-ics/output_gb/devs/htcleo_defconfig
 rm -rf /home/root/kernel/dorimanx-ics/output_gb/system/lib/modules/*
 make ARCH=arm CROSS_COMPILE=$COMPILER modules -j8
