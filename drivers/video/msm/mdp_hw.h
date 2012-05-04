@@ -392,7 +392,7 @@ int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq);
 #define TV_OUT_DMA3_DONE		(1<<6)
 #define TV_ENC_UNDERRUN			(1<<7)
 #define TV_OUT_FRAME_START		(1<<13)
-#define MDP_HIST_DONE       	(1<<20)
+#define MDP_HIST_DONE       		(1<<20)
 
 #ifdef CONFIG_MSM_MDP22
 #define MDP_DMA_P_DONE			(1 << 2)

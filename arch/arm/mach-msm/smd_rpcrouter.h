@@ -37,9 +37,9 @@
 #define RPCROUTER_PROCESSORS_MAX		4
 
 #if defined(CONFIG_RPC_SIZE_1024)
-#define RPCROUTER_MSGSIZE_MAX          1024
+#define RPCROUTER_MSGSIZE_MAX          		1024
 #else
-#define RPCROUTER_MSGSIZE_MAX           512
+#define RPCROUTER_MSGSIZE_MAX           	512
 #endif
 #define RPCROUTER_DATASIZE_MAX			500
 
@@ -63,7 +63,7 @@
 #define RPCROUTER_CTRL_CMD_EXIT			8
 #define RPCROUTER_CTRL_CMD_PING			9
 
-#define RPCROUTER_DEFAULT_RX_QUOTA	5
+#define RPCROUTER_DEFAULT_RX_QUOTA		5
 
 union rr_control_msg {
 	uint32_t cmd;

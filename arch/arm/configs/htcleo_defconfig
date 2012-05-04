@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.59
-# Fri May  4 13:05:52 2012
+# Fri May  4 20:20:38 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1417,7 +1417,10 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 CONFIG_FB_MSM=y
 CONFIG_FB_MSM_MDP_PPP=y
 CONFIG_FB_MSM_LCDC=y
-# CONFIG_FB_MSM_TVOUT is not set
+CONFIG_FB_MSM_MDDI=y
+CONFIG_FB_MSM_LEGACY_MDP=y
+# CONFIG_FB_MSM_MDDI_EPSON is not set
+# CONFIG_FB_MSM_MDDI_NOVTEC is not set
 # CONFIG_MSM_HDMI is not set
 # CONFIG_FB_MSM_LOGO is not set
 # CONFIG_BACKLIGHT_LCD_SUPPORT is not set

@@ -122,7 +122,7 @@ static atomic_t rpcrouter_pdev_created = ATOMIC_INIT(0);
 #define RR_STATE_BODY    2
 #define RR_STATE_ERROR   3
 
-#define RMT_STORAGE_APIPROG_BE32		0xa7000030
+#define RMT_STORAGE_APIPROG_BE32	0xa7000030
 #define RMT_STORAGE_SRV_APIPROG_BE32	0x9c000030
 
 struct rr_context {

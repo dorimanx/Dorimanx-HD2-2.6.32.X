@@ -748,28 +748,6 @@ static struct platform_device qsd_device_spi = {
 ///////////////////////////////////////////////////////////////////////
 // KGSL (HW3D support)#include <linux/android_pmem.h>
 ///////////////////////////////////////////////////////////////////////
-#ifndef CONFIG_MSM_KGSL
-static struct resource msm_kgsl_resources[] =
-{
-	{
-		.name	= "kgsl_reg_memory",
-		.start	= MSM_GPU_REG_PHYS,
-		.end	= MSM_GPU_REG_PHYS + MSM_GPU_REG_SIZE - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.name	= "kgsl_phys_memory",
-		.start	= MSM_GPU_PHYS_BASE,
-		.end	= MSM_GPU_PHYS_BASE + MSM_GPU_PHYS_SIZE - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.start	= INT_GRAPHICS,
-		.end	= INT_GRAPHICS,
-		.flags	= IORESOURCE_IRQ,
-	},
-};
-#endif
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
@@ -786,8 +764,7 @@ static int htcleo_kgsl_power(bool on)
     	return msm_proc_comm(cmd, &rail_id, NULL);
 }
 
-#ifdef CONFIG_MSM_KGSL
-/* start kgsl */
+/* start kgsl-3d0 */
 static struct resource kgsl_3d0_resources[] = {
 	{
 		.name  = KGSL_3D0_REG_MEMORY,
@@ -835,8 +812,7 @@ struct platform_device msm_kgsl_3d0 = {
 		.platform_data = &kgsl_3d0_pdata,
 	},
 };
-/* end kgsl */
-#endif
+/* end kgsl-3d0 */
 
 ///////////////////////////////////////////////////////////////////////
 // Memory

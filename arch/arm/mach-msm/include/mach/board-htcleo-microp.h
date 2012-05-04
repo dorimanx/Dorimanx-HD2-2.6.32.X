@@ -145,5 +145,4 @@ void microp_early_suspend(struct early_suspend *h);
 void microp_early_resume(struct early_suspend *h);
 #endif // CONFIG_HAS_EARLYSUSPEND
 
-
 #endif

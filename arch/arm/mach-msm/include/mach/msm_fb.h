@@ -27,12 +27,12 @@ struct mddi_info;
 #define MSM_MDP_OUT_IF_FMT_RGB888 2
 
 /* mdp override operations */
-#define MSM_MDP_PANEL_IGNORE_PIXEL_DATA	(1 << 0)
+#define MSM_MDP_PANEL_IGNORE_PIXEL_DATA		(1 << 0)
 #define MSM_MDP_PANEL_FLIP_UD			(1 << 1)
 #define MSM_MDP_PANEL_FLIP_LR			(1 << 2)
 #define MSM_MDP4_MDDI_DMA_SWITCH		(1 << 3)
 #define MSM_MDP_DMA_PACK_ALIGN_LSB		(1 << 4)
-#define MSM_MDP_RGB_PANEL_SELF_REFRESH         (1 << 5)
+#define MSM_MDP_RGB_PANEL_SELF_REFRESH         	(1 << 5)
 
 /* mddi type */
 #define MSM_MDP_MDDI_TYPE_I	 0
