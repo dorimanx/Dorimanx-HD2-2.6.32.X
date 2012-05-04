@@ -240,4 +240,3 @@ int mdp_hw_init(struct mdp_info *mdp)
 #endif
 	return 0;
 }
-
