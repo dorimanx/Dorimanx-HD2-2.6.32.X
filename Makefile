@@ -325,25 +325,20 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS        = -DMODULE -march=armv7-a -mtune=cortex-a8 \
-		  -mfpu=neon -ftree-vectorize -ffast-math \
-		  -fsingle-precision-constant
+MODFLAGS	= -DMODULE -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS) -pipe
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL   = -marm -march=armv7-a -mtune=cortex-a8 -mfpu=neon \
-		  -ftree-vectorize -ffast-math -fsingle-precision-constant
-AFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon \
-		  -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe
-XX_GRAPHITE     = -ftree-loop-linear -ftree-loop-distribution
+CFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant
+AFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
-LINUXINCLUDE    := -Iinclude \
-                   $(if $(KBUILD_SRC),-Iinclude2 -I$(srctree)/include) \
-                   -I$(srctree)/arch/$(hdr-arch)/include               \
-                   -include include/linux/autoconf.h
+LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
+                   $(if $(KBUILD_SRC), -I$(srctree)/include) \
+                   -include include/generated/autoconf.h
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
@@ -351,7 +346,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks $(XX_GRAPHITE)
+		   -fno-delete-null-pointer-checks
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
