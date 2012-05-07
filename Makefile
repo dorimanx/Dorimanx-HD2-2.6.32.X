@@ -325,12 +325,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS	= -DMODULE -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant
+MODFLAGS	= -DMODULE -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS) -pipe
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant
-AFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ftree-vectorize -ffast-math -fsingle-precision-constant -pipe
+CFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant
+AFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant -pipe
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 
@@ -338,7 +338,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 # Needed to be compatible with the O= option
 LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                   -include include/generated/autoconf.h
+                   -include include/linux/autoconf.h
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
