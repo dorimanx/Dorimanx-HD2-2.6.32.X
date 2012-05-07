@@ -74,7 +74,6 @@ static size_t lowmem_minfile[6] = {
 };
 static int lowmem_minfile_size = 6;
 
-static struct task_struct *lowmem_deathpending;
 static unsigned long lowmem_deathpending_timeout;
 static uint32_t lowmem_check_filepages = 0;
 #ifdef CONFIG_SWAP
@@ -88,63 +87,6 @@ static int fudgeswap = 512;
 			printk(x);			\
 		}					\
 	} while (0)
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data);
-
-static struct notifier_block task_nb = {
-	.notifier_call	= task_notify_func,
-};
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-{
-	struct task_struct *task = data;
-
-	if (task == lowmem_deathpending) {
-		lowmem_deathpending = NULL;
-		lowmem_print(2, "deathpending end %d (%s)\n",
-			task->pid, task->comm);
-	}
-
-	return NOTIFY_OK;
-}
-
-static void dump_deathpending(struct task_struct *t_deathpending)
-{
-	struct task_struct *p;
-
-	if (lowmem_debug_level < DEBUG_LEVEL_DEATHPENDING)
-		return;
-
-	BUG_ON(!t_deathpending);
-	lowmem_print(DEBUG_LEVEL_DEATHPENDING, "deathpending %d (%s)\n",
-		t_deathpending->pid, t_deathpending->comm);
-
-	read_lock(&tasklist_lock);
-	for_each_process(p) {
-		struct mm_struct *mm;
-		struct signal_struct *sig;
-		int oom_adj;
-		int tasksize;
-
-		task_lock(p);
-		mm = p->mm;
-		sig = p->signal;
-		if (!mm || !sig) {
-			task_unlock(p);
-			continue;
-		}
-		oom_adj = sig->oom_adj;
-		tasksize = get_mm_rss(mm);
-		task_unlock(p);
-		lowmem_print(DEBUG_LEVEL_DEATHPENDING,
-			"  %d (%s), adj %d, size %d\n",
-			p->pid, p->comm,
-			oom_adj, tasksize);
-	}
-	read_unlock(&tasklist_lock);
-}
 
 static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 {
@@ -162,19 +104,6 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 						global_page_state(NR_SHMEM);
 	int lru_file = global_page_state(NR_ACTIVE_FILE) +
 			global_page_state(NR_INACTIVE_FILE);
-
-	/*
-	 * If we already have a death outstanding, then
-	 * bail out right away; indicating to vmscan
-	 * that we have nothing further to offer on
-	 * this pass.
-	 *
-	 */
-	if (lowmem_deathpending &&
-	    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
-		dump_deathpending(lowmem_deathpending);
-		return 0;
-	}
 
 #ifdef CONFIG_SWAP
 	if(fudgeswap != 0){
@@ -232,6 +161,13 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 		if (!p)
 			continue;
 
+		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
+				time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+			task_unlock(p);
+			rcu_read_unlock();
+			return 0;
+		}
+
 		oom_adj = p->signal->oom_adj;
 		if (oom_adj < min_adj) {
 			task_unlock(p);
@@ -258,9 +194,8 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
 			     selected->pid, selected->comm,
 			     selected_oom_adj, selected_tasksize);
-		lowmem_deathpending = selected;
-		lowmem_deathpending_timeout = jiffies + HZ;
 		send_sig(SIGKILL, selected, 0);	
+		set_tsk_thread_flag(selected, TIF_MEMDIE);
 		rem -= selected_tasksize;
 	}
 	lowmem_print(4, "lowmem_shrink %d, %x, return %d\n",
@@ -276,7 +211,6 @@ static struct shrinker lowmem_shrinker = {
 
 static int __init lowmem_init(void)
 {
-	task_free_register(&task_nb);
 	register_shrinker(&lowmem_shrinker);
 	return 0;
 }
@@ -284,7 +218,6 @@ static int __init lowmem_init(void)
 static void __exit lowmem_exit(void)
 {
 	unregister_shrinker(&lowmem_shrinker);
-	task_free_unregister(&task_nb);
 }
 
 module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
