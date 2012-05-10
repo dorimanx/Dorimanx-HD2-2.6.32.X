@@ -118,6 +118,11 @@ static unsigned con_start;	/* Index into log_buf: next char to be sent to consol
 static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
 
 /*
+ * If exclusive_console is non-NULL then only this console is to be printed to.
+ */
+static struct console *exclusive_console;
+
+/*
  *	Array of consoles built from command line options (console=)
  */
 struct console_cmdline
@@ -1017,6 +1022,79 @@ void resume_console(void)
 	console_suspended = 0;
 	release_console_sem();
 }
+
+/**
+ * console_lock - lock the console system for exclusive use.
+ *
+ * Acquires a lock which guarantees that the caller has
+ * exclusive access to the console system and the console_drivers list.
+ *
+ * Can sleep, returns nothing.
+ */
+void console_lock(void)
+{
+        BUG_ON(in_interrupt());
+        down(&console_sem);
+        if (console_suspended)
+                return;
+        console_locked = 1;
+        console_may_schedule = 1;
+}
+EXPORT_SYMBOL(console_lock);
+
+/**
+ * console_unlock - unlock the console system
+ *
+ * Releases the console_lock which the caller holds on the console system
+ * and the console driver list.
+ *
+ * While the console_lock was held, console output may have been buffered
+ * by printk().  If this is the case, console_unlock(); emits
+ * the output prior to releasing the lock.
+ *
+ * If there is output waiting for klogd, we wake it up.
+ *
+ * console_unlock(); may be called from any context.
+ */
+void console_unlock(void)
+{
+        unsigned long flags;
+        unsigned _con_start, _log_end;
+        unsigned wake_klogd = 0;
+ 
+        if (console_suspended) {
+                up(&console_sem);
+                return;
+        }
+
+        console_may_schedule = 0;
+
+        for ( ; ; ) {
+                spin_lock_irqsave(&logbuf_lock, flags);
+                wake_klogd |= log_start - log_end;
+                if (con_start == log_end)
+                        break;                  /* Nothing to print */
+                _con_start = con_start;
+                _log_end = log_end;
+                con_start = log_end;            /* Flush */
+                spin_unlock(&logbuf_lock);
+                stop_critical_timings();        /* don't trace print latency */
+                call_console_drivers(_con_start, _log_end);
+                start_critical_timings();
+                local_irq_restore(flags);
+        }
+        console_locked = 0;
+
+        /* Release the exclusive_console once it is used */
+        if (unlikely(exclusive_console))
+                exclusive_console = NULL;
+
+        up(&console_sem);
+        spin_unlock_irqrestore(&logbuf_lock, flags);
+        if (wake_klogd)
+                wake_up_klogd();
+}
+EXPORT_SYMBOL(console_unlock);
 
 /**
  * acquire_console_sem - lock the console system for exclusive use.

@@ -3,30 +3,13 @@
 
 #include <linux/types.h>
 #include <linux/i2c.h>
-struct dentry;
+#ifdef __KERNEL__
+#include <linux/kgdb.h>
+#endif /* __KERNEL__ */
 
 /* Definitions of frame buffers						*/
 
 #define FB_MAX			32	/* sufficient for now */
-
-struct fbcon_decor_iowrapper
-{
-	unsigned short vc;		/* Virtual console */
-	unsigned char origin;		/* Point of origin of the request */
-	void *data;
-};
-
-#ifdef __KERNEL__
-#ifdef CONFIG_COMPAT
-#include <linux/compat.h>
-struct fbcon_decor_iowrapper32
-{
-	unsigned short vc;		/* Virtual console */
-	unsigned char origin;		/* Point of origin of the request */
-	compat_uptr_t data;
-};
-#endif /* CONFIG_COMPAT */
-#endif /* __KERNEL__ */
 
 /* ioctls
    0x46 is 'F'								*/
@@ -55,24 +38,7 @@ struct fbcon_decor_iowrapper32
 #define FBIOGET_HWCINFO         0x4616
 #define FBIOPUT_MODEINFO        0x4617
 #define FBIOGET_DISPINFO        0x4618
-#define FBIOCONDECOR_SETCFG	_IOWR('F', 0x19, struct fbcon_decor_iowrapper)
-#define FBIOCONDECOR_GETCFG	_IOR('F', 0x1A, struct fbcon_decor_iowrapper)
-#define FBIOCONDECOR_SETSTATE	_IOWR('F', 0x1B, struct fbcon_decor_iowrapper)
-#define FBIOCONDECOR_GETSTATE	_IOR('F', 0x1C, struct fbcon_decor_iowrapper)
-#define FBIOCONDECOR_SETPIC 	_IOWR('F', 0x1D, struct fbcon_decor_iowrapper)
-#ifdef __KERNEL__
-#ifdef CONFIG_COMPAT
-#define FBIOCONDECOR_SETCFG32	_IOWR('F', 0x19, struct fbcon_decor_iowrapper32)
-#define FBIOCONDECOR_GETCFG32	_IOR('F', 0x1A, struct fbcon_decor_iowrapper32)
-#define FBIOCONDECOR_SETSTATE32	_IOWR('F', 0x1B, struct fbcon_decor_iowrapper32)
-#define FBIOCONDECOR_GETSTATE32	_IOR('F', 0x1C, struct fbcon_decor_iowrapper32)
-#define FBIOCONDECOR_SETPIC32	_IOWR('F', 0x1D, struct fbcon_decor_iowrapper32)
-#endif /* CONFIG_COMPAT */
-#endif /* __KERNEL__ */
-
-#define FBCON_DECOR_THEME_LEN		128	/* Maximum lenght of a theme name */
-#define FBCON_DECOR_IO_ORIG_KERNEL	0	/* Kernel ioctl origin */
-#define FBCON_DECOR_IO_ORIG_USER	1	/* User ioctl origin */
+#define FBIO_WAITFORVSYNC	_IOW('F', 0x20, __u32)
 
 #define FB_TYPE_PACKED_PIXELS		0	/* Packed Pixels	*/
 #define FB_TYPE_PLANES			1	/* Non interleaved planes */
@@ -185,6 +151,8 @@ struct fbcon_decor_iowrapper32
 #define FB_ACCEL_SUPERSAVAGE    0x8c    /* S3 Supersavage               */
 #define FB_ACCEL_PROSAVAGE_DDR  0x8d	/* S3 ProSavage DDR             */
 #define FB_ACCEL_PROSAVAGE_DDRK 0x8e	/* S3 ProSavage DDR-K           */
+
+#define FB_ACCEL_PUV3_UNIGFX	0xa0	/* PKUnity-v3 Unigfx		*/
 
 struct fb_fix_screeninfo {
 	char id[16];			/* identification string eg "TT Builtin" */
@@ -317,28 +285,6 @@ struct fb_cmap {
 	__u16 *transp;			/* transparency, can be NULL */
 };
 
-#ifdef __KERNEL__
-#ifdef CONFIG_COMPAT
-struct fb_cmap32 {
-	__u32 start;
-	__u32 len;			/* Number of entries */
-	compat_uptr_t red;		/* Red values	*/
-	compat_uptr_t green;
-	compat_uptr_t blue;
-	compat_uptr_t transp;		/* transparency, can be NULL */
-};
-
-#define fb_cmap_from_compat(to, from) \
-	(to).start  = (from).start; \
-	(to).len    = (from).len; \
-	(to).red    = compat_ptr((from).red); \
-	(to).green  = compat_ptr((from).green); \
-	(to).blue   = compat_ptr((from).blue); \
-	(to).transp = compat_ptr((from).transp)
-
-#endif /* CONFIG_COMPAT */
-#endif /* __KERNEL__ */
-
 struct fb_con2fbmap {
 	__u32 console;
 	__u32 framebuffer;
@@ -419,34 +365,6 @@ struct fb_image {
 	const char *data;	/* Pointer to image data */
 	struct fb_cmap cmap;	/* color map info */
 };
-
-#ifdef __KERNEL__
-#ifdef CONFIG_COMPAT
-struct fb_image32 {
-	__u32 dx;			/* Where to place image */
-	__u32 dy;
-	__u32 width;			/* Size of image */
-	__u32 height;
-	__u32 fg_color;			/* Only used when a mono bitmap */
-	__u32 bg_color;
-	__u8  depth;			/* Depth of the image */
-	const compat_uptr_t data;	/* Pointer to image data */
-	struct fb_cmap32 cmap;		/* color map info */
-};
-
-#define fb_image_from_compat(to, from) \
-	(to).dx       = (from).dx; \
-	(to).dy       = (from).dy; \
-	(to).width    = (from).width; \
-	(to).height   = (from).height; \
-	(to).fg_color = (from).fg_color; \
-	(to).bg_color = (from).bg_color; \
-	(to).depth    = (from).depth; \
-	(to).data     = compat_ptr((from).data); \
-	fb_cmap_from_compat((to).cmap, (from).cmap)
-
-#endif /* CONFIG_COMPAT */
-#endif /* __KERNEL__ */
 
 /*
  * hardware cursor control
@@ -616,14 +534,14 @@ struct fb_cursor_user {
 #define FB_EVENT_GET_CONSOLE_MAP        0x07
 /*      CONSOLE-SPECIFIC: set console to framebuffer mapping */
 #define FB_EVENT_SET_CONSOLE_MAP        0x08
-/*      A hardware display blank change occured */
+/*      A hardware display blank change occurred */
 #define FB_EVENT_BLANK                  0x09
 /*      Private modelist is to be replaced */
 #define FB_EVENT_NEW_MODELIST           0x0A
 /*	The resolution of the passed in fb_info about to change and
         all vc's should be changed         */
 #define FB_EVENT_MODE_CHANGE_ALL	0x0B
-/*	A software display blank change occured */
+/*	A software display blank change occurred */
 #define FB_EVENT_CONBLANK               0x0C
 /*      Get drawing requirements        */
 #define FB_EVENT_GET_REQ                0x0D
@@ -631,6 +549,10 @@ struct fb_cursor_user {
 #define FB_EVENT_FB_UNBIND              0x0E
 /*      CONSOLE-SPECIFIC: remap all consoles to new fb - for vga switcheroo */
 #define FB_EVENT_REMAP_ALL_CONSOLE      0x0F
+/*      A hardware display blank early change occured */
+#define FB_EARLY_EVENT_BLANK		0x10
+/*      A hardware display blank revert early change occured */
+#define FB_R_EARLY_EVENT_BLANK		0x11
 
 struct fb_event {
 	struct fb_info *info;
@@ -887,7 +809,7 @@ struct fb_tile_ops {
 /* A driver may set this flag to indicate that it does want a set_par to be
  * called every time when fbcon_switch is executed. The advantage is that with
  * this flag set you can really be sure that set_par is always called before
- * any of the functions dependant on the correct hardware state or altering
+ * any of the functions dependent on the correct hardware state or altering
  * that state, even if you are using some broken X releases. The disadvantage
  * is that it introduces unwanted delays to every console switch if set_par
  * is slow. It is a good idea to try this flag in the drivers initialization
@@ -914,6 +836,7 @@ struct fb_tile_ops {
 #define FBINFO_CAN_FORCE_OUTPUT     0x200000
 
 struct fb_info {
+	atomic_t count;
 	int node;
 	int flags;
 	struct mutex lock;		/* Lock for open/release/ioctl funcs */
@@ -957,12 +880,9 @@ struct fb_info {
 #define FBINFO_STATE_SUSPENDED	1
 	u32 state;			/* Hardware state i.e suspend */
 	void *fbcon_par;                /* fbcon use-only private area */
-
-	struct fb_image bgdecor;
-
 	/* From here on everything is device dependent */
 	void *par;
-	/* we need the PCI or similiar aperture base/size not
+	/* we need the PCI or similar aperture base/size not
 	   smem_start/size as smem_start may just be an object
 	   allocated inside the aperture so may not actually overlap */
 	struct apertures_struct {
@@ -1081,6 +1001,7 @@ extern ssize_t fb_sys_write(struct fb_info *info, const char __user *buf,
 /* drivers/video/fbmem.c */
 extern int register_framebuffer(struct fb_info *fb_info);
 extern int unregister_framebuffer(struct fb_info *fb_info);
+extern int unlink_framebuffer(struct fb_info *fb_info);
 extern void remove_conflicting_framebuffers(struct apertures_struct *a,
 				const char *name, bool primary);
 extern int fb_prepare_logo(struct fb_info *fb_info, int rotate);
@@ -1127,8 +1048,7 @@ extern void fb_deferred_io_open(struct fb_info *info,
 				struct inode *inode,
 				struct file *file);
 extern void fb_deferred_io_cleanup(struct fb_info *info);
-extern int fb_deferred_io_fsync(struct file *file, struct dentry *dentry,
-				int datasync);
+extern int fb_deferred_io_fsync(struct file *file, int datasync);
 
 static inline bool fb_be_math(struct fb_info *info)
 {
@@ -1240,6 +1160,7 @@ struct fb_videomode {
 
 extern const char *fb_mode_option;
 extern const struct fb_videomode vesa_modes[];
+extern const struct fb_videomode cea_modes[64];
 
 struct fb_modelist {
 	struct list_head list;
