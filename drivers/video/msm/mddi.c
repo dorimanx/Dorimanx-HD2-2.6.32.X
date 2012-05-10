@@ -887,8 +887,8 @@ static int __init mddi_probe(struct platform_device *pdev)
 	printk(KERN_INFO "mddi: init() base=0x%p irq=%d\n", mddi->base,
 	       mddi->irq);
 	mddi->power_client = pdata->power_client;
-	if ((pdata->type != NULL) && (pdata->type != MSM_MDP_MDDI_TYPE_I))
-		mddi->type = pdata->type;
+//	if ((pdata->type != NULL) && (pdata->type != MSM_MDP_MDDI_TYPE_I))
+//		mddi->type = pdata->type;
 
 	mutex_init(&mddi->reg_write_lock);
 	mutex_init(&mddi->reg_read_lock);
