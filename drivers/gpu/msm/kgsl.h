@@ -271,7 +271,7 @@ kgsl_mem_entry_put(struct kgsl_mem_entry *entry)
 }
 
 static inline int kgsl_create_device_sysfs_files(struct device *root,
-	struct device_attribute **list)
+	const struct device_attribute **list)
 {
 	int ret = 0, i;
 	for (i = 0; list[i] != NULL; i++)
@@ -280,7 +280,7 @@ static inline int kgsl_create_device_sysfs_files(struct device *root,
 }
 
 static inline void kgsl_remove_device_sysfs_files(struct device *root,
-	struct device_attribute **list)
+	const struct device_attribute **list)
 {
 	int i;
 	for (i = 0; list[i] != NULL; i++)
