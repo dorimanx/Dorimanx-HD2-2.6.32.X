@@ -1072,10 +1072,10 @@ void mmc_rescan(struct work_struct *work)
 		container_of(work, struct mmc_host, detect.work);
 	u32 ocr;
 	int err = 0;
-        int extend_wakelock = 0;
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
-        int retries = 2;
+        int retries = 3;
 #endif
+        int extend_wakelock = 0;
 
 #ifdef CONFIG_MMC_UNSAFE_RESUME
 /* Do nothing! */
@@ -1107,7 +1107,6 @@ void mmc_rescan(struct work_struct *work)
 
 	mmc_bus_put(host);
 
-
 	mmc_bus_get(host);
 
 	/* if there still is a card present, stop here */
@@ -1127,7 +1126,9 @@ void mmc_rescan(struct work_struct *work)
 	if (host->ops->get_cd && host->ops->get_cd(host) == 0)
 		goto out;
 
+#ifdef CONFIG_MMC_PARANOID_SD_INIT
 retry:
+#endif
 	mmc_claim_host(host);
 
 	mmc_power_up(host);

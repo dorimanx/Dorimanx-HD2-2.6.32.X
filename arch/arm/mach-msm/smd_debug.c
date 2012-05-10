@@ -70,6 +70,7 @@ struct smem_negate_client {
 
 struct mutex mem_sleep_stat_lock;
 static struct smem_sleep_stat *sleep_stat;
+#if CONFIG_SMD_OFFSET_TCXO_STAT
 static struct smem_sleep_stat *get_smem_sleep_stat(void)
 {
 #if CONFIG_SMD_OFFSET_TCXO_STAT
@@ -160,7 +161,9 @@ static int sleep_stat_suspend_notifier(struct notifier_block *nb,
 		return NOTIFY_DONE;
 	}
 }
+#endif
 
+#if CONFIG_SMD_OFFSET_TCXO_STAT
 static struct notifier_block sleep_stat_notif_block = {
 	.notifier_call = sleep_stat_suspend_notifier,
 };
@@ -179,6 +182,7 @@ static struct early_suspend sleep_stat_screen_hdl = {
 	.suspend = sleep_stat_early_suspend,
 	.resume = sleep_stat_late_resume,
 };
+#endif
 
 #if defined(CONFIG_DEBUG_FS)
 
@@ -519,8 +523,10 @@ static ssize_t show_mem_sleep_stat_attr(struct device *dev,
 static int __init smd_debugfs_init(void)
 {
 	struct dentry *dent;
+#if CONFIG_SMD_OFFSET_TCXO_STAT
 	int ret;
 	int i;
+#endif
 
 	dent = debugfs_create_dir("smd", 0);
 	if (IS_ERR(dent))
