@@ -499,6 +499,7 @@ dev_wlc_bufvar_get(
 
 	len = bcm_mkiovar(name, NULL, 0, ioctlbuf, sizeof(ioctlbuf));
 	ASSERT(len);
+	BCM_REFERENCE(len);
 	error = dev_wlc_ioctl(dev, WLC_GET_VAR, (void *)ioctlbuf, MAX_WLIW_IOCTL_LEN);
 	if (!error)
 		bcopy(ioctlbuf, buf, buflen);
@@ -5111,111 +5112,87 @@ struct {
 
 static int
 wl_iw_set_pmksa(
-	struct net_device *dev,
-	struct iw_request_info *info,
-	struct iw_param *vwrq,
-	char *extra
+        struct net_device *dev,
+        struct iw_request_info *info,
+        struct iw_param *vwrq,
+        char *extra
 )
 {
-	struct iw_pmksa *iwpmksa;
-	uint i;
-	int ret = 0;
-	char eabuf[ETHER_ADDR_STR_LEN];
+        struct iw_pmksa *iwpmksa;
+        uint i;
+        char eabuf[ETHER_ADDR_STR_LEN];
+        pmkid_t * pmkid_array = pmkid_list.pmkids.pmkid;
 
-	WL_WSEC(("%s: SIOCSIWPMKSA\n", dev->name));
-	CHECK_EXTRA_FOR_NULL(extra);
-
-	iwpmksa = (struct iw_pmksa *)extra;
-	bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
-
-	if (iwpmksa->cmd == IW_PMKSA_FLUSH) {
-		WL_WSEC(("wl_iw_set_pmksa - IW_PMKSA_FLUSH\n"));
-		bzero((char *)&pmkid_list, sizeof(pmkid_list));
-	}
-
-	else if (iwpmksa->cmd == IW_PMKSA_REMOVE) {
-		{
-			pmkid_list_t pmkid, *pmkidptr;
-			uint j;
-			pmkidptr = &pmkid;
-
-			bcopy(&iwpmksa->bssid.sa_data[0], &pmkidptr->pmkid[0].BSSID, ETHER_ADDR_LEN);
-			bcopy(&iwpmksa->pmkid[0], &pmkidptr->pmkid[0].PMKID, WPA2_PMKID_LEN);
-
-			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_REMOVE - PMKID: %s = ",
-				bcm_ether_ntoa(&pmkidptr->pmkid[0].BSSID,
-				eabuf)));
-			for (j = 0; j < WPA2_PMKID_LEN; j++)
-				WL_WSEC(("%02x ", pmkidptr->pmkid[0].PMKID[j]));
-			WL_WSEC(("\n"));
-		}
-
-		for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
-			if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_list.pmkids.pmkid[i].BSSID,
-				ETHER_ADDR_LEN))
-				break;
-
-		if ((pmkid_list.pmkids.npmkid > 0) && (i < pmkid_list.pmkids.npmkid)) {
-			bzero(&pmkid_list.pmkids.pmkid[i], sizeof(pmkid_t));
-			for (; i < (pmkid_list.pmkids.npmkid - 1); i++) {
-				bcopy(&pmkid_list.pmkids.pmkid[i+1].BSSID,
-					&pmkid_list.pmkids.pmkid[i].BSSID,
-					ETHER_ADDR_LEN);
-				bcopy(&pmkid_list.pmkids.pmkid[i+1].PMKID,
-					&pmkid_list.pmkids.pmkid[i].PMKID,
-					WPA2_PMKID_LEN);
-			}
-			pmkid_list.pmkids.npmkid--;
-		}
-		else
-			ret = -EINVAL;
-	}
-
-	else if (iwpmksa->cmd == IW_PMKSA_ADD) {
-		for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
-			if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_list.pmkids.pmkid[i].BSSID,
-				ETHER_ADDR_LEN))
-				break;
-		if (i < MAXPMKID) {
-			bcopy(&iwpmksa->bssid.sa_data[0],
-				&pmkid_list.pmkids.pmkid[i].BSSID,
-				ETHER_ADDR_LEN);
-			bcopy(&iwpmksa->pmkid[0], &pmkid_list.pmkids.pmkid[i].PMKID,
-				WPA2_PMKID_LEN);
-			if (i == pmkid_list.pmkids.npmkid)
-				pmkid_list.pmkids.npmkid++;
-		}
-		else
-			ret = -EINVAL;
-
-		{
-			uint j;
-			uint k;
-			k = pmkid_list.pmkids.npmkid;
-			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %s = ",
-				bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[k].BSSID,
-				eabuf)));
-			for (j = 0; j < WPA2_PMKID_LEN; j++)
-				WL_WSEC(("%02x ", pmkid_list.pmkids.pmkid[k].PMKID[j]));
-			WL_WSEC(("\n"));
-		}
-	}
-	WL_WSEC(("PRINTING pmkid LIST - No of elements %d, ret = %d\n", pmkid_list.pmkids.npmkid, ret));
-	for (i = 0; i < pmkid_list.pmkids.npmkid; i++) {
-		uint j;
-		WL_WSEC(("PMKID[%d]: %s = ", i,
-			bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[i].BSSID,
-			eabuf)));
-		for (j = 0; j < WPA2_PMKID_LEN; j++)
-			WL_WSEC(("%02x ", pmkid_list.pmkids.pmkid[i].PMKID[j]));
-		WL_WSEC(("\n"));
-	}
-	WL_WSEC(("\n"));
-
-	if (!ret)
-		ret = dev_wlc_bufvar_set(dev, "pmkid_info", (char *)&pmkid_list, sizeof(pmkid_list));
-	return ret;
+        WL_TRACE(("%s: SIOCSIWPMKSA\n", dev->name));
+        iwpmksa = (struct iw_pmksa *)extra;
+        bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
+        if (iwpmksa->cmd == IW_PMKSA_FLUSH) {
+                WL_TRACE(("wl_iw_set_pmksa - IW_PMKSA_FLUSH\n"));
+                bzero((char *)&pmkid_list, sizeof(pmkid_list));
+        }
+        if (iwpmksa->cmd == IW_PMKSA_REMOVE) {
+                pmkid_list_t pmkid, *pmkidptr;
+                pmkidptr = &pmkid;
+                bcopy(&iwpmksa->bssid.sa_data[0], &pmkidptr->pmkid[0].BSSID, ETHER_ADDR_LEN);
+                bcopy(&iwpmksa->pmkid[0], &pmkidptr->pmkid[0].PMKID, WPA2_PMKID_LEN);
+                {
+                        uint j;
+                        WL_TRACE(("wl_iw_set_pmksa,IW_PMKSA_REMOVE - PMKID: %s = ",
+                                bcm_ether_ntoa(&pmkidptr->pmkid[0].BSSID,
+                                eabuf)));
+                        for (j = 0; j < WPA2_PMKID_LEN; j++)
+                                WL_TRACE(("%02x ", pmkidptr->pmkid[0].PMKID[j]));
+                        WL_TRACE(("\n"));
+                }
+                for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
+                        if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_array[i].BSSID,
+                                ETHER_ADDR_LEN))
+                                break;
+                for (; i < pmkid_list.pmkids.npmkid; i++) {
+                        bcopy(&pmkid_array[i+1].BSSID,
+                                &pmkid_array[i].BSSID,
+                                ETHER_ADDR_LEN);
+                        bcopy(&pmkid_array[i+1].PMKID,
+                                &pmkid_array[i].PMKID,
+                                WPA2_PMKID_LEN);
+                }
+                pmkid_list.pmkids.npmkid--;
+        }
+        if (iwpmksa->cmd == IW_PMKSA_ADD) {
+                bcopy(&iwpmksa->bssid.sa_data[0],
+                        &pmkid_array[pmkid_list.pmkids.npmkid].BSSID,
+                        ETHER_ADDR_LEN);
+                bcopy(&iwpmksa->pmkid[0], &pmkid_array[pmkid_list.pmkids.npmkid].PMKID,
+                        WPA2_PMKID_LEN);
+                {
+                        uint j;
+                        uint k;
+                        k = pmkid_list.pmkids.npmkid;
+                        BCM_REFERENCE(k);
+                        WL_TRACE(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %s = ",
+                                bcm_ether_ntoa(&pmkid_array[k].BSSID,
+                                eabuf)));
+                        for (j = 0; j < WPA2_PMKID_LEN; j++)
+                                WL_TRACE(("%02x ", pmkid_array[k].PMKID[j]));
+                        WL_TRACE(("\n"));
+                }
+                pmkid_list.pmkids.npmkid++;
+        }
+        WL_TRACE(("PRINTING pmkid LIST - No of elements %d\n", pmkid_list.pmkids.npmkid));
+        for (i = 0; i < pmkid_list.pmkids.npmkid; i++) {
+                uint j;
+                WL_TRACE(("PMKID[%d]: %s = ", i,
+                        bcm_ether_ntoa(&pmkid_array[i].BSSID,
+                        eabuf)));
+                for (j = 0; j < WPA2_PMKID_LEN; j++)
+                        WL_TRACE(("%02x ", pmkid_array[i].PMKID[j]));
+                printf("\n");
+        }
+        WL_TRACE(("\n"));
+        dev_wlc_bufvar_set(dev, "pmkid_info", (char *)&pmkid_list, sizeof(pmkid_list));
+        return 0;
 }
+
 #endif 
 #endif 
 
