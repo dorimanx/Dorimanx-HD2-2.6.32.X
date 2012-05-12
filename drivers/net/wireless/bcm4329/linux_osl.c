@@ -358,15 +358,11 @@ osl_pktfree_static(osl_t *osh, void *p, bool send)
 {
 	int i;
 	
-	for (i = 0; i < MAX_STATIC_PKT_NUM*2; i++)
-	{
-		if (p == bcm_static_skb->skb_4k[i])
-		{
+	for (i = 0; i < MAX_STATIC_PKT_NUM; i++) {
+		if (p == bcm_static_skb->skb_4k[i]) {
 			mutex_lock(&bcm_static_skb->osl_pkt_sem);
 			bcm_static_skb->pkt_use[i] = 0;
 			mutex_unlock(&bcm_static_skb->osl_pkt_sem);
-
-			
 			return;
 		}
 	}

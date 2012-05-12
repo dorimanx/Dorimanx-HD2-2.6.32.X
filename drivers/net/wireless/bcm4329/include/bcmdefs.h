@@ -27,6 +27,7 @@
 #ifndef	_bcmdefs_h_
 #define	_bcmdefs_h_
 
+#define BCM_REFERENCE(data)     ((void)(data))
 #define STATIC	static
 
 #define	SI_BUS			0	
