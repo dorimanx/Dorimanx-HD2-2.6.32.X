@@ -5,10 +5,10 @@
 #COMPILER=/android-kernel/ICS/toolchain/bin/arm-none-eabi-
 
 #GCC 4.4.3
-#COMPILER=/media/Source-Code/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
+COMPILER=/media/Source-Code/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
 
 #GCC 4.4.5
-COMPILER=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-
+#COMPILER=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-
 
 #VERYOLDCOMPILER=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi-
 
