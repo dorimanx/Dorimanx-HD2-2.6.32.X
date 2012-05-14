@@ -53,6 +53,12 @@ Added Keyboard back light !ON! in DARK, and !OFF! in LIGHT (Mod is DISABLED by d
 Added ICS HeadSet FIX (Credits: tytung , dorimanx)
 Stochastic Fair Blue Net Scheduler (SFB) (all credits to fhasovic)
 Added new hyper governor (very strong and fast!) (credits to fhasovic and Dorimanx)
+- Wired headphones support for ICS. (Credits: zivan56)
+- Backported xt_qtaguid and xt_quota2 to support data usage for ICS. (Credits: tytung)
+- Improved Flashlight compatibility for ICS. (Credits: tytung)
+- Backported the GPU driver to enable the Hardware Acceleration for ICS. (Credits: Securecrt and Rick_1995)
+
+Credits: Cotulla, Markinus, Hastarin, TYTung, Letama, Rajko, Dan1j3l, Cedesmith, Arne, Trilu, Charansingh, Mdebeljuh, Jdivic, Avs333, Snq-, Savan, Drizztje, Marc1706, Zivan56, Securecrt, Rick_1995, Franck78, other devs, and testers.
 
 	Linux kernel release 2.6.xx <http://kernel.org/>
 
