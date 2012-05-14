@@ -24,7 +24,7 @@ struct hw3d_region;
 
 #define HW3D_IOCTL_MAGIC		'h'
 #define HW3D_WAIT_FOR_REVOKE		_IO(HW3D_IOCTL_MAGIC, 0x80)
-#define HW3D_WAIT_FOR_INTERRUPT		_IO(HW3D_IOCTL_MAGIC, 0x81)
+//#define HW3D_WAIT_FOR_INTERRUPT		_IO(HW3D_IOCTL_MAGIC, 0x81)
 #define HW3D_GET_REGIONS		\
 			_IOR(HW3D_IOCTL_MAGIC, 0x82, struct hw3d_region *)
 
