@@ -48,3 +48,4 @@ obj-$(CONFIG_ZCACHE)            += zcache/
 obj-$(CONFIG_ZRAM)		+= zram/
 obj-$(CONFIG_XVMALLOC)		+= zram/
 obj-$(CONFIG_ADIS16255)		+= adis16255/
+
