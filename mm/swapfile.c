@@ -586,11 +586,10 @@ static int swap_entry_free(struct swap_info_struct *p,
 		if (p->prio > swap_info[swap_list.next].prio)
 			swap_list.next = p - swap_info;
 		nr_swap_pages++;
-                if (disk->fops->swap_slot_free_notify)
-                        disk->fops->swap_slot_free_notify(p->bdev,
-                                                        offset);
 
-
+		p->inuse_pages--;
+		if (disk->fops->swap_slot_free_notify)
+			disk->fops->swap_slot_free_notify(p->bdev, offset);
 	}
 	if (!swap_count(count))
 		mem_cgroup_uncharge_swap(ent);
