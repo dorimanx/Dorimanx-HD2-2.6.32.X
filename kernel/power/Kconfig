@@ -135,7 +135,7 @@ config HAS_EARLYSUSPEND
 	bool
 
 config CPU_PM
-	def_bool y
+	bool "CPU Power Managment"
 	depends on SUSPEND || CPU_IDLE
 
 config WAKELOCK
