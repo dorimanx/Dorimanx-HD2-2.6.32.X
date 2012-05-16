@@ -195,17 +195,123 @@ extern int rcu_my_thread_group_empty(void);
  * locks being held, for example, by using lockdep_is_held().
  */
 #define rcu_dereference_check(p, c) \
-	({ \
-		if (debug_locks && !(c)) \
-			lockdep_rcu_dereference(__FILE__, __LINE__); \
-		rcu_dereference_raw(p); \
-	})
+        ({ \
+                if (debug_locks && !(c)) \
+                        lockdep_rcu_dereference(__FILE__, __LINE__); \
+                rcu_dereference_raw(p); \
+        })
+
+/**
+ * rcu_lockdep_assert - emit lockdep splat if specified condition not met
+ * @c: condition to check
+ */
+#define rcu_lockdep_assert(c)                                           \
+        do {                                                            \
+                static bool __warned;                                   \
+                if (debug_lockdep_rcu_enabled() && !__warned && !(c)) { \
+                        __warned = true;                                \
+                        lockdep_rcu_dereference(__FILE__, __LINE__);    \
+                }                                                       \
+        } while (0)
 
 #else /* #ifdef CONFIG_PROVE_RCU */
 
-#define rcu_dereference_check(p, c)	rcu_dereference_raw(p)
+#define rcu_dereference_check(p, c)     rcu_dereference_raw(p)
+#define rcu_lockdep_assert(c) do { } while (0)
 
 #endif /* #else #ifdef CONFIG_PROVE_RCU */
+
+/*
+ * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
+ * and rcu_assign_pointer().  Some of these could be folded into their
+ * callers, but they are left separate in order to ease introduction of
+ * multiple flavors of pointers to match the multiple flavors of RCU
+ * (e.g., __rcu_bh, * __rcu_sched, and __srcu), should this make sense in
+ * the future.
+ */
+
+#ifdef __CHECKER__
+#define rcu_dereference_sparse(p, space) \
+        ((void)(((typeof(*p) space *)p) == p))
+#else /* #ifdef __CHECKER__ */
+#define rcu_dereference_sparse(p, space)
+#endif /* #else #ifdef __CHECKER__ */
+
+#define __rcu_access_pointer(p, space) \
+        ({ \
+                typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+                rcu_dereference_sparse(p, space); \
+                ((typeof(*p) __force __kernel *)(_________p1)); \
+        })
+#define __rcu_dereference_check(p, c, space) \
+        ({ \
+                typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+                rcu_lockdep_assert(c); \
+                rcu_dereference_sparse(p, space); \
+                smp_read_barrier_depends(); \
+                ((typeof(*p) __force __kernel *)(_________p1)); \
+        })
+#define __rcu_dereference_protected(p, c, space) \
+        ({ \
+                rcu_lockdep_assert(c); \
+                rcu_dereference_sparse(p, space); \
+                ((typeof(*p) __force __kernel *)(p)); \
+        })
+
+#define __rcu_access_index(p, space) \
+        ({ \
+                typeof(p) _________p1 = ACCESS_ONCE(p); \
+                rcu_dereference_sparse(p, space); \
+                (_________p1); \
+        })
+#define __rcu_dereference_index_check(p, c) \
+        ({ \
+                typeof(p) _________p1 = ACCESS_ONCE(p); \
+                rcu_lockdep_assert(c); \
+                smp_read_barrier_depends(); \
+                (_________p1); \
+        })
+#define __rcu_assign_pointer(p, v, space) \
+        ({ \
+                if (!__builtin_constant_p(v) || \
+                    ((v) != NULL)) \
+                        smp_wmb(); \
+                (p) = (typeof(*v) __force space *)(v); \
+        })
+
+/**
+ * rcu_access_pointer() - fetch RCU pointer with no dereferencing
+ * @p: The pointer to read
+ *
+ * Return the value of the specified RCU-protected pointer, but omit the
+ * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
+ * when the value of this pointer is accessed, but the pointer is not
+ * dereferenced, for example, when testing an RCU-protected pointer against
+ * NULL.  Although rcu_access_pointer() may also be used in cases where
+ * update-side locks prevent the value of the pointer from changing, you
+ * should instead use rcu_dereference_protected() for this use case.
+ */
+#define rcu_access_pointer(p) __rcu_access_pointer((p), __rcu)
+
+/**
+ * rcu_dereference_protected() - fetch RCU pointer when updates prevented
+ * @p: The pointer to read, prior to dereferencing
+ * @c: The conditions under which the dereference will take place
+ *
+ * Return the value of the specified RCU-protected pointer, but omit
+ * both the smp_read_barrier_depends() and the ACCESS_ONCE().  This
+ * is useful in cases where update-side locks prevent the value of the
+ * pointer from changing.  Please note that this primitive does -not-
+ * prevent the compiler from repeating this reference or combining it
+ * with other references, so it should not be used without protection
+ * of appropriate locks.
+ *
+ * This function is only for update-side use.  Using this function
+ * when protected only by rcu_read_lock() will result in infrequent
+ * but very ugly failures.
+ */
+#define rcu_dereference_protected(p, c) \
+        __rcu_dereference_protected((p), (c), __rcu)
 
 /**
  * rcu_read_lock - mark the beginning of an RCU read-side critical section.
@@ -402,6 +508,12 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
 		(p) = (v); \
 	})
 
+#define rcu_assign_pointer_nonull(p, v) \
+	({ \
+		if (!__builtin_constant_p(v)) \
+			smp_wmb(); \
+		(p) = (v); \
+	})
 /* Infrastructure to implement the synchronize_() primitives. */
 
 struct rcu_synchronize {

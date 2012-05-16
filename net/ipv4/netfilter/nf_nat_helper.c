@@ -145,6 +145,17 @@ static int enlarge_skb(struct sk_buff *skb, unsigned int extra)
 	return 1;
 }
 
+void nf_nat_set_seq_adjust(struct nf_conn *ct, enum ip_conntrack_info ctinfo,
+                           __be32 seq, s16 off)
+{
+        if (!off)
+                return;
+        set_bit(IPS_SEQ_ADJUST_BIT, &ct->status);
+        adjust_tcp_sequence(ntohl(seq), off, ct, ctinfo);
+        nf_conntrack_event_cache(IPCT_NATSEQADJ, ct);
+}
+EXPORT_SYMBOL_GPL(nf_nat_set_seq_adjust);
+
 /* Generic function for mangling variable-length address changes inside
  * NATed TCP connections (like the PORT XXX,XXX,XXX,XXX,XXX,XXX
  * command in FTP).

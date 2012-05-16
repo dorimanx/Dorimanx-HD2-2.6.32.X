@@ -198,8 +198,10 @@ void nf_conntrack_l3proto_unregister(struct nf_conntrack_l3proto *proto)
 	BUG_ON(proto->l3proto >= AF_MAX);
 
 	mutex_lock(&nf_ct_proto_mutex);
-	BUG_ON(nf_ct_l3protos[proto->l3proto] != proto);
-	rcu_assign_pointer(nf_ct_l3protos[proto->l3proto],
+	BUG_ON(rcu_dereference_protected(nf_ct_l3protos[proto->l3proto],
+					 lockdep_is_held(&nf_ct_proto_mutex)
+					 ) != proto);
+	rcu_assign_pointer_nonull(nf_ct_l3protos[proto->l3proto],
 			   &nf_conntrack_l3proto_generic);
 	nf_ct_l3proto_unregister_sysctl(proto);
 	mutex_unlock(&nf_ct_proto_mutex);
@@ -306,7 +308,7 @@ int nf_conntrack_l4proto_register(struct nf_conntrack_l4proto *l4proto)
 	if (l4proto->nlattr_tuple_size)
 		l4proto->nla_size += 3 * l4proto->nlattr_tuple_size();
 
-	rcu_assign_pointer(nf_ct_protos[l4proto->l3proto][l4proto->l4proto],
+	rcu_assign_pointer_nonull(nf_ct_protos[l4proto->l3proto][l4proto->l4proto],
 			   l4proto);
 
 out_unlock:
@@ -322,8 +324,11 @@ void nf_conntrack_l4proto_unregister(struct nf_conntrack_l4proto *l4proto)
 	BUG_ON(l4proto->l3proto >= PF_MAX);
 
 	mutex_lock(&nf_ct_proto_mutex);
-	BUG_ON(nf_ct_protos[l4proto->l3proto][l4proto->l4proto] != l4proto);
-	rcu_assign_pointer(nf_ct_protos[l4proto->l3proto][l4proto->l4proto],
+	BUG_ON(rcu_dereference_protected(
+			nf_ct_protos[l4proto->l3proto][l4proto->l4proto],
+			lockdep_is_held(&nf_ct_proto_mutex)
+			) != l4proto);
+	rcu_assign_pointer_nonull(nf_ct_protos[l4proto->l3proto][l4proto->l4proto],
 			   &nf_conntrack_l4proto_generic);
 	nf_ct_l4proto_unregister_sysctl(l4proto);
 	mutex_unlock(&nf_ct_proto_mutex);
@@ -348,7 +353,7 @@ int nf_conntrack_proto_init(void)
 		return err;
 
 	for (i = 0; i < AF_MAX; i++)
-		rcu_assign_pointer(nf_ct_l3protos[i],
+		rcu_assign_pointer_nonull(nf_ct_l3protos[i],
 				   &nf_conntrack_l3proto_generic);
 	return 0;
 }
