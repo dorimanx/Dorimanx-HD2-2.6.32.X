@@ -43,6 +43,11 @@
 
 #define DEBUG_LEVEL_DEATHPENDING 6
 
+#ifdef CONFIG_SWAP
+#include <linux/fs.h>
+#include <linux/swap.h>
+#endif
+
 static uint32_t lowmem_debug_level = 2;
 static int lowmem_adj[6] = {
         0,
@@ -232,7 +237,6 @@ module_param_named(check_filepages , lowmem_check_filepages, uint,
 		   S_IRUGO | S_IWUSR);
 module_param_array_named(minfile, lowmem_minfile, uint, &lowmem_minfile_size,
 			 S_IRUGO | S_IWUSR);
-
 #ifdef CONFIG_SWAP
 module_param_named(fudgeswap, fudgeswap, int, S_IRUGO | S_IWUSR);
 #endif
