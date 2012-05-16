@@ -62,6 +62,15 @@ include/generated/autoconf.h
 include/generated/compile.h
 *piggy.*
 
+#
+# Generated build output
+#
+arch/arm/boot/compressed/lib1funcs.S
+arch/arm/boot/compressed/ashldi3.S
+arch/arm/boot/compressed/piggy.gzip
+arch/arm/boot/compressed/piggy.xzkern
+arch/arm/boot/compressed/vmlinux
+
 # stgit generated dirs
 patches-*
 file-bkp/
