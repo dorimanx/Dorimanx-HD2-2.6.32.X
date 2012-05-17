@@ -33,6 +33,7 @@ enum {
 };
 
 struct wake_lock {
+#ifdef CONFIG_HAS_WAKELOCK
 	struct list_head    link;
 	int                 flags;
 	const char         *name;
@@ -47,6 +48,7 @@ struct wake_lock {
 		ktime_t         max_time;
 		ktime_t         last_time;
 	} stat;
+#endif
 #endif
 };
 
