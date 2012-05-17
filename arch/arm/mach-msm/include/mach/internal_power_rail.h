@@ -44,6 +44,7 @@ enum rail_ctl_mode {
 	PWR_RAIL_CTL_MANUAL,
 };
 
+#if defined(CONFIG_ARCH_MSM8X60) || defined(CONFIG_ARCH_MSM8960)
 static inline int __maybe_unused internal_pwr_rail_ctl(unsigned rail_id,
 						       bool enable)
 {
@@ -56,8 +57,11 @@ static inline int __maybe_unused internal_pwr_rail_mode(unsigned rail_id,
 	/* Not yet implemented. */
 	return 0;
 }
+#else
+int internal_pwr_rail_ctl(unsigned rail_id, bool enable);
+int internal_pwr_rail_mode(unsigned rail_id, enum rail_ctl_mode mode);
+#endif
 
 int internal_pwr_rail_ctl_auto(unsigned rail_id, bool enable);
 
 #endif /* _INTERNAL_POWER_RAIL_H */
-

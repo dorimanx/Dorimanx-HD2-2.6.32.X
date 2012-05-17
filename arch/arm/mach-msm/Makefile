@@ -22,8 +22,8 @@ obj-y += pmic.o
 obj-y += remote_spinlock.o
 obj-$(CONFIG_ARCH_MSM_ARM11) += acpuclock-arm11.o idle.o
 obj-$(CONFIG_ARCH_QSD8X50) += arch-init-scorpion.o acpuclock-scorpion.o
-obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o internal_power_rail.o
-obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o arch-init-7x30.o socinfo.o
+obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o
+obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o arch-init-7x30.o 
 obj-$(CONFIG_ARCH_MSM7X30) += rpc_pmapp.o smd_rpcrouter_clients.o spm.o
 obj-$(CONFIG_MSM_CPU_AVS) += avs.o avs_hw.o
 obj-$(CONFIG_ARCH_MSM7X30) += rpc_hsusb.o
@@ -45,6 +45,19 @@ else
 obj-$(CONFIG_ARCH_QSD8X50) += board-htcleo-wifi-nvs.o
 endif
 
+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuclock-8x60.o clock-debug.o
+obj-$(CONFIG_ARCH_MSM8X60) += clock-rpm.o spm.o restart.o mpm.o mpp.o
+obj-$(CONFIG_ARCH_MSM8X60) += subsystem-fatal-8x60.o
+obj-$(CONFIG_ARCH_MSM8X60) += saw-regulator.o
+obj-$(CONFIG_ARCH_MSM8X60) += rpm-regulator.o
+obj-$(CONFIG_ARCH_MSM8X60) += footswitch-8x60.o
+obj-$(CONFIG_ARCH_MSM8X60) += sysinfo-8x60.o
+obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o htc_simlock-8x60.o
+obj-$(CONFIG_MSM_SECURE_IO) += scm-io.o
+obj-$(CONFIG_MSM_PIL) += peripheral-loader.o
+obj-$(CONFIG_MSM_PIL) += peripheral-reset.o
+obj-$(CONFIG_MSM_DSPS) += msm_dsps.o
 obj-$(CONFIG_MSM_FIQ_SUPPORT) += fiq_glue.o
 obj-$(CONFIG_MACH_TROUT) += board-trout-rfkill.o
 obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
@@ -73,6 +86,17 @@ endif
 obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_xdr.o
 obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_dog_keepalive.o
 obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_time_remote.o
+obj-$(CONFIG_MSM_SMD) += smd_tty.o
+ifdef CONFIG_MACH_HTCLEO
+obj-$(CONFIG_MSM_SMD) += smd_qmi_wince.o
+obj-y += clock-wince.o
+else
+obj-$(CONFIG_MSM_SMD) += smd_qmi.o
+obj-y += clock-pcom.o
+obj-y += clock.o
+endif
+obj-y += internal_power_rail.o
+
 obj-$(CONFIG_MSM_DALRPC) += dal.o
 obj-$(CONFIG_MSM_DALRPC_TEST) += dal_remotetest.o
 obj-$(CONFIG_ARCH_MSM7X30) += dal_axi.o
