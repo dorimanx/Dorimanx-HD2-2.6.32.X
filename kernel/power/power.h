@@ -253,9 +253,10 @@ extern struct wake_lock main_wake_lock;
 extern suspend_state_t requested_suspend_state;
 extern void suspend_sys_sync_queue(void);
 extern int suspend_sys_sync_wait(void);
+extern struct wake_lock no_suspend_wake_lock;
 #else
-static inline void suspend_sys_sync_queue(void) {}
-static inline int suspend_sys_sync_wait(void) { return 0; }
+void suspend_sys_sync_queue(void) {}
+int suspend_sys_sync_wait(void) { return 0; }
 #endif
 
 #ifdef CONFIG_USER_WAKELOCK
