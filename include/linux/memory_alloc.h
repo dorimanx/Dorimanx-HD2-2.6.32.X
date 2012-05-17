@@ -16,7 +16,6 @@
 #include <linux/mutex.h>
 #include <linux/genalloc.h>
 #include <linux/rbtree.h>
-#include <linux/pfn.h>
 
 struct mem_pool {
 	struct mutex pool_mutex;
