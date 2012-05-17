@@ -35,6 +35,7 @@
 #include <linux/akm8973.h>
 #include <../../../drivers/staging/android/timed_gpio.h>
 #include <linux/ds2746_battery.h>
+#include <linux/regulator/machine.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -71,6 +72,7 @@
 #include "devices.h"
 #include "proc_comm.h"
 #include "dex_comm.h"
+#include "footswitch.h"
 
 #define ATAG_MAGLDR_BOOT    0x4C47414D
 struct tag_magldr_entry
@@ -700,23 +702,8 @@ static struct platform_device qsd_device_spi = {
 ///////////////////////////////////////////////////////////////////////
 // KGSL (HW3D support)#include <linux/android_pmem.h>
 ///////////////////////////////////////////////////////////////////////
-static int htcleo_kgsl_power_rail_mode(int follow_clk)
-{
-	int mode = follow_clk ? 0 : 1;
-	int rail_id = 0;
-	return msm_proc_comm(PCOM_CLK_REGIME_SEC_RAIL_CONTROL, &rail_id, &mode);
-}
 
-static int htcleo_kgsl_power(bool on)
-{
-	int cmd;
-	int rail_id = 0;
-
-    	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
-    	return msm_proc_comm(cmd, &rail_id, NULL);
-}
-
-/* start kgsl-3d0 */
+/* start kgsl */
 static struct resource kgsl_3d0_resources[] = {
 	{
 		.name  = KGSL_3D0_REG_MEMORY,
@@ -765,6 +752,13 @@ struct platform_device msm_kgsl_3d0 = {
 	},
 };
 /* end kgsl-3d0 */
+
+/* start footswitch regulator */
+struct platform_device *msm_footswitch_devices[] = {
+	FS_PCOM(FS_GFX3D,  "fs_gfx3d"),
+};
+unsigned msm_num_footswitch_devices = ARRAY_SIZE(msm_footswitch_devices);
+/* end footswitch regulator */
 
 ///////////////////////////////////////////////////////////////////////
 // Memory
@@ -1091,15 +1085,10 @@ static void __init htcleo_init(void)
 
 	msm_device_i2c_init();
 
-	/* set the gpu power rail to manual mode so clk en/dis will not
-	* turn off gpu power, and hang it on resume */
-
-	htcleo_kgsl_power_rail_mode(0);
-	htcleo_kgsl_power(false);
-	mdelay(100);
-	htcleo_kgsl_power(true);
-
 	platform_add_devices(devices, ARRAY_SIZE(devices));
+
+	platform_add_devices(msm_footswitch_devices,
+			msm_num_footswitch_devices);
 
 	htcleo_init_panel();
 

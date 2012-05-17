@@ -54,6 +54,17 @@ extern struct platform_device msm_device_vidc_720p;
 #ifdef CONFIG_SPI_QSD_NEW
 extern struct platform_device qsdnew_device_spi;
 #endif
+extern struct platform_device *msm_footswitch_devices[];
+extern struct platform_device msm_footswitch;
+extern unsigned msm_num_footswitch_devices;
+
+#ifdef CONFIG_ARCH_MSM8X60
+extern struct clk_lookup msm_clocks_8x60[];
+extern unsigned msm_num_clocks_8x60;
+#endif
+
+void __init msm_fb_register_device(char *name, void *data);
+void __init msm_camera_register_device(void *, uint32_t, void *);
 extern struct platform_device msm_device_touchscreen;
 extern struct platform_device msm_device_spi;
 extern unsigned engineer_id;
