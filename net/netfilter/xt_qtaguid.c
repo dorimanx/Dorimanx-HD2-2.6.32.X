@@ -15,7 +15,6 @@
 #define DEBUG
 
 #include <linux/file.h>
-#include <linux/miscdevice.h>
 #include <linux/inetdevice.h>
 #include <linux/module.h>
 #include <linux/netfilter/x_tables.h>
@@ -26,16 +25,26 @@
 #include <net/sock.h>
 #include <net/tcp.h>
 #include <net/udp.h>
-
 #if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
-#include <linux/netfilter_ipv6/ip6_tables.h>
+#define XT_SOCKET_HAVE_IPV6 1
 #endif
+
+/*
+ * no_printk doesn't exist in .35
+ * added by marc1706
+ */
+int no_printk(const char *fmt, ...)
+{
+	return 0;
+}
+
+#define pr_warn_once(fmt, ...)                                  \
+	printk_once(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
 
 #include <linux/netfilter/xt_socket.h>
 #include "xt_qtaguid_internal.h"
 #include "xt_qtaguid_print.h"
 
-#define pr_warn_once printk
 /*
  * We only use the xt_socket funcs within a similar context to avoid unexpected
  * return values.
@@ -792,7 +801,7 @@ static int iface_stat_all_proc_read(char *page, char **num_items_returned,
 	int len;
 	struct iface_stat *iface_entry;
 	const struct net_device_stats *stats;
-	struct net_device_stats no_dev_stats = {0};
+	const struct net_device_stats no_dev_stats = {0};
 
 	if (unlikely(module_passive)) {
 		*eof = 1;
@@ -800,17 +809,17 @@ static int iface_stat_all_proc_read(char *page, char **num_items_returned,
 	}
 
 	CT_DEBUG("qtaguid:proc iface_stat_all "
-		 "page=%p *num_items_returned=%p off=%ld "
-		 "char_count=%d *eof=%d\n", page, *num_items_returned,
-		 items_to_skip, char_count, *eof);
+		"page=%p *num_items_returned=%p off=%ld "
+		"char_count=%d *eof=%d\n", page, *num_items_returned,
+		items_to_skip, char_count, *eof);
 
 	if (*eof)
 		return 0;
 
 	/*
-	 * This lock will prevent iface_stat_update() from changing active,
-	 * and in turn prevent an interface from unregistering itself.
-	 */
+	* This lock will prevent iface_stat_update() from changing active,
+	* and in turn prevent an interface from unregistering itself.
+	*/
 	spin_lock_bh(&iface_stat_list_lock);
 	list_for_each_entry(iface_entry, &iface_stat_list, list) {
 		if (item_index++ < items_to_skip)
@@ -822,17 +831,17 @@ static int iface_stat_all_proc_read(char *page, char **num_items_returned,
 			stats = &no_dev_stats;
 		}
 		len = snprintf(outp, char_count,
-			       "%s %d "
-			       "%llu %llu %llu %llu "
-			       "%lu %lu %lu %lu\n",
-			       iface_entry->ifname,
-			       iface_entry->active,
-			       iface_entry->totals[IFS_RX].bytes,
-			       iface_entry->totals[IFS_RX].packets,
-			       iface_entry->totals[IFS_TX].bytes,
-			       iface_entry->totals[IFS_TX].packets,
-			       stats->rx_bytes, stats->rx_packets,
-			       stats->tx_bytes, stats->tx_packets);
+			"%s %d "
+			"%llu %llu %llu %llu "
+			"%lu %lu %lu %lu\n",
+			iface_entry->ifname,
+			iface_entry->active,
+			iface_entry->totals[IFS_RX].bytes,
+			iface_entry->totals[IFS_RX].packets,
+			iface_entry->totals[IFS_TX].bytes,
+			iface_entry->totals[IFS_TX].packets,
+			stats->rx_bytes, stats->rx_packets,
+			stats->tx_bytes, stats->tx_packets);
 		if (len >= char_count) {
 			spin_unlock_bh(&iface_stat_list_lock);
 			*outp = '\0';
@@ -892,9 +901,17 @@ static void _iface_stat_set_active(struct iface_stat *entry,
 	if (activate) {
 		entry->net_dev = net_dev;
 		entry->active = true;
+		IF_DEBUG("qtaguid: %s(%s): "
+			 "enable tracking. rfcnt=%u\n", __func__,
+			 entry->ifname,
+			 atomic_read(&net_dev->refcnt));
 	} else {
 		entry->active = false;
 		entry->net_dev = NULL;
+		IF_DEBUG("qtaguid: %s(%s): "
+			 "disable tracking. rfcnt=%d\n", __func__,
+			 entry->ifname,
+			 atomic_read(&net_dev->refcnt));
 
 	}
 }
@@ -1327,19 +1344,8 @@ static void if_tag_stat_update(const char *ifname, uid_t uid,
 	}
 
 	if (acct_tag) {
-		/* Create the child {acct_tag, uid_tag} and hook up parent. */
 		new_tag_stat = create_if_tag_stat(iface_entry, tag);
 		new_tag_stat->parent_counters = uid_tag_counters;
-	} else {
-	       /*
-		* For new_tag_stat to be still NULL here would require:
-		*  {0, uid_tag} exists
-		*  and {acct_tag, uid_tag} doesn't exist
-		*  AND acct_tag == 0.
-		* Impossible. This reassures us that new_tag_stat
-		* below will always be assigned.
-		*/
-		BUG_ON(!new_tag_stat);
 	}
 	tag_stat_update(new_tag_stat, direction, proto, bytes);
 	spin_unlock_bh(&iface_entry->tag_stat_list_lock);
@@ -1545,32 +1551,6 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 	return sk;
 }
 
-static int ipx_proto(const struct sk_buff *skb,
-		struct xt_action_param *par)
-{
-#ifdef CONFIG_IP6_NF_IPTABLES
-	int thoff;
-#endif
-	int tproto;
-
-	switch (par->family) {
-#ifdef CONFIG_IP6_NF_IPTABLES
-	case NFPROTO_IPV6:
-		tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
-		if (tproto < 0)
-			MT_DEBUG("%s(): transport header not found in ipv6"
-				" skb=%p\n", __func__, skb);
-		break;
-#endif
-	case NFPROTO_IPV4:
-		tproto = ip_hdr(skb)->protocol;
-		break;
-	default:
-		tproto = IPPROTO_RAW;
-	}
-	return tproto;
-}
-
 static void account_for_uid(const struct sk_buff *skb,
 			    const struct sock *alternate_sk, uid_t uid,
 			    struct xt_action_param *par)
@@ -1597,15 +1577,15 @@ static void account_for_uid(const struct sk_buff *skb,
 	} else if (unlikely(!el_dev->name)) {
 		pr_info("qtaguid[%d]: no dev->name?!!\n", par->hooknum);
 	} else {
-		int proto = ipx_proto(skb, par);
-		MT_DEBUG("qtaguid[%d]: dev name=%s type=%d fam=%d proto=%d\n",
-			par->hooknum, el_dev->name, el_dev->type,
-			par->family, proto);
+		MT_DEBUG("qtaguid[%d]: dev name=%s type=%d\n",
+			 par->hooknum,
+			 el_dev->name,
+			 el_dev->type);
 
 		if_tag_stat_update(el_dev->name, uid,
 				skb->sk ? skb->sk : alternate_sk,
 				par->in ? IFS_RX : IFS_TX,
-				proto, skb->len);
+				ip_hdr(skb)->protocol, skb->len);
 	}
 }
 
@@ -1650,8 +1630,8 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 	} else {
 		atomic64_inc(&qtu_events.match_found_sk);
 	}
-	MT_DEBUG("qtaguid[%d]: sk=%p got_sock=%d fam=%d proto=%d\n",	
-		par->hooknum, sk, got_sock, par->family, ipx_proto(skb, par));
+	MT_DEBUG("qtaguid[%d]: sk=%p got_sock=%d proto=%d\n",
+		par->hooknum, sk, got_sock, ip_hdr(skb)->protocol);
 	if (sk != NULL) {
 		MT_DEBUG("qtaguid[%d]: sk=%p->sk_socket=%p->file=%p\n",
 			par->hooknum, sk, sk->sk_socket,
@@ -2221,16 +2201,14 @@ static int ctrl_cmd_tag(const char *input)
 		 * At first, we want to catch user-space code that is not
 		 * opening the /dev/xt_qtaguid.
 		 */
-		if (IS_ERR_OR_NULL(pqd_entry))
-			pr_warn_once(
-				"qtaguid: %s(): "
-				"User space forgot to open /dev/xt_qtaguid? "
-				"pid=%u tgid=%u uid=%u\n", __func__,
-				current->pid, current->tgid,
-				current_fsuid());
-		else
+		WARN_ONCE(IS_ERR_OR_NULL(pqd_entry),
+			  "qtaguid: User space forgot to open /dev/xt_qtaguid? "
+			  "pid=%u tgid=%u uid=%u\n",
+			  current->pid, current->tgid, current_fsuid());
+		if (!IS_ERR_OR_NULL(pqd_entry)) {
 			list_add(&sock_tag_entry->list,
 				 &pqd_entry->sock_tag_list);
+		}
 		spin_unlock_bh(&uid_tag_data_tree_lock);
 
 		sock_tag_tree_insert(sock_tag_entry, &sock_tag_tree);
@@ -2310,12 +2288,11 @@ static int ctrl_cmd_untag(const char *input)
 	 * At first, we want to catch user-space code that is not
 	 * opening the /dev/xt_qtaguid.
 	 */
-	if (IS_ERR_OR_NULL(pqd_entry))
-		pr_warn_once("qtaguid: %s(): "
-			     "User space forgot to open /dev/xt_qtaguid? "
-			     "pid=%u tgid=%u uid=%u\n", __func__,
-			     current->pid, current->tgid, current_fsuid());
-	else
+	WARN_ONCE(IS_ERR_OR_NULL(pqd_entry),
+		  "qtaguid: User space forgot to open /dev/xt_qtaguid? "
+		  "pid=%u tgid=%u uid=%u\n",
+		  current->pid, current->tgid, current_fsuid());
+	if (!IS_ERR_OR_NULL(pqd_entry))
 		list_del(&sock_tag_entry->list);
 	spin_unlock_bh(&uid_tag_data_tree_lock);
 	/*
