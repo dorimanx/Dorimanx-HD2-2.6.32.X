@@ -859,7 +859,7 @@ static void mddi_skew_calibration(struct mddi_info *mddi)
 }
 */
 
-static int __init mddi_probe(struct platform_device *pdev)
+static int mddi_probe(struct platform_device *pdev)
 {
 	struct msm_mddi_platform_data *pdata = pdev->dev.platform_data;
 	struct mddi_info *mddi = &mddi_info[pdev->id];
