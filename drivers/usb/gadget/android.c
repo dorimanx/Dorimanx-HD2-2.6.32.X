@@ -127,7 +127,6 @@ struct android_dev {
 };
 
 static struct android_dev *_android_dev;
-static int android_bind_config(struct usb_configuration *c);
 
 /* string IDs are assigned dynamically */
 
