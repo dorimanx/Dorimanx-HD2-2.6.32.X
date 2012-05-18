@@ -325,14 +325,22 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS	= -DMODULE -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant
+CFLAGS_COMPILE  = -pipe -fno-ident
+CFLAGS_ARM      = -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr \
+                  -ffast-math -marm -mtune=cortex-a8 \
+                  -march=armv7-a -mfpu=neon
+CFLAGS_LOOPS    = -fsingle-precision-constant -ftree-vectorize \
+                  -ftree-loop-distribution \
+                  -mvectorize-with-neon-quad
+# -ftree-loop-linear -floop-strip-mine -floop-block
+CFLAGS_MODULO   = -fmodulo-sched -fmodulo-sched-allow-regmoves
+CFLAGS_DISABLE  = -fno-ipa-cp-clone
+MODFLAGS        = -DMODULE $(CFLAGS_COMPILE) $(CFLAGS_ARM) $(CFLAGS_DISABLE)
+KERNELFLAGS     = $(CFLAGS_COMPILE) $(CFLAGS_ARM) $(CFLAGS_DISABLE)
 CFLAGS_MODULE   = $(MODFLAGS)
-AFLAGS_MODULE   = $(MODFLAGS) -pipe
-LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant
-AFLAGS_KERNEL	= -march=armv7-a -mtune=cortex-a8 -mfpu=neon -ffast-math -ftree-vectorize -fsingle-precision-constant -pipe
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
-
+AFLAGS_MODULE   = $(MODFLAGS)
+LDFLAGS_MODULE  =
+CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
@@ -346,7 +354,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks
+                   -fno-delete-null-pointer-checks \
+                   $(CFLAGS_COMPILE) \
+                   $(CFLAGS_ARM) \
+                   $(CFLAGS_LOOPS) \
+                   $(CFLAGS_MODULO) \
+                   $(CFLAGS_DISABLE)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
