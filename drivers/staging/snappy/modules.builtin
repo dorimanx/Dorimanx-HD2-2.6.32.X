@@ -1,0 +1,2 @@
+kernel/drivers/staging/snappy/csnappy_compress.ko
+kernel/drivers/staging/snappy/csnappy_decompress.ko
