@@ -480,6 +480,20 @@ config QSD_PMIC_DEFAULT_DCDC1
 	help
 	  This is the PMIC voltage at Linux kernel boot.
 
+config MAX_CPU_VOLTAGE
+        int "MAX CPU voltage"
+        depends on (ARCH_MSM_SCORPION)
+        default 1350
+        help
+          This is the MAX CPU voltage allowed to be set.
+
+config MIN_CPU_VOLTAGE
+        int "MIN CPU voltage"
+        depends on (ARCH_MSM_SCORPION)
+        default 800
+        help
+          This is the MIN CPU voltage allowed to be set.
+
 config HTC_PWRSINK
 	depends on MSM_SMD
 	default y
