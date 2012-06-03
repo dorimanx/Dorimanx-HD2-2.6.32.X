@@ -42,14 +42,14 @@
  */
 
 /* Tuned for MAX performance and MID battery save */
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(3)
 #define DEF_FREQUENCY_UP_THRESHOLD		(70)
-#define DEF_SAMPLING_DOWN_FACTOR		(10)
-#define MAX_SAMPLING_DOWN_FACTOR		(10000)
-#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(2)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(70)
+#define DEF_SAMPLING_DOWN_FACTOR		(3)
+#define MAX_SAMPLING_DOWN_FACTOR		(100000)
+#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(60)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
-#define MIN_FREQUENCY_UP_THRESHOLD		(10)
+#define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
 #define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
 #define DEF_SUSPEND_FREQ			(245000)
@@ -92,7 +92,7 @@ static struct notifier_block idle_notifier_block = {
 
 #define MIN_LATENCY_MULTIPLIER			(100)
 #if defined(CONFIG_ARCH_MSM_SCORPION)
-#define TRANSITION_LATENCY_LIMIT (8000000)
+#define TRANSITION_LATENCY_LIMIT (9000000)
 #else
 #define TRANSITION_LATENCY_LIMIT (10000000)
 #endif
@@ -1578,12 +1578,14 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					NULL,
 					dbs_tuners_ins.powersave_bias))
 			dbs_timer_init(this_dbs_info);
-                register_early_suspend(&cpufreq_gov_early_suspend);
-		              register_early_suspend(&hyper_power_suspend);
+                	register_early_suspend(&cpufreq_gov_early_suspend);
+			register_early_suspend(&hyper_power_suspend);
 		pr_info("[hyper] hyper active\n");
 		break;
 
 	case CPUFREQ_GOV_STOP:
+                unregister_early_suspend(&cpufreq_gov_early_suspend);
+                unregister_early_suspend(&hyper_power_suspend);
 		dbs_timer_exit(this_dbs_info);
 
 		mutex_lock(&dbs_mutex);
@@ -1598,8 +1600,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		if (!dbs_enable)
 			sysfs_remove_group(cpufreq_global_kobject,
 					   &dbs_attr_group);
-                unregister_early_suspend(&cpufreq_gov_early_suspend);
-		unregister_early_suspend(&hyper_power_suspend);
 		pr_info("[hyper] hyper inactive\n");
 		break;
 
