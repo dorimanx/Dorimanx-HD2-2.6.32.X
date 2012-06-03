@@ -42,14 +42,14 @@
  */
 
 /* Tuned for MID performance and GOOD battery save */
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(2)
 #define DEF_FREQUENCY_UP_THRESHOLD		(70)
-#define DEF_SAMPLING_DOWN_FACTOR		(10)
+#define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
-#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(2)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(80)
+#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(60)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
-#define MIN_FREQUENCY_UP_THRESHOLD		(10)
+#define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
 #define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
 #define DEF_SUSPEND_FREQ			(245000)
@@ -1640,12 +1640,14 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					NULL,
 					dbs_tuners_ins.powersave_bias))
 			dbs_timer_init(this_dbs_info);
-		register_early_suspend(&cpufreq_gov_early_suspend);
+			register_early_suspend(&cpufreq_gov_early_suspend);
 			register_early_suspend(&ondemand_power_suspend);
 		pr_info("[ondemand] ondemand active\n");
 		break;
 
 	case CPUFREQ_GOV_STOP:
+                unregister_early_suspend(&cpufreq_gov_early_suspend);
+                unregister_early_suspend(&ondemand_power_suspend);
 		dbs_timer_exit(this_dbs_info);
 
 		mutex_lock(&dbs_mutex);
@@ -1660,8 +1662,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		if (!dbs_enable)
 			sysfs_remove_group(cpufreq_global_kobject,
 					   &dbs_attr_group);
-		unregister_early_suspend(&cpufreq_gov_early_suspend);
-		unregister_early_suspend(&ondemand_power_suspend);
 		pr_info("[ondemand] ondemand inactive\n");
 		break;
 
