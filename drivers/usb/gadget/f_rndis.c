@@ -87,8 +87,8 @@ struct f_rndis {
 	struct gether			port;
 	u8				ctrl_id, data_id;
 	u8				ethaddr[ETH_ALEN];
-        u32                             vendorID;
-        const char                      *manufacturer;
+        u32				vendorID;
+        const char			*manufacturer;
 	int				config;
 
 	struct rndis_ep_descs		fs;
@@ -826,8 +826,9 @@ int __init rndis_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
 		goto fail;
 
 	memcpy(rndis->ethaddr, ethaddr, ETH_ALEN);
-        rndis->vendorID = vendorID;
-        rndis->manufacturer = manufacturer;
+
+	rndis->vendorID = vendorID;
+	rndis->manufacturer = manufacturer;
 
 	/* RNDIS activates when the host changes this filter */
 	rndis->port.cdc_filter = 0;
