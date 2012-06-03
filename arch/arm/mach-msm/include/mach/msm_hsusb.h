@@ -91,7 +91,7 @@ struct msm_hsusb_platform_data {
         bool enable_car_kit_detect;
         __u8 accessory_detect;
         bool dock_detect;
- 
+
         int ac_9v_gpio;
 };
 
