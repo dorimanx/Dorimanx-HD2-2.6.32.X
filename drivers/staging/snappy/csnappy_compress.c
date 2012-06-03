@@ -469,7 +469,7 @@ csnappy_compress(
 	written += (p - compressed);
 	compressed = p;
 	while (input_length > 0) {
-		num_to_read = min(input_length, (uint32_t)kBlockSize);
+		num_to_read = min_t(uint32_t, input_length, kBlockSize);
 		workmem_size = workmem_bytes_power_of_two;
 		if (num_to_read < kBlockSize) {
 			for (workmem_size = 9;
