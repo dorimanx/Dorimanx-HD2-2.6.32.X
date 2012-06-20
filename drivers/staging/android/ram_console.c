@@ -21,6 +21,7 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
+#include <linux/printk.h>
 
 #if defined(CONFIG_VERY_EARLY_CONSOLE)
 #include <asm/mach/map.h>
