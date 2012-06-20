@@ -656,8 +656,9 @@ static int mtp_send_file(struct mtp_dev *dev, struct file *filp,
 		req->length = xfer;
 		ret = usb_ep_queue(dev->ep_in, req, GFP_KERNEL);
 		if (ret < 0) {
-			DBG(cdev, "mtp_write: xfer error %d\n", ret);
-			dev->state = STATE_ERROR;
+			DBG(cdev, "send_file_work: xfer error %d\n", ret);
+			if (dev->state != STATE_OFFLINE)
+				dev->state = STATE_ERROR;
 			r = -EIO;
 			break;
 		}
@@ -698,7 +699,8 @@ static int mtp_receive_file(struct mtp_dev *dev, struct file *filp,
 			ret = usb_ep_queue(dev->ep_out, read_req, GFP_KERNEL);
 			if (ret < 0) {
 				r = -EIO;
-				dev->state = STATE_ERROR;
+				if (dev->state != STATE_OFFLINE)
+					dev->state = STATE_ERROR;
 				break;
 			}
 			count -= ret;
@@ -711,7 +713,8 @@ static int mtp_receive_file(struct mtp_dev *dev, struct file *filp,
 			DBG(cdev, "vfs_write %d\n", ret);
 			if (ret != write_req->actual) {
 				r = -EIO;
-				dev->state = STATE_ERROR;
+				if (dev->state != STATE_OFFLINE)
+					dev->state = STATE_ERROR;	
 				break;
 			}
 			write_req = NULL;
