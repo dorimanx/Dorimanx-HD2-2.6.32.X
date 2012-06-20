@@ -121,7 +121,41 @@ config HAVE_CLK
 config HAVE_DMA_API_DEBUG
 	bool
 
-config HAVE_DEFAULT_NO_SPIN_MUTEXES
+config HAVE_HW_BREAKPOINT
+	bool
+	depends on PERF_EVENTS
+
+config HAVE_MIXED_BREAKPOINTS_REGS
+	bool
+	depends on HAVE_HW_BREAKPOINT
+	help
+	  Depending on the arch implementation of hardware breakpoints,
+	  some of them have separate registers for data and instruction
+	  breakpoints addresses, others have mixed registers to store
+	  them but define the access type in a control register.
+	  Select this option if your arch implements breakpoints under the
+	  latter fashion.
+
+config HAVE_USER_RETURN_NOTIFIER
+	bool
+
+config HAVE_PERF_EVENTS_NMI
+	bool
+	help
+	  System hardware can generate an NMI using the perf event
+	  subsystem.  Also has support for calculating CPU cycle events
+	  to determine how many clock cycles in a given period.
+
+config HAVE_ARCH_JUMP_LABEL
+	bool
+
+config HAVE_ARCH_MUTEX_CPU_RELAX
+	bool
+
+config ARCH_HAVE_NMI_SAFE_CMPXCHG
+	bool
+
+config HAVE_RCU_TABLE_FREE
 	bool
 
 source "kernel/gcov/Kconfig"

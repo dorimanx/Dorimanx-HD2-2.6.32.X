@@ -24,7 +24,13 @@ config X86
 	select HAVE_UNSTABLE_SCHED_CLOCK
 	select HAVE_IDE
 	select HAVE_OPROFILE
+<<<<<<< HEAD
 	select HAVE_PERF_EVENTS if (!M386 && !M486)
+=======
+	select HAVE_PERF_EVENTS
+	select HAVE_IRQ_WORK
+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if !M386
+>>>>>>> 056c975... + testing: cherry picked the new lockless list support from Linux 3.3+ -> http://lwn.net/Articles/423366/
 	select HAVE_IOREMAP_PROT
 	select HAVE_KPROBES
 	select ARCH_WANT_OPTIONAL_GPIOLIB

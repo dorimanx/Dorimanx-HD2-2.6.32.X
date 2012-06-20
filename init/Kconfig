@@ -19,7 +19,14 @@ config DEFCONFIG_LIST
 config CONSTRUCTORS
 	bool
 	depends on !UML
-	default y
+
+config HAVE_IRQ_WORK
+	bool
+
+config IRQ_WORK
+	bool
+	depends on HAVE_IRQ_WORK
+	select LLIST
 
 menu "General setup"
 

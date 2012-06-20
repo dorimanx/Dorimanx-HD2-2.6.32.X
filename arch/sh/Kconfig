@@ -17,6 +17,11 @@ config SUPERH
 	select HAVE_ARCH_TRACEHOOK
 	select HAVE_DMA_API_DEBUG
 	select HAVE_PERF_EVENTS
+<<<<<<< HEAD
+=======
+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if (GUSA_RB || CPU_SH4A)
+	select PERF_USE_VMALLOC
+>>>>>>> 056c975... + testing: cherry picked the new lockless list support from Linux 3.3+ -> http://lwn.net/Articles/423366/
 	select HAVE_KERNEL_GZIP
 	select HAVE_KERNEL_BZIP2
 	select HAVE_KERNEL_LZMA

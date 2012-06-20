@@ -29,6 +29,15 @@ config IA64
 	select HAVE_KVM
 	select HAVE_ARCH_TRACEHOOK
 	select HAVE_DMA_API_DEBUG
+<<<<<<< HEAD
+=======
+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+	select HAVE_GENERIC_HARDIRQS
+	select GENERIC_IRQ_PROBE
+	select GENERIC_PENDING_IRQ if SMP
+	select IRQ_PER_CPU
+	select GENERIC_IRQ_SHOW
+>>>>>>> 056c975... + testing: cherry picked the new lockless list support from Linux 3.3+ -> http://lwn.net/Articles/423366/
 	default y
 	help
 	  The Itanium Processor Family is Intel's 64-bit successor to

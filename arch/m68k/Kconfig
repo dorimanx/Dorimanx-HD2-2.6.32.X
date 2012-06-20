@@ -7,10 +7,18 @@ config M68K
 	default y
 	select HAVE_AOUT
 	select HAVE_IDE
+<<<<<<< HEAD
 
 config MMU
 	bool
 	default y
+=======
+	select HAVE_AOUT if MMU
+	select GENERIC_ATOMIC64 if MMU
+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+	select HAVE_GENERIC_HARDIRQS if !MMU
+	select GENERIC_IRQ_SHOW if !MMU
+>>>>>>> 056c975... + testing: cherry picked the new lockless list support from Linux 3.3+ -> http://lwn.net/Articles/423366/
 
 config RWSEM_GENERIC_SPINLOCK
 	bool

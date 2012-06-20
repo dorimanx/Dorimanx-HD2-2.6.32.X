@@ -130,6 +130,19 @@ config PPC
 	select HAVE_SYSCALL_WRAPPERS if PPC64
 	select GENERIC_ATOMIC64 if PPC32
 	select HAVE_PERF_EVENTS
+<<<<<<< HEAD
+=======
+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+	select HAVE_REGS_AND_STACK_ACCESS_API
+	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+	select HAVE_GENERIC_HARDIRQS
+	select HAVE_SPARSE_IRQ
+	select IRQ_PER_CPU
+	select GENERIC_IRQ_SHOW
+	select GENERIC_IRQ_SHOW_LEVEL
+	select HAVE_RCU_TABLE_FREE if SMP
+	select HAVE_SYSCALL_TRACEPOINTS
+>>>>>>> 056c975... + testing: cherry picked the new lockless list support from Linux 3.3+ -> http://lwn.net/Articles/423366/
 
 config EARLY_PRINTK
 	bool
