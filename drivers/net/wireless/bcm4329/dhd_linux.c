@@ -2764,13 +2764,35 @@ int
 dhd_os_ioctl_resp_wait(dhd_pub_t *pub, uint *condition, bool *pending)
 {
 	dhd_info_t *dhd = (dhd_info_t *)(pub->info);
+	DECLARE_WAITQUEUE(wait, current);
 	int timeout = dhd_ioctl_timeout_msec;
 
 	/* Convert timeout in millsecond to jiffies */
 	/* timeout = timeout * HZ / 1000; */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
 	timeout = msecs_to_jiffies(timeout);
+#else
+	timeout = timeout * HZ / 1000;
+#endif
 
-	timeout = wait_event_timeout(dhd->ioctl_resp_wait, (*condition), timeout);
+	/* Wait until control frame is available */
+	add_wait_queue(&dhd->ioctl_resp_wait, &wait);
+	set_current_state(TASK_INTERRUPTIBLE);
+
+	/* Memory barrier to support multi-processing
+	 * As the variable "condition", which points to dhd->rxlen (dhd_bus_rxctl[dhd_sdio.c])
+	 * Can be changed by another processor.
+	 */
+
+	smp_mb();
+	while (!(*condition) && timeout) {
+		timeout = schedule_timeout(timeout);
+		smp_mb();
+	}
+
+	set_current_state(TASK_RUNNING);
+	remove_wait_queue(&dhd->ioctl_resp_wait, &wait);
+
 	return timeout;
 }
 
