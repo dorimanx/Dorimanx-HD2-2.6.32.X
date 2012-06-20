@@ -48,7 +48,7 @@
 #include <linux/swap.h>
 #endif
 
-static uint32_t lowmem_debug_level = 2;
+static uint32_t lowmem_debug_level = 0;
 static int lowmem_adj[6] = {
         0,
         1,
@@ -57,9 +57,9 @@ static int lowmem_adj[6] = {
         6,
         15,
 };
-static int lowmem_adj_size = 6;
 
-static size_t lowmem_minfree[6] = {
+static int lowmem_adj_size = 6;
+static int lowmem_minfree[6] = {
 	3 * 512, /* 6MB */
 	2 * 1024, /* 8MB */
 	3 * 1024, /* 12MB */
@@ -67,8 +67,8 @@ static size_t lowmem_minfree[6] = {
 	5 * 1024, /* 20MB */
 	6 * 1024, /* 25MB */
 };
-static int lowmem_minfree_size = 6;
 
+static int lowmem_minfree_size = 6;
 static size_t lowmem_minfile[6] = {
         3 * 512, /* 6MB */
         2 * 1024, /* 8MB */
