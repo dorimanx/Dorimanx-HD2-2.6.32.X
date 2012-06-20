@@ -59,7 +59,6 @@ ENDPROC(cpu_v7_proc_fin)
  *
  *	It is assumed that:
  */
-	.arch_extension sec
 	.align	5
 ENTRY(cpu_v7_reset)
 	mov	pc, r0
