@@ -714,7 +714,7 @@ static int mtp_receive_file(struct mtp_dev *dev, struct file *filp,
 			if (ret != write_req->actual) {
 				r = -EIO;
 				if (dev->state != STATE_OFFLINE)
-					dev->state = STATE_ERROR;	
+					dev->state = STATE_ERROR;
 				break;
 			}
 			write_req = NULL;
