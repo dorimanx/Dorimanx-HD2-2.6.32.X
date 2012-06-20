@@ -19,6 +19,7 @@ struct nameidata {
 	struct path	path;
 	struct qstr	last;
 	struct path	root;
+	struct inode    *inode; /* path.dentry.d_inode */
 	unsigned int	flags;
 	int		last_type;
 	unsigned	depth;
@@ -56,6 +57,8 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
 #define LOOKUP_CREATE		0x0200
 #define LOOKUP_EXCL		0x0400
 #define LOOKUP_RENAME_TARGET	0x0800
+
+#define LOOKUP_JUMPED           0x1000
 
 extern int user_path_at(int, const char __user *, unsigned, struct path *);
 

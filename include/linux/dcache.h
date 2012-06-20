@@ -205,6 +205,8 @@ d_iput:		no		no		no       yes
 
 #define DCACHE_FSNOTIFY_PARENT_WATCHED	0x0080 /* Parent inode is watched by some fsnotify listener */
 
+#define DCACHE_OP_HASH          0x1000
+
 extern spinlock_t dcache_lock;
 extern seqlock_t rename_lock;
 

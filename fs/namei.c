@@ -840,6 +840,26 @@ static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
 }
 
 /*
+ * We know there's a real path component here of at least
+ * one character.
+ */
+
+static inline unsigned long hash_name(const char *name, unsigned int *hashp)
+{
+	unsigned long hash = init_name_hash();
+	unsigned long len = 0, c;
+
+	c = (unsigned char)*name;
+	do {
+		len++;
+		hash = partial_name_hash(c, hash);
+		c = (unsigned char)name[len];
+	} while (c && c != '/');
+	*hashp = end_name_hash(hash);
+	return len;
+}
+
+/*
  * Name resolution.
  * This is the basic name resolution function, turning a pathname into
  * the final dentry. We expect 'base' to be positive and a directory.
@@ -865,33 +885,52 @@ static int __link_path_walk(const char *name, struct nameidata *nd)
 
 	/* At this point we know we have a real path component. */
 	for(;;) {
-		unsigned long hash;
 		struct qstr this;
-		unsigned int c;
+		long len;
+		int type;
 
 		nd->flags |= LOOKUP_CONTINUE;
 		err = exec_permission_lite(inode);
  		if (err)
 			break;
 
+		len = hash_name(name, &this.hash);
 		this.name = name;
-		c = *(const unsigned char *)name;
+		this.len = len;
 
-		hash = init_name_hash();
-		do {
-			name++;
-			hash = partial_name_hash(c, hash);
-			c = *(const unsigned char *)name;
-		} while (c && (c != '/'));
-		this.len = name - (const char *) this.name;
-		this.hash = end_name_hash(hash);
+		type = LAST_NORM;
+		if (name[0] == '.') switch (len) {
+			case 2:
+				if (name[1] == '.') {
+					type = LAST_DOTDOT;
+					nd->flags |= LOOKUP_JUMPED;
+				}
+				break;
+			case 1:
+				type = LAST_DOT;
+		}
+		if (likely(type == LAST_NORM)) {
+			struct dentry *parent = nd->path.dentry;
+			nd->flags &= ~LOOKUP_JUMPED;
+			if (unlikely(parent->d_flags & DCACHE_OP_HASH)) {
+				err = parent->d_op->d_hash(parent, &this);
+				if (err < 0)
+					break;
+			}
+		}
 
-		/* remove trailing slashes? */
-		if (!c)
+		if (!name[len])
 			goto last_component;
-		while (*++name == '/');
-		if (!*name)
-			goto last_with_slashes;
+	/*
+	 * If it wasn't NUL, we know it was '/'. Skip that
+	 * slash, and continue until no more slashes.
+	 */
+	do {
+		len++;
+	} while (unlikely(name[len] == '/'));
+		if (!name[len])
+			goto last_component;
+		name += len;
 
 		/*
 		 * "." and ".." are special - ".." especially so because it has
@@ -946,8 +985,6 @@ static int __link_path_walk(const char *name, struct nameidata *nd)
 		continue;
 		/* here ends the main loop */
 
-last_with_slashes:
-		lookup_flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
 last_component:
 		/* Clear LOOKUP_CONTINUE iff it was previously unset */
 		nd->flags &= lookup_flags | ~LOOKUP_CONTINUE;
