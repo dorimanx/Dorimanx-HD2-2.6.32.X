@@ -39,6 +39,7 @@
  */
 
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL         (20)
+#define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
 #define DEF_FREQUENCY_UP_THRESHOLD              (70)
 #define DEF_SAMPLING_DOWN_FACTOR                (5)
 #define MAX_SAMPLING_DOWN_FACTOR                (100000)
@@ -572,14 +573,17 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 }
 
 static ssize_t store_down_differential(struct kobject *a, struct attribute *b,
-				   const char *buf, size_t count)
+				const char *buf, size_t count)
 {
 	unsigned int input;
 	int ret;
 	ret = sscanf(buf, "%u", &input);
-	if (ret != 1)
+
+	if (ret != 1 || input >= dbs_tuners_ins.up_threshold ||
+			input < MIN_FREQUENCY_DOWN_DIFFERENTIAL) {
 		return -EINVAL;
-	dbs_tuners_ins.down_differential = min(input, 100u);
+	}
+	dbs_tuners_ins.down_differential = input;
 	return count;
 }
 

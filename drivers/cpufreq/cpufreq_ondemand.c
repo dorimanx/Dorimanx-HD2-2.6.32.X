@@ -5,6 +5,7 @@
  *            (C)  2003 Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>.
  *                      Jun Nakajima <jun.nakajima@intel.com>
  *
+ *                 2012 Minor Edits by Sar Castillo <sar.castillo@gmail.com>
  *                 2012 MAR heavy addons by DORIMANX <yuri@bynet.co.il>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -36,7 +37,8 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL         (25)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL         (30)
+#define MIN_FREQUENCY_DOWN_DIFFERENTIAL		(1)
 #define DEF_FREQUENCY_UP_THRESHOLD              (80)
 #define DEF_SAMPLING_DOWN_FACTOR                (1)
 #define MAX_SAMPLING_DOWN_FACTOR                (100000)
@@ -53,7 +55,7 @@
 #ifdef CONFIG_HAS_EARLYSUSPEND
 /* FIX ME! what is set here, will be on wake state also! */
 #define FREQ_STEP_SUSPEND                       (50)
-#define SAMPLING_FACTOR_SUSPEND                 (5)
+#define SAMPLING_FACTOR_SUSPEND                 (1)
 #define DEF_FREQUENCY_UP_THRESHOLD_SUSPEND      (60)
 #endif
 
@@ -569,14 +571,17 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 }
 
 static ssize_t store_down_differential(struct kobject *a, struct attribute *b,
-				   const char *buf, size_t count)
+				const char *buf, size_t count)
 {
 	unsigned int input;
 	int ret;
 	ret = sscanf(buf, "%u", &input);
-	if (ret != 1)
+
+	if (ret != 1 || input >= dbs_tuners_ins.up_threshold ||
+			input < MIN_FREQUENCY_DOWN_DIFFERENTIAL) {
 		return -EINVAL;
-	dbs_tuners_ins.down_differential = min(input, 100u);
+	}
+	dbs_tuners_ins.down_differential = input;
 	return count;
 }
 
