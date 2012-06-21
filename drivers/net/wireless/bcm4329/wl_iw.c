@@ -499,7 +499,6 @@ dev_wlc_bufvar_get(
 
 	len = bcm_mkiovar(name, NULL, 0, ioctlbuf, sizeof(ioctlbuf));
 	ASSERT(len);
-	BCM_REFERENCE(len);
 	error = dev_wlc_ioctl(dev, WLC_GET_VAR, (void *)ioctlbuf, MAX_WLIW_IOCTL_LEN);
 	if (!error)
 		bcopy(ioctlbuf, buf, buflen);
@@ -648,31 +647,6 @@ wl_iw_get_macaddr(
 	return error;
 }
 
-static int 
-wl_iw_set_country_code(struct net_device *dev, char *ccode) 
-{ 
-  char country_code[WLC_CNTRY_BUF_SZ]; 
-  int ret = -1; 
- 
-  WL_TRACE(("%s\n", __FUNCTION__)); 
-  if (!ccode) 
-   ccode = dhd_bus_country_get(dev); 
-  strncpy(country_code, ccode, sizeof(country_code)); 
-  if (ccode && (country_code[0] != 0)) { 
-#ifdef CONFIG_US_NON_DFS_CHANNELS_ONLY 
-    if (use_non_dfs_channels && !strncmp(country_code, "US", 2)) 
-      strncpy(country_code, "Q2", WLC_CNTRY_BUF_SZ); 
-    if (!use_non_dfs_channels && !strncmp(country_code, "Q2", 2)) 
-      strncpy(country_code, "US", WLC_CNTRY_BUF_SZ); 
-#endif 
-    ret = dev_wlc_ioctl(dev, WLC_SET_COUNTRY, &country_code, sizeof(country_code)); 
-    if (ret >= 0) { 
-      WL_TRACE(("%s: set country %s OK\n", __FUNCTION__, country_code)); 
-      dhd_bus_country_set(dev, &country_code[0]); 
-    } 
-  } 
-  return ret; 
-} 
 
 static int
 wl_iw_set_country(
@@ -687,9 +661,12 @@ wl_iw_set_country(
 	char *p = extra;
 	int country_offset;
 	int country_code_size;
+	wl_country_t cspec = {{0}, 0, {0}};
+	char smbuf[WLC_IOCTL_SMLEN];
 
-	WL_TRACE(("%s\n", __FUNCTION__));
+	cspec.rev = -1;
 	memset(country_code, 0, sizeof(country_code));
+	memset(smbuf, 0, sizeof(smbuf));
 
 	country_offset = strcspn(extra, " ");
 	country_code_size = strlen(extra) - country_offset;
@@ -697,15 +674,25 @@ wl_iw_set_country(
 	if (country_offset != 0) {
 		strncpy(country_code, extra + country_offset +1,
 			MIN(country_code_size, sizeof(country_code)));
-		error = wl_iw_set_country_code(dev, country_code);
-		if (error >= 0) {
+
+
+		memcpy(cspec.country_abbrev, country_code, WLC_CNTRY_BUF_SZ);
+		memcpy(cspec.ccode, country_code, WLC_CNTRY_BUF_SZ);
+
+		get_customized_country_code((char *)&cspec.country_abbrev, &cspec);
+
+		if ((error = dev_iw_iovar_setbuf(dev, "country", &cspec, \
+			sizeof(cspec), smbuf, sizeof(smbuf))) >= 0) {
 			p += snprintf(p, MAX_WX_STRING, "OK");
-			WL_TRACE(("%s: set country %s OK\n", __FUNCTION__, country_code));
+			WL_ERROR(("%s: set country for %s as %s rev %d is OK\n", \
+				__FUNCTION__, country_code, cspec.ccode, cspec.rev));
+			dhd_bus_country_set(dev, &cspec);
 			goto exit;
 		}
 	}
 
-	WL_ERROR(("%s: set country %s failed code %d\n", __FUNCTION__, country_code, error));
+	WL_ERROR(("%s: set country for %s as %s rev %d failed\n", \
+			__FUNCTION__, country_code, cspec.ccode, cspec.rev));
 
 	p += snprintf(p, MAX_WX_STRING, "FAIL");
 
@@ -1836,7 +1823,7 @@ char softap_cmd_example[] = {
 		return -1;
 	}
 
-	str_ptr =  extra + strlen(SOFTAP_SET_CMD)+1; 
+	str_ptr =  extra + strlen(SOFTAP_SET_CMD)+1;
 	tlv_size_left = wrqu->data.length - (strlen(SOFTAP_SET_CMD)+1);
 
 	memset(&my_ap, 0, sizeof(my_ap));
@@ -5112,87 +5099,111 @@ struct {
 
 static int
 wl_iw_set_pmksa(
-        struct net_device *dev,
-        struct iw_request_info *info,
-        struct iw_param *vwrq,
-        char *extra
+	struct net_device *dev,
+	struct iw_request_info *info,
+	struct iw_param *vwrq,
+	char *extra
 )
 {
-        struct iw_pmksa *iwpmksa;
-        uint i;
-        char eabuf[ETHER_ADDR_STR_LEN];
-        pmkid_t * pmkid_array = pmkid_list.pmkids.pmkid;
+	struct iw_pmksa *iwpmksa;
+	uint i;
+	int ret = 0;
+	char eabuf[ETHER_ADDR_STR_LEN];
 
-        WL_TRACE(("%s: SIOCSIWPMKSA\n", dev->name));
-        iwpmksa = (struct iw_pmksa *)extra;
-        bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
-        if (iwpmksa->cmd == IW_PMKSA_FLUSH) {
-                WL_TRACE(("wl_iw_set_pmksa - IW_PMKSA_FLUSH\n"));
-                bzero((char *)&pmkid_list, sizeof(pmkid_list));
-        }
-        if (iwpmksa->cmd == IW_PMKSA_REMOVE) {
-                pmkid_list_t pmkid, *pmkidptr;
-                pmkidptr = &pmkid;
-                bcopy(&iwpmksa->bssid.sa_data[0], &pmkidptr->pmkid[0].BSSID, ETHER_ADDR_LEN);
-                bcopy(&iwpmksa->pmkid[0], &pmkidptr->pmkid[0].PMKID, WPA2_PMKID_LEN);
-                {
-                        uint j;
-                        WL_TRACE(("wl_iw_set_pmksa,IW_PMKSA_REMOVE - PMKID: %s = ",
-                                bcm_ether_ntoa(&pmkidptr->pmkid[0].BSSID,
-                                eabuf)));
-                        for (j = 0; j < WPA2_PMKID_LEN; j++)
-                                WL_TRACE(("%02x ", pmkidptr->pmkid[0].PMKID[j]));
-                        WL_TRACE(("\n"));
-                }
-                for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
-                        if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_array[i].BSSID,
-                                ETHER_ADDR_LEN))
-                                break;
-                for (; i < pmkid_list.pmkids.npmkid; i++) {
-                        bcopy(&pmkid_array[i+1].BSSID,
-                                &pmkid_array[i].BSSID,
-                                ETHER_ADDR_LEN);
-                        bcopy(&pmkid_array[i+1].PMKID,
-                                &pmkid_array[i].PMKID,
-                                WPA2_PMKID_LEN);
-                }
-                pmkid_list.pmkids.npmkid--;
-        }
-        if (iwpmksa->cmd == IW_PMKSA_ADD) {
-                bcopy(&iwpmksa->bssid.sa_data[0],
-                        &pmkid_array[pmkid_list.pmkids.npmkid].BSSID,
-                        ETHER_ADDR_LEN);
-                bcopy(&iwpmksa->pmkid[0], &pmkid_array[pmkid_list.pmkids.npmkid].PMKID,
-                        WPA2_PMKID_LEN);
-                {
-                        uint j;
-                        uint k;
-                        k = pmkid_list.pmkids.npmkid;
-                        BCM_REFERENCE(k);
-                        WL_TRACE(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %s = ",
-                                bcm_ether_ntoa(&pmkid_array[k].BSSID,
-                                eabuf)));
-                        for (j = 0; j < WPA2_PMKID_LEN; j++)
-                                WL_TRACE(("%02x ", pmkid_array[k].PMKID[j]));
-                        WL_TRACE(("\n"));
-                }
-                pmkid_list.pmkids.npmkid++;
-        }
-        WL_TRACE(("PRINTING pmkid LIST - No of elements %d\n", pmkid_list.pmkids.npmkid));
-        for (i = 0; i < pmkid_list.pmkids.npmkid; i++) {
-                uint j;
-                WL_TRACE(("PMKID[%d]: %s = ", i,
-                        bcm_ether_ntoa(&pmkid_array[i].BSSID,
-                        eabuf)));
-                for (j = 0; j < WPA2_PMKID_LEN; j++)
-                        WL_TRACE(("%02x ", pmkid_array[i].PMKID[j]));
-                printf("\n");
-        }
-        WL_TRACE(("\n"));
-        dev_wlc_bufvar_set(dev, "pmkid_info", (char *)&pmkid_list, sizeof(pmkid_list));
-        return 0;
+	WL_WSEC(("%s: SIOCSIWPMKSA\n", dev->name));
+	CHECK_EXTRA_FOR_NULL(extra);
+
+	iwpmksa = (struct iw_pmksa *)extra;
+	bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
+
+	if (iwpmksa->cmd == IW_PMKSA_FLUSH) {
+		WL_WSEC(("wl_iw_set_pmksa - IW_PMKSA_FLUSH\n"));
+		bzero((char *)&pmkid_list, sizeof(pmkid_list));
+	}
+
+	else if (iwpmksa->cmd == IW_PMKSA_REMOVE) {
+		{
+			pmkid_list_t pmkid, *pmkidptr;
+			uint j;
+			pmkidptr = &pmkid;
+
+			bcopy(&iwpmksa->bssid.sa_data[0], &pmkidptr->pmkid[0].BSSID, ETHER_ADDR_LEN);
+			bcopy(&iwpmksa->pmkid[0], &pmkidptr->pmkid[0].PMKID, WPA2_PMKID_LEN);
+
+			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_REMOVE - PMKID: %s = ",
+				bcm_ether_ntoa(&pmkidptr->pmkid[0].BSSID,
+				eabuf)));
+			for (j = 0; j < WPA2_PMKID_LEN; j++)
+				WL_WSEC(("%02x ", pmkidptr->pmkid[0].PMKID[j]));
+			WL_WSEC(("\n"));
+		}
+
+		for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
+			if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_list.pmkids.pmkid[i].BSSID,
+				ETHER_ADDR_LEN))
+				break;
+
+		if ((pmkid_list.pmkids.npmkid > 0) && (i < pmkid_list.pmkids.npmkid)) {
+			bzero(&pmkid_list.pmkids.pmkid[i], sizeof(pmkid_t));
+			for (; i < (pmkid_list.pmkids.npmkid - 1); i++) {
+				bcopy(&pmkid_list.pmkids.pmkid[i+1].BSSID,
+					&pmkid_list.pmkids.pmkid[i].BSSID,
+					ETHER_ADDR_LEN);
+				bcopy(&pmkid_list.pmkids.pmkid[i+1].PMKID,
+					&pmkid_list.pmkids.pmkid[i].PMKID,
+					WPA2_PMKID_LEN);
+			}
+			pmkid_list.pmkids.npmkid--;
+		}
+		else
+			ret = -EINVAL;
+	}
+
+	else if (iwpmksa->cmd == IW_PMKSA_ADD) {
+		for (i = 0; i < pmkid_list.pmkids.npmkid; i++)
+			if (!bcmp(&iwpmksa->bssid.sa_data[0], &pmkid_list.pmkids.pmkid[i].BSSID,
+				ETHER_ADDR_LEN))
+				break;
+		if (i < MAXPMKID) {
+			bcopy(&iwpmksa->bssid.sa_data[0],
+				&pmkid_list.pmkids.pmkid[i].BSSID,
+				ETHER_ADDR_LEN);
+			bcopy(&iwpmksa->pmkid[0], &pmkid_list.pmkids.pmkid[i].PMKID,
+				WPA2_PMKID_LEN);
+			if (i == pmkid_list.pmkids.npmkid)
+				pmkid_list.pmkids.npmkid++;
+		}
+		else
+			ret = -EINVAL;
+
+		{
+			uint j;
+			uint k;
+			k = pmkid_list.pmkids.npmkid;
+			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %s = ",
+				bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[k].BSSID,
+				eabuf)));
+			for (j = 0; j < WPA2_PMKID_LEN; j++)
+				WL_WSEC(("%02x ", pmkid_list.pmkids.pmkid[k].PMKID[j]));
+			WL_WSEC(("\n"));
+		}
+	}
+	WL_WSEC(("PRINTING pmkid LIST - No of elements %d, ret = %d\n", pmkid_list.pmkids.npmkid, ret));
+	for (i = 0; i < pmkid_list.pmkids.npmkid; i++) {
+		uint j;
+		WL_WSEC(("PMKID[%d]: %s = ", i,
+			bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[i].BSSID,
+			eabuf)));
+		for (j = 0; j < WPA2_PMKID_LEN; j++)
+			WL_WSEC(("%02x ", pmkid_list.pmkids.pmkid[i].PMKID[j]));
+		WL_WSEC(("\n"));
+	}
+	WL_WSEC(("\n"));
+
+	if (!ret)
+		ret = dev_wlc_bufvar_set(dev, "pmkid_info", (char *)&pmkid_list, sizeof(pmkid_list));
+	return ret;
 }
-
 #endif 
 #endif 
 
@@ -5862,7 +5873,7 @@ static int iwpriv_set_cscan(struct net_device *dev, struct iw_request_info *info
 	int nssid = 0;
 	int nchan = 0;
 
-	WL_TRACE(("%s: info->cmd:%x, info->flags:%x, u.data=0x%p, u.len=%d\n",
+	WL_TRACE(("\%s: info->cmd:%x, info->flags:%x, u.data=0x%p, u.len=%d\n",
 		__FUNCTION__, info->cmd, info->flags,
 		wrqu->data.pointer, wrqu->data.length));
 
@@ -6403,16 +6414,8 @@ static int set_ap_cfg(struct net_device *dev, struct ap_profile *ap)
 	}
 
 	if (strlen(ap->country_code)) {
-	  int error = 0;
-	  if ((error = dev_wlc_ioctl(dev, WLC_SET_COUNTRY,
-	    ap->country_code, sizeof(ap->country_code))) >= 0) {
-	    WL_SOFTAP(("%s: set country %s OK\n",
-		__FUNCTION__, ap->country_code));
-	    dhd_bus_country_set(dev, &ap->country_code[0]);
-	} else {
-	  WL_ERROR(("%s: ERROR:%d setting country %s\n",
-	    __FUNCTION__, error, ap->country_code));
-	}
+		WL_ERROR(("%s: Igonored: Country MUST be specified \
+				  COUNTRY command with \n",	__FUNCTION__));
 	} else {
 		WL_SOFTAP(("%s: Country code is not specified,"
 			" will use Radio's default\n",
@@ -7867,9 +7870,6 @@ wl_iw_event(struct net_device *dev, wl_event_msg_t *e, void* data)
 			roam_no_success = 0;
 #endif
 			goto wl_iw_event_end;
-			memcpy(wrqu.addr.sa_data, &e->addr.octet, ETHER_ADDR_LEN);
-			wrqu.addr.sa_family = ARPHRD_ETHER;
-			cmd = SIOCGIWAP;
 		}
 #if defined(ROAM_NOT_USED)
 		else if (status == WLC_E_STATUS_NO_NETWORKS) {
@@ -8073,7 +8073,6 @@ wl_iw_event(struct net_device *dev, wl_event_msg_t *e, void* data)
 #endif
 
 #if WIRELESS_EXT > 14
-	
 	memset(extra, 0, sizeof(extra));
 	if (wl_iw_check_conn_fail(e, extra, sizeof(extra))) {
 		cmd = IWEVCUSTOM;

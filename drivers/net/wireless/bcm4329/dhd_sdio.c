@@ -376,7 +376,7 @@ static bool dhd_readahead;
 
 /* To check if there's window offered */
 #define DATAOK(bus) \
-	(((uint8)(bus->tx_max - bus->tx_seq) != 1) && \
+	(((uint8)(bus->tx_max - bus->tx_seq) != 0) && \
 	(((uint8)(bus->tx_max - bus->tx_seq) & 0x80) == 0))
 
 /* Macros to get register read/write status */
@@ -2770,9 +2770,9 @@ dhd_bus_init(dhd_pub_t *dhdp, bool enforce_mutex)
 	dhd_timeout_start(&tmo, DHD_WAIT_F2RDY * 1000);
 
 	ready = 0;
-	do {
-		ready = bcmsdh_cfg_read(bus->sdh, SDIO_FUNC_0, SDIOD_CCCR_IORDY, NULL);
-	} while (ready != enable && !dhd_timeout_expired(&tmo));
+	while (ready != enable && !dhd_timeout_expired(&tmo))
+	        ready = bcmsdh_cfg_read(bus->sdh, SDIO_FUNC_0, SDIOD_CCCR_IORDY, NULL);
+
 
 	DHD_INFO(("%s: enable 0x%02x, ready 0x%02x (waited %uus)\n",
 	          __FUNCTION__, enable, ready, tmo.elapsed));
