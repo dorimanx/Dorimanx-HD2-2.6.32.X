@@ -16,8 +16,8 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <asm/atomic.h>
-
 #include <linux/netlink.h>
+
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_quota2.h>
 #ifdef CONFIG_NETFILTER_XT_MATCH_QUOTA2_LOG
@@ -283,40 +283,40 @@ static void quota_mt2_destroy(const struct xt_mtdtor_param *par)
 static bool
 quota_mt2(const struct sk_buff *skb, struct xt_action_param *par)
 {
-        struct xt_quota_mtinfo2 *q = (void *)par->matchinfo;
-        struct xt_quota_counter *e = q->master;
-        bool ret = q->flags & XT_QUOTA_INVERT;
+	struct xt_quota_mtinfo2 *q = (void *)par->matchinfo;
+	struct xt_quota_counter *e = q->master;
+	bool ret = q->flags & XT_QUOTA_INVERT;
 
-        spin_lock_bh(&e->lock);
-        if (q->flags & XT_QUOTA_GROW) {
-                /*
-                 * While no_change is pointless in "grow" mode, we will
-                 * implement it here simply to have a consistent behavior.
-                 */
-                if (!(q->flags & XT_QUOTA_NO_CHANGE)) {
-                        e->quota += (q->flags & XT_QUOTA_PACKET) ? 1 : skb->len;
-                }
-                ret = true;
-        } else {
-                if (e->quota >= skb->len) {
-                        if (!(q->flags & XT_QUOTA_NO_CHANGE))
-                                e->quota -= (q->flags & XT_QUOTA_PACKET) ? 1 : skb->len;
-                        ret = !ret;
-                } else {
-                        /* We are transitioning, log that fact. */
-                        if (e->quota) {
-                                quota2_log(par->hooknum,
-                                           skb,
-                                           par->in,
-                                           par->out,
-                                           q->name);
-                        }
-                        /* we do not allow even small packets from now on */
-                        e->quota = 0;
-                }
-        }
-        spin_unlock_bh(&e->lock);
-        return ret;
+	spin_lock_bh(&e->lock);
+	if (q->flags & XT_QUOTA_GROW) {
+		/*
+		 * While no_change is pointless in "grow" mode, we will
+		 * implement it here simply to have a consistent behavior.
+		 */
+		if (!(q->flags & XT_QUOTA_NO_CHANGE)) {
+			e->quota += (q->flags & XT_QUOTA_PACKET) ? 1 : skb->len;
+		}
+		ret = true;
+	} else {
+		if (e->quota >= skb->len) {
+			if (!(q->flags & XT_QUOTA_NO_CHANGE))
+				e->quota -= (q->flags & XT_QUOTA_PACKET) ? 1 : skb->len;
+			ret = !ret;
+		} else {
+			/* We are transitioning, log that fact. */
+			if (e->quota) {
+				quota2_log(par->hooknum,
+					   skb,
+					   par->in,
+					   par->out,
+					   q->name);
+			}
+			/* we do not allow even small packets from now on */
+			e->quota = 0;
+		}
+	}
+	spin_unlock_bh(&e->lock);
+	return ret;
 }
 
 static struct xt_match quota_mt2_reg[] __read_mostly = {
