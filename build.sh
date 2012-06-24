@@ -5,15 +5,15 @@
 #COMPILER=/android-kernel/ICS/toolchain/bin/arm-none-eabi-
 
 #GCC 4.4.3
-#COMPILER=/media/Source-Code/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
+COMPILER=/media/Source-Code/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
 
 #GCC 4.4.5
 #COMPILER=/root/CodeSourcery-2010.09/arm-2010.09/bin/arm-none-eabi-
 
 #VERYOLDCOMPILER=/root/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi-
 
-#LINARO 12.5 GCC 4.6 for GB/ICS
-COMPILER=/android-kernel/gb-linaro-4.6-12_05/android-toolchain-eabi/bin/arm-eabi-
+#LINARO 12.5 GCC 4.6 for GB/ICS (not booting kernel :( )
+#COMPILER=/android-kernel/gb-linaro-4.6-12_05/android-toolchain-eabi/bin/arm-eabi-
 
 rm -f arch/arm/boot/zImage
 rm -f /home/root/kernel/dorimanx-tytyng/output_gb/boot/zImage
