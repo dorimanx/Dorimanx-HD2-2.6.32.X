@@ -31,11 +31,7 @@ struct sys_device;
 struct sysdev_class {
 	const char *name;
 	struct list_head	drivers;
-
-	/* Default operations for these types of devices */
-	int	(*shutdown)(struct sys_device *);
-	int	(*suspend)(struct sys_device *, pm_message_t state);
-	int	(*resume)(struct sys_device *);
+	struct sysdev_class_attribute **attrs;
 	struct kset		kset;
 };
 
@@ -72,9 +68,6 @@ struct sysdev_driver {
 	struct list_head	entry;
 	int	(*add)(struct sys_device *);
 	int	(*remove)(struct sys_device *);
-	int	(*shutdown)(struct sys_device *);
-	int	(*suspend)(struct sys_device *, pm_message_t state);
-	int	(*resume)(struct sys_device *);
 };
 
 
